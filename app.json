@@ -8,7 +8,11 @@
     "scheme": "bikeeco",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": {
+        "dark": "./assets/images/ios-icon-dark.png",
+        "light": "./assets/images/ios-icon-default.png",
+        "tinted": "./assets/images/ios-icon-tinted.png"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,11 +32,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
+          "backgroundColor": "#000000",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200
         }
       ]
     ],
