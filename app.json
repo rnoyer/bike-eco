@@ -21,7 +21,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.rnoyer.bikeeco"
     },
     "web": {
       "output": "static",
@@ -47,6 +48,7 @@
       "eas": {
         "projectId": "47460676-c6f4-4dc0-977d-644b4e23b37e"
       }
-    }
+    },
+    "owner": "rnoyer"
   }
 }
