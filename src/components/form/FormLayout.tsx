@@ -1,14 +1,14 @@
-import React from 'react';
+import React from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface Props {
   progress: number;
@@ -29,14 +29,14 @@ export default function FormLayout({
   onPrev,
   onNext,
   canGoBack = true,
-  nextLabel = 'Suivant',
+  nextLabel = "Suivant",
 }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
         style={styles.scroll}
@@ -49,12 +49,8 @@ export default function FormLayout({
       >
         {/* Progress bar */}
         <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${progress}%` as any }]} />
           <View
-            style={[
-              styles.progressThumb,
-              { left: `${progress}%` as any, transform: [{ translateX: -8 }] },
-            ]}
+            style={[styles.progressFill, { width: `${progress}%` as any }]}
           />
         </View>
 
@@ -66,7 +62,11 @@ export default function FormLayout({
 
       <View style={[styles.buttons, { paddingBottom: insets.bottom + 16 }]}>
         <TouchableOpacity
-          style={[styles.btn, styles.btnSecondary, !canGoBack && styles.btnDisabled]}
+          style={[
+            styles.btn,
+            styles.btnSecondary,
+            !canGoBack && styles.btnDisabled,
+          ]}
           onPress={canGoBack ? onPrev : undefined}
           activeOpacity={canGoBack ? 0.7 : 1}
         >
@@ -79,7 +79,9 @@ export default function FormLayout({
           onPress={onNext}
           activeOpacity={0.8}
         >
-          <Text style={[styles.btnText, styles.btnTextPrimary]}>{nextLabel}</Text>
+          <Text style={[styles.btnText, styles.btnTextPrimary]}>
+            {nextLabel}
+          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -89,7 +91,7 @@ export default function FormLayout({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   scroll: {
     flex: 1,
@@ -100,84 +102,69 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 6,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: "#E5E7EB",
     borderRadius: 3,
     marginBottom: 36,
-    position: 'relative',
-    justifyContent: 'center',
+    position: "relative",
+    justifyContent: "center",
   },
   progressFill: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
-    height: '100%',
-    backgroundColor: '#111',
+    height: "100%",
+    backgroundColor: "#111",
     borderRadius: 3,
-  },
-  progressThumb: {
-    position: 'absolute',
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#111',
-    borderWidth: 3,
-    borderColor: '#fff',
-    top: -5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111',
+    fontWeight: "bold",
+    color: "#111",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    fontWeight: '400',
-    color: '#71727A',
+    fontWeight: "400",
+    color: "#71727A",
     marginBottom: 28,
   },
   fields: {
     gap: 20,
   },
   buttons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     paddingHorizontal: 24,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    backgroundColor: '#fff',
+    borderTopColor: "#F3F4F6",
+    backgroundColor: "#fff",
   },
   btn: {
     flex: 1,
     height: 52,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   btnPrimary: {
-    backgroundColor: '#111',
+    backgroundColor: "#111",
   },
   btnSecondary: {
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
   },
   btnDisabled: {
-    borderColor: '#F3F4F6',
+    borderColor: "#F3F4F6",
   },
   btnText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#111',
+    fontWeight: "600",
+    color: "#111",
   },
   btnTextPrimary: {
-    color: '#fff',
+    color: "#fff",
   },
   btnTextDisabled: {
-    color: '#C1C1C6',
+    color: "#C1C1C6",
   },
 });
