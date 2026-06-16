@@ -158,20 +158,20 @@ export default function FormScreen() {
       return;
     }
 
-    setCurrentStep((s) => Math.min(9, s + 1));
+    setCurrentStep((step) => Math.min(9, step + 1));
   }
 
   function handlePrev() {
-    setCurrentStep((s) => Math.max(1, s - 1));
+    setCurrentStep((step) => Math.max(1, step - 1));
   }
 
   function updateStep1<K extends keyof Step1Data>(
     field: K,
     value: Step1Data[K],
   ) {
-    setStep1Data((d) => ({ ...d, [field]: value }));
+    setStep1Data((prev) => ({ ...prev, [field]: value }));
     if (step1Errors[field as keyof Step1Errors]) {
-      setStep1Errors((e) => ({ ...e, [field]: undefined }));
+      setStep1Errors((prevErrors) => ({ ...prevErrors, [field]: undefined }));
     }
   }
 
@@ -192,44 +192,58 @@ export default function FormScreen() {
         {currentStep === 2 && (
           <Step2
             data={step2Data}
-            onChange={(f, v) => setStep2Data((d) => ({ ...d, [f]: v }))}
+            onChange={(field, value) =>
+              setStep2Data((prev) => ({ ...prev, [field]: value }))
+            }
           />
         )}
         {currentStep === 3 && (
           <Step3
             data={step3Data}
-            onChange={(f, v) => setStep3Data((d) => ({ ...d, [f]: v }))}
+            onChange={(field, value) =>
+              setStep3Data((prev) => ({ ...prev, [field]: value }))
+            }
           />
         )}
         {currentStep === 4 && (
           <Step4
             data={step4Data}
-            onChange={(f, v) => setStep4Data((d) => ({ ...d, [f]: v }))}
+            onChange={(field, value) =>
+              setStep4Data((prev) => ({ ...prev, [field]: value }))
+            }
           />
         )}
         {currentStep === 5 && (
           <Step5
             data={step5Data}
-            onChange={(f, v) => setStep5Data((d) => ({ ...d, [f]: v }))}
+            onChange={(field, value) =>
+              setStep5Data((prev) => ({ ...prev, [field]: value }))
+            }
           />
         )}
         {currentStep === 6 && (
           <Step6
             data={step6Data}
-            onChange={(f, v) => setStep6Data((d) => ({ ...d, [f]: v }))}
+            onChange={(field, value) =>
+              setStep6Data((prev) => ({ ...prev, [field]: value }))
+            }
           />
         )}
         {currentStep === 7 && (
           <Step7
             data={step7Data}
-            onChange={(f, v) => setStep7Data((d) => ({ ...d, [f]: v }))}
+            onChange={(field, value) =>
+              setStep7Data((prev) => ({ ...prev, [field]: value }))
+            }
           />
         )}
         {currentStep === 8 && (
           <Step8
             data={step8Data}
             departement={step1Data.departement}
-            onChange={(f, v) => setStep8Data((d) => ({ ...d, [f]: v }))}
+            onChange={(field, value) =>
+              setStep8Data((prev) => ({ ...prev, [field]: value }))
+            }
           />
         )}
       </FormLayout>
