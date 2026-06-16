@@ -38,22 +38,21 @@ export default function FormLayout({
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: insets.top + 24 },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Progress bar */}
+      {/* Progress bar — fixed above the scroll, so it stays put while the form scrolls. */}
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.progressTrack}>
           <View
             style={[styles.progressFill, { width: `${progress}%` as any }]}
           />
         </View>
+      </View>
 
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
 
@@ -93,18 +92,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
+  header: {
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    backgroundColor: "#fff",
+  },
   scroll: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 24,
+    paddingTop: 8,
     paddingBottom: 32,
   },
   progressTrack: {
     height: 6,
     backgroundColor: "#E5E7EB",
     borderRadius: 3,
-    marginBottom: 36,
     position: "relative",
     justifyContent: "center",
   },
