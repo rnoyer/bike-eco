@@ -10,7 +10,7 @@ import Step5, { type Step5Data } from "@/components/form/Step5";
 import Step6, { type Step6Data } from "@/components/form/Step6";
 import Step7, { type Step7Data } from "@/components/form/Step7";
 import Step8, { type Step8Data } from "@/components/form/Step8";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert } from "react-native";
 
@@ -126,6 +126,7 @@ function validateStep1(data: Step1Data): Step1Errors {
 // ─── screen ────────────────────────────────────────────────────────────────────
 
 export default function FormScreen() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
 
   const [step1Data, setStep1Data] = useState<Step1Data>(INITIAL_STEP1);
@@ -162,6 +163,14 @@ export default function FormScreen() {
   }
 
   function handlePrev() {
+    if (currentStep === 1) {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/");
+      }
+      return;
+    }
     setCurrentStep((step) => Math.max(1, step - 1));
   }
 
@@ -184,7 +193,6 @@ export default function FormScreen() {
         subtitle={meta.subtitle}
         onPrev={handlePrev}
         onNext={handleNext}
-        canGoBack={currentStep > 1}
       >
         {currentStep === 1 && (
           <Step1 data={step1Data} errors={step1Errors} onChange={updateStep1} />

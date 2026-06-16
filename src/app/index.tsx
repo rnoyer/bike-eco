@@ -1,5 +1,6 @@
 import { type Href, Stack, useRouter } from "expo-router";
 import {
+  ImageBackground,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -20,49 +21,63 @@ export default function Index() {
       {/* No nav bar on the landing screen — same convention as formParticuliers. */}
       <Stack.Screen options={{ headerShown: false }} />
 
-      <View
-        style={[
-          styles.backdrop,
-          { paddingTop: insets.top, paddingBottom: insets.bottom },
-        ]}
+      <ImageBackground
+        source={require("@/assets/images/bg-motos.jpg")}
+        style={styles.background}
+        resizeMode="cover"
       >
-        {/* Fake modal: a centered card, NOT a <Modal> component. */}
-        <View style={styles.card} accessibilityRole="alert">
-          <Text style={styles.title}>Qui êtes-vous&nbsp;?</Text>
+        {/* Darkens the photo so the card stays legible on top of it. */}
+        <View style={[StyleSheet.absoluteFill, styles.overlay]} />
 
-          <View style={styles.actions}>
-            <TouchableOpacity
-              style={[styles.btn, styles.btnPrimary]}
-              onPress={() => router.push("/formParticuliers")}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Un particulier"
-            >
-              <Text style={[styles.btnText, styles.btnTextPrimary]}>
-                Un particulier
-              </Text>
-            </TouchableOpacity>
+        <View
+          style={[
+            styles.content,
+            { paddingTop: insets.top, paddingBottom: insets.bottom },
+          ]}
+        >
+          {/* Fake modal: a centered card, NOT a <Modal> component. */}
+          <View style={styles.card} accessibilityRole="alert">
+            <Text style={styles.title}>Qui êtes-vous&nbsp;?</Text>
 
-            <TouchableOpacity
-              style={[styles.btn, styles.btnSecondary]}
-              onPress={() => router.push(SIGNIN_ROUTE)}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="Un garagiste ou concessionnaire"
-            >
-              <Text style={styles.btnText}>Un garagiste/concessionnaire</Text>
-            </TouchableOpacity>
+            <View style={styles.actions}>
+              <TouchableOpacity
+                style={[styles.btn, styles.btnPrimary]}
+                onPress={() => router.push("/formParticuliers")}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Un particulier"
+              >
+                <Text style={[styles.btnText, styles.btnTextPrimary]}>
+                  Un particulier
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.btn, styles.btnSecondary]}
+                onPress={() => router.push(SIGNIN_ROUTE)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Un garagiste ou concessionnaire"
+              >
+                <Text style={styles.btnText}>Un garagiste/concessionnaire</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
+      </ImageBackground>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
+  background: {
     flex: 1,
-    backgroundColor: "rgba(17, 17, 17, 0.45)",
+  },
+  overlay: {
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  content: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
