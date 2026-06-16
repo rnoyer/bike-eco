@@ -1,0 +1,2 @@
+- [Routing conventions](project_routing.md) — Expo Router v56 typed routes, per-screen header config, ignore the example/ app's tsc noise
+- [Design tokens](project_design_tokens.md) — shared button/title/color styling vocabulary from FormLayout.tsx
