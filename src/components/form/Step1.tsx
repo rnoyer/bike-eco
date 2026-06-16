@@ -37,6 +37,7 @@ export default function Step1({ data, errors, onChange }: Props) {
         onChangeText={(v) => onChange('nom', v)}
         error={errors.nom}
         autoCapitalize="words"
+        autoComplete="family-name"
         returnKeyType="next"
       />
       <FormField
@@ -46,6 +47,7 @@ export default function Step1({ data, errors, onChange }: Props) {
         onChangeText={(v) => onChange('prenom', v)}
         error={errors.prenom}
         autoCapitalize="words"
+        autoComplete="given-name"
         returnKeyType="next"
       />
       <FormField
@@ -66,6 +68,7 @@ export default function Step1({ data, errors, onChange }: Props) {
         onChangeText={(v) => onChange('telephone', v.replace(/\D/g, '').slice(0, 10))}
         error={errors.telephone}
         keyboardType="phone-pad"
+        autoComplete="tel"
       />
       <Dropdown
         label="Département"
