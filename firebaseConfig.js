@@ -5,7 +5,7 @@ import { initializeApp } from "firebase/app";
 // import {...} from 'firebase/database';
 // import {...} from 'firebase/firestore';
 // import {...} from 'firebase/functions';
-// import {...} from 'firebase/storage';
+import { getStorage } from "firebase/storage";
 // Import the functions you need from the SDKs you need
 
 // TODO: Add SDKs for Firebase products that you want to use
@@ -25,3 +25,4 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
