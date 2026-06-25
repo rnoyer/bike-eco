@@ -104,6 +104,8 @@ Texte d'information : "\* Champs obligatoires"
 Form : step 4
 slider : 100%
 title : "Demande d'inscription envoyé !"
-subtitle : "Votre inscription est prise en compte" "Après validation par notre équipe, vous pourrez comencer à utiliser l'application pour vendre vos véhicules."
+subtitle : "Votre inscription est prise en compte"
+"Un email de confirmation vous sera envoyé lorsque votre compte sera validé par notre équipe."
+"Vous pourrez ensuite comencer à utiliser l'application pour vendre vos véhicules."
 
 ---

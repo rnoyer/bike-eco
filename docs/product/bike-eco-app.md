@@ -63,9 +63,19 @@ When card is clicked, the Dossier page opens. It contains, from top to Bottom :
 
 ## B2B Customer registration
 
+### First registration (company + user)
+
 When B2B customer registers, it gives the SIRET number and the company name.
 
-### B2B Customer registration Form
+- First user submit registration form (b2b-company-registration-form)
+- Manually validated by Bike-eco team member
+- Each user has the admin right to add someone else
+
+### User registration for an existing company
+
+- Existing user add the email address of the user to add
+- The future user receive an email with a one-time, time limited registration link
+- The future user click on link, it opens the app with the corresponding form (b2b-invited-registration-form)
 
 ## Bike-eco team registration
 

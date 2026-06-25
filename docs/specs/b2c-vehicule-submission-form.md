@@ -375,9 +375,9 @@ default value : null
 type : dropdown
 
 - "Enlevement a domicile"
-  Si le département sélectionné fait partie du 'Nord'
+  If "département" (step 1) isNord
 - "Je dépose la moto au centre de Montargis"
-  Si le département sélectionné fait partie du 'Sud'
+  If "département" (step 1) isSud
 - "Je dépose la moto au centre de Vitrolles"
   mandatory : no
 
