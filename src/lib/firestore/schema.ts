@@ -1,0 +1,173 @@
+import type { Timestamp } from "firebase/firestore";
+
+/**
+ * The Firestore data model for Bike-eco, expressed as read-side types
+ * (timestamps are `Timestamp`, as returned by reads). Writes may substitute
+ * `serverTimestamp()` for timestamp fields — see the converters layer.
+ *
+ * Collections:
+ *   companies/{companyId}
+ *   users/{uid}
+ *   invitations/{invitationId}
+ *   dossiers/{dossierId}                    (B2B only — B2C is email-only)
+ *   dossiers/{dossierId}/messages/{messageId}
+ */
+
+// ─── shared enums ────────────────────────────────────────────────────────────
+
+export type OuiNon = "oui" | "non";
+export type Region = "NORTH" | "SOUTH";
+export type UserRole = "b2b" | "backoffice";
+
+export const COMPANY_STATUSES = ["pending", "active", "rejected"] as const;
+export type CompanyStatus = (typeof COMPANY_STATUSES)[number];
+
+export const USER_STATUSES = ["pending", "active"] as const;
+export type UserStatus = (typeof USER_STATUSES)[number];
+
+export const INVITATION_STATUSES = ["pending", "accepted", "expired"] as const;
+export type InvitationStatus = (typeof INVITATION_STATUSES)[number];
+
+/** `a_traiter` = new, `en_cours` = ongoing, `cloture` = closed. */
+export const DOSSIER_STATUSES = ["a_traiter", "en_cours", "cloture"] as const;
+export type DossierStatus = (typeof DOSSIER_STATUSES)[number];
+
+export const ETATS_VEHICULE = [
+  "Bon état",
+  "En Panne",
+  "Fort kilométrage",
+  "Refus au Contrôle Technique",
+  "Mauvais Etat",
+  "Accidenté",
+] as const;
+export type EtatVehicule = (typeof ETATS_VEHICULE)[number];
+
+export type ResultatCT = "Favorable" | "Défavorable";
+export type AttachmentType = "image" | "pdf";
+
+// ─── companies ───────────────────────────────────────────────────────────────
+
+export interface Company {
+  siret: string; // 14 digits, immutable
+  name: string;
+  status: CompanyStatus; // manual validation by the Bike-eco team
+  createdBy: string; // uid of the first registrant
+  createdAt: Timestamp;
+}
+
+// ─── users ───────────────────────────────────────────────────────────────────
+
+/** Mirrors the Auth custom claims; `role`/`companyId`/`status` are server-set. */
+export interface AppUser {
+  role: UserRole;
+  companyId: string | null; // b2b only
+  region: Region | null; // backoffice routing
+  nom: string;
+  prenom: string;
+  email: string; // PII — owner + team read only
+  telephone: string; // PII
+  departement: string;
+  ville: string;
+  status: UserStatus; // pending until the company is validated
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// ─── invitations ─────────────────────────────────────────────────────────────
+
+export interface Invitation {
+  email: string;
+  companyId: string;
+  invitedBy: string; // uid
+  tokenHash: string; // store a hash, never the raw token
+  status: InvitationStatus;
+  expiresAt: Timestamp; // one-time, time-limited
+  createdAt: Timestamp;
+}
+
+// ─── dossiers ────────────────────────────────────────────────────────────────
+
+/** Denormalized identity for cards/chat (avoids extra reads). */
+export interface DossierSubmitter {
+  nom: string;
+  prenom: string;
+  companyName: string;
+}
+
+export interface DossierVehicle {
+  electrique: OuiNon;
+  materiel: string[]; // e.g. "J'ai la batterie", "J'ai le chargeur"
+  marque: string;
+  modele: string; // B2B merges "Modèle et Cylindrée" here
+  cylindree: number | null;
+  annee: number | null;
+  kilometrage: number | null;
+  accessoires: string;
+}
+
+export interface DossierKeys {
+  aClesContact: OuiNon | null;
+  cleNoire: number | null;
+  cleMarron: number | null;
+  cleRouge: number | null;
+  aTelecommande: OuiNon | null;
+  telecommande: number | null;
+}
+
+export interface DossierCondition {
+  etat: EtatVehicule | null;
+  naturePanne: string;
+}
+
+export interface DossierPapers {
+  carteGrise: OuiNon | null;
+  carteGriseAVotreNom: OuiNon | null;
+  controleTechnique: OuiNon | null;
+  ctMoins6Mois: OuiNon | null;
+  resultatCT: ResultatCT | null;
+  certificatNonGage: OuiNon | null;
+  carnetEntretien: OuiNon | null;
+  factureEntretien: OuiNon | null;
+}
+
+export interface DossierPricing {
+  prix: number | null;
+  commentaires: string;
+}
+
+export interface Dossier {
+  status: DossierStatus;
+  region: Region; // derived from the submitter's departement
+  companyId: string;
+  submittedBy: string; // uid
+  assignedTo: string | null; // team member handling it
+  submitter: DossierSubmitter;
+  vehicle: DossierVehicle;
+  keys: DossierKeys;
+  condition: DossierCondition;
+  papers: DossierPapers;
+  pricing: DossierPricing;
+  photos: string[]; // Storage download URLs
+  thumbnailUrl: string | null; // low-res first photo
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  lastMessageAt: Timestamp | null;
+}
+
+// ─── messages (subcollection of dossiers) ────────────────────────────────────
+
+export interface MessageAttachment {
+  type: AttachmentType;
+  url: string; // Storage download URL
+  name: string;
+  size: number; // bytes
+}
+
+export interface Message {
+  senderId: string; // uid
+  senderName: string; // "[name] - [company]" or "[name] - Bike-eco"
+  senderRole: UserRole;
+  text: string;
+  attachments: MessageAttachment[];
+  createdAt: Timestamp;
+}

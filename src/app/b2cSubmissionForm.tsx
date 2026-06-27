@@ -4,12 +4,12 @@ import { FormProvider } from "react-hook-form";
 
 import FormLayout from "@/components/form/FormLayout";
 import {
-  B2C_VEHICULE_DEFAULTS,
-  b2cVehiculeSchema,
-  type B2cVehiculeForm,
-} from "@/features/b2c-vehicule/schema";
-import { B2C_VEHICULE_STEPS } from "@/features/b2c-vehicule/steps";
-import SubmissionConfirmation from "@/features/b2c-vehicule/SubmissionConfirmation";
+  B2C_SUBMISSION_DEFAULTS,
+  b2cSubmissionSchema,
+  type B2cSubmissionForm,
+} from "@/features/b2c-submission/schema";
+import { B2C_SUBMISSION_STEPS } from "@/features/b2c-submission/steps";
+import SubmissionConfirmation from "@/features/b2c-submission/SubmissionConfirmation";
 import { useStepForm } from "@/lib/forms/useStepForm";
 
 export default function FormParticuliersScreen() {
@@ -17,10 +17,10 @@ export default function FormParticuliersScreen() {
   const [submitted, setSubmitted] = useState(false);
 
   const { form, step, isFirst, isLast, meta, next, prev } =
-    useStepForm<B2cVehiculeForm>({
-      schema: b2cVehiculeSchema,
-      steps: B2C_VEHICULE_STEPS,
-      defaultValues: B2C_VEHICULE_DEFAULTS,
+    useStepForm<B2cSubmissionForm>({
+      schema: b2cSubmissionSchema,
+      steps: B2C_SUBMISSION_STEPS,
+      defaultValues: B2C_SUBMISSION_DEFAULTS,
       onSubmit: async (_values) => {
         // TODO: submit the dossier to the backend.
         setSubmitted(true);
@@ -64,7 +64,7 @@ export default function FormParticuliersScreen() {
           onNext={next}
           nextLabel={isLast ? "Envoyer" : "Suivant"}
         >
-          {B2C_VEHICULE_STEPS[step].render()}
+          {B2C_SUBMISSION_STEPS[step].render()}
         </FormLayout>
       </FormProvider>
     </>

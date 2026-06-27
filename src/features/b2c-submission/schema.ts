@@ -14,7 +14,7 @@ const optionalChoice = z.string().nullable().default(null);
  * Field types mirror the inputs (strings), and validation follows the spec's
  * mandatory flags. Derive types from this schema — never redeclare them.
  */
-export const b2cVehiculeSchema = z.object({
+export const b2cSubmissionSchema = z.object({
   // Step 1 — coordonnées (all mandatory)
   nom: requiredText(),
   prenom: requiredText(),
@@ -68,9 +68,9 @@ export const b2cVehiculeSchema = z.object({
   modalite: optionalChoice,
 });
 
-export type B2cVehiculeForm = z.infer<typeof b2cVehiculeSchema>;
+export type B2cSubmissionForm = z.infer<typeof b2cSubmissionSchema>;
 
-export const B2C_VEHICULE_DEFAULTS: B2cVehiculeForm = {
+export const B2C_SUBMISSION_DEFAULTS: B2cSubmissionForm = {
   nom: "",
   prenom: "",
   email: "",

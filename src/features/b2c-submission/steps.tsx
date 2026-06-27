@@ -8,9 +8,9 @@ import ControlledField from "@/components/form/ControlledField";
 import PhotoPicker from "@/components/form/PhotoPicker";
 import { DEPARTMENTS, isNord, isSud } from "@/constants/departments";
 import type { StepConfig } from "@/lib/forms/useStepForm";
-import type { B2cVehiculeForm } from "./schema";
+import type { B2cSubmissionForm } from "./schema";
 
-export type B2cStep = StepConfig<B2cVehiculeForm> & { render: () => ReactNode };
+export type B2cStep = StepConfig<B2cSubmissionForm> & { render: () => ReactNode };
 
 const COUNT_OPTIONS = ["0", "1", "2", "3", "4"];
 const OUI_NON = ["oui", "non"];
@@ -48,7 +48,7 @@ function CoordonneesFields() {
 }
 
 function ElectriqueFields() {
-  const electrique = useWatch<B2cVehiculeForm, "electrique">({ name: "electrique" });
+  const electrique = useWatch<B2cSubmissionForm, "electrique">({ name: "electrique" });
   return (
     <>
       <ControlledDropdown name="electrique" label="S'agit-il d'un véhicule électrique ?" options={OUI_NON} />
@@ -73,8 +73,8 @@ function MotoFields() {
 }
 
 function ClesFields() {
-  const aClesContact = useWatch<B2cVehiculeForm, "aClesContact">({ name: "aClesContact" });
-  const aTelecommande = useWatch<B2cVehiculeForm, "aTelecommande">({ name: "aTelecommande" });
+  const aClesContact = useWatch<B2cSubmissionForm, "aClesContact">({ name: "aClesContact" });
+  const aTelecommande = useWatch<B2cSubmissionForm, "aTelecommande">({ name: "aTelecommande" });
   return (
     <>
       <ControlledDropdown name="aClesContact" label="Avez-vous des clés de contact ?" options={OUI_NON} />
@@ -94,7 +94,7 @@ function ClesFields() {
 }
 
 function EtatFields() {
-  const etat = useWatch<B2cVehiculeForm, "etat">({ name: "etat" });
+  const etat = useWatch<B2cSubmissionForm, "etat">({ name: "etat" });
   return (
     <>
       <ControlledDropdown name="etat" label="Dans quel état se trouve votre moto ?" placeholder="Etat du véhicule" options={ETAT_OPTIONS} />
@@ -106,8 +106,8 @@ function EtatFields() {
 }
 
 function PapiersFields() {
-  const carteGrise = useWatch<B2cVehiculeForm, "carteGrise">({ name: "carteGrise" });
-  const controleTechnique = useWatch<B2cVehiculeForm, "controleTechnique">({ name: "controleTechnique" });
+  const carteGrise = useWatch<B2cSubmissionForm, "carteGrise">({ name: "carteGrise" });
+  const controleTechnique = useWatch<B2cSubmissionForm, "controleTechnique">({ name: "controleTechnique" });
   return (
     <>
       <ControlledDropdown name="carteGrise" label="Avez-vous la carte grise du véhicule ?" options={OUI_NON} />
@@ -134,7 +134,7 @@ function PapiersFields() {
 }
 
 function PhotosFields() {
-  const { control } = useFormContext<B2cVehiculeForm>();
+  const { control } = useFormContext<B2cSubmissionForm>();
   return (
     <>
       <Text style={styles.hint}>
@@ -166,7 +166,7 @@ function PrixFields() {
 }
 
 function ModaliteFields() {
-  const departement = useWatch<B2cVehiculeForm, "departement">({ name: "departement" });
+  const departement = useWatch<B2cSubmissionForm, "departement">({ name: "departement" });
   const options = ["Enlèvement à domicile"];
   if (departement && isNord(departement)) {
     options.push("Je dépose la moto au centre de Montargis");
@@ -181,7 +181,7 @@ function ModaliteFields() {
 
 // ─── step definitions ────────────────────────────────────────────────────────
 
-export const B2C_VEHICULE_STEPS: B2cStep[] = [
+export const B2C_SUBMISSION_STEPS: B2cStep[] = [
   {
     progress: 0,
     title: "Vos coordonnées",
