@@ -141,6 +141,7 @@ export interface Dossier {
   companyId: string;
   submittedBy: string; // uid
   assignedTo: string | null; // team member handling it
+  negotiatedPrice: number | null; // back-office deal outcome (page-dossier-management)
   submitter: DossierSubmitter;
   vehicle: DossierVehicle;
   keys: DossierKeys;
