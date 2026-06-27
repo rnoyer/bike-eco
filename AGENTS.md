@@ -30,6 +30,7 @@ feature. Keep a spec in sync in the same change that alters its feature.
   - `page-login-signup.md` — B2B/back-office login front page (sign-in form + third-party auth).
   - `page-dashboard.md` — B2B and back-office dashboard with dossier sections (differs by role).
   - `page-dossier.md` — dossier detail (compact label/value list of the vehicle's form data).
+  - `page-dossier-management.md` — back-office status + negotiated-price update (status dropdown, prix, "Mettre à jour").
   - `page-chat.md` — per-dossier messaging with file (pdf/photo) attachments.
   - `page-my-account.md` — user account info screen.
   - `page-settings.md` — settings (invite a colleague, delete account).
@@ -45,6 +46,13 @@ feature. Keep a spec in sync in the same change that alters its feature.
 
 # Forms conventions
 
+- **Reuse the shared multi-step engine** — `src/lib/forms/useStepForm.ts` (react-hook-form
+  + `zodResolver`, step cursor, per-step validation) drives every multi-step form. Build
+  fields with the controlled wrappers in `src/components/form/` (`ControlledField`,
+  `ControlledDropdown`, `ControlledCheckboxGroup`, `PhotoPicker`) over the shared
+  `FormLayout`. A form = one `schema.ts` (Zod) + a declarative `steps.tsx`; see
+  `src/features/b2c-submission/` as the reference implementation. Do NOT re-create
+  per-step `useState` or hand-rolled validators.
 - **Build forms with `react-hook-form`** — use it for form state, field registration,
   and submission. Do NOT hand-roll form state or a custom `useForm`-style hook.
 - **Validation uses Zod (v4) schemas** — see the Zod section above. Do NOT hand-roll a
@@ -58,3 +66,18 @@ feature. Keep a spec in sync in the same change that alters its feature.
 - Error messages must be specific and actionable ("Saisissez un email valide", not
   "Champ invalide"). UI copy is in French — match the wording in the specs.
 - Mandatory fields are marked with `*` and accompanied by the "* Champs obligatoires" note.
+
+# Data / Firestore
+
+When designing or changing data, activate the `firebase-firestore` skill and follow its
+guides. Conventions in place:
+
+- App data lives in the **named `bike-eco-db`** database (Standard edition), not
+  `(default)`. The client is initialized in `firebaseConfig.ts` (`db`, `storage`, `app`).
+- The data model is typed in `src/lib/firestore/schema.ts` (collections: `companies`,
+  `users`, `invitations`, `dossiers`, `dossiers/*/messages`) with typed, converter-backed
+  refs in `src/lib/firestore/collections.ts`. Keep these in sync when the model changes.
+- `dossiers` are **B2B only** — the public B2C funnel is email-only (a Cloud Function
+  sends the NORTH/SOUTH summary emails; nothing is persisted).
+- `role` / `companyId` / account `status` are server-set (Auth custom claims), never
+  client-writable. Security rules are default-deny and require auth.
