@@ -1,0 +1,203 @@
+# Firestore data model
+
+The Bike-eco Firestore data model: target database, collections, schema, access
+patterns, and the build roadmap. The authoritative types live in
+`src/lib/firestore/schema.ts` (typed refs in `src/lib/firestore/collections.ts`);
+keep this document in sync when the model changes.
+
+## Key decisions
+
+- **Database:** app data lives in the named **`bike-eco-db`** database (Standard
+  edition), not `(default)`. Initialized in `firebaseConfig.ts` via
+  `getFirestore(app, "bike-eco-db")`.
+- **B2C is email-only:** the public (non-logged-in) B2C funnel does **not** write
+  to Firestore. A Cloud Function validates the submission and sends the two
+  summary emails routed NORTH/SOUTH (→ `romain.noyer@gmail.com` in dev). Because
+  there is no unauthenticated write path, **every Firestore rule can require
+  auth**. As a result, `dossiers` are **B2B only**.
+- **RBAC via custom claims:** `role`, `companyId`, and account `status` are
+  server-set (Auth custom claims), never client-writable. The `users` document
+  mirrors these for display; rules trust the claim, not the document.
+
+## Build roadmap
+
+| # | Step | Status |
+|---|------|--------|
+| 1 | `getFirestore(app, "bike-eco-db")` in `firebaseConfig.ts` | ✅ done |
+| 2 | Firebase Auth (email/password + Google) + custom claims (`role`, `companyId`) | todo |
+| 3 | Schema-as-code: TS interfaces + converter-backed refs | ✅ done |
+| 4 | `firestore` block in `firebase.json` → `firestore.rules` + `firestore.indexes.json` | todo |
+| 5 | Security rules — default-deny, role/ownership + per-collection validators (incl. devil's-advocate pass) | todo |
+| 6 | Cloud Functions: B2C email-only, B2B invitation, onDossierCreate notify, company/user validation | todo |
+| 7 | Composite indexes (see [Indexes](#query-patterns--indexes)) | todo |
+| 8 | Emulator validation + app integration (dashboard queries, dossier page, chat) | todo |
+
+## Collections
+
+```
+companies/{companyId}
+users/{uid}
+invitations/{invitationId}
+dossiers/{dossierId}                      (B2B only)
+dossiers/{dossierId}/messages/{messageId}
+```
+
+Dates are `timestamp`; numeric vehicle values (`prix`, `annee`, `kilometrage`,
+`cylindree`) are `number` (converted from the funnel's string inputs on submit).
+
+### `companies/{companyId}`
+
+| field | type | notes |
+|-------|------|-------|
+| `siret` | string | 14 digits, immutable |
+| `name` | string | |
+| `status` | string | `pending` → `active` / `rejected` (manual validation by the team) |
+| `createdBy` | uid | first registrant |
+| `createdAt` | timestamp | immutable |
+
+### `users/{uid}`
+
+Contains PII → readable by the owner and the Bike-eco team only.
+
+| field | type | notes |
+|-------|------|-------|
+| `role` | string | `b2b` \| `backoffice` — mirror of the custom claim, server-set |
+| `companyId` | string \| null | b2b only |
+| `region` | string \| null | `NORTH` \| `SOUTH` (back-office routing) |
+| `nom`, `prenom` | string | |
+| `email`, `telephone` | string | PII |
+| `departement`, `ville` | string | |
+| `status` | string | `pending` until the company is validated → `active` |
+| `createdAt`, `updatedAt` | timestamp | |
+
+### `invitations/{invitationId}`
+
+| field | type | notes |
+|-------|------|-------|
+| `email` | string | invitee |
+| `companyId` | string | |
+| `invitedBy` | uid | |
+| `tokenHash` | string | store a hash, never the raw token |
+| `status` | string | `pending` \| `accepted` \| `expired` |
+| `expiresAt` | timestamp | one-time, time-limited |
+| `createdAt` | timestamp | |
+
+### `dossiers/{dossierId}`
+
+B2B only. Form sections are grouped into nested maps for readability.
+
+| field | type | notes |
+|-------|------|-------|
+| `status` | string | `a_traiter` \| `en_cours` \| `cloture` |
+| `region` | string | `NORTH` \| `SOUTH`, derived from the submitter's `departement` (reuses `isNord`/`isSud`) |
+| `companyId` | string | owner company |
+| `submittedBy` | uid | |
+| `assignedTo` | uid \| null | team member handling it |
+| `negotiatedPrice` | number \| null | back-office deal outcome (page-dossier-management) |
+| `submitter` | map | denormalized display: `{ nom, prenom, companyName }` (for cards/chat) |
+| `vehicle` | map | see below |
+| `keys` | map | see below |
+| `condition` | map | see below |
+| `papers` | map | see below |
+| `pricing` | map | see below |
+| `photos` | string[] | Storage download URLs |
+| `thumbnailUrl` | string \| null | low-res first photo (card spec) |
+| `createdAt`, `updatedAt` | timestamp | `createdAt` orders the dashboards |
+| `lastMessageAt` | timestamp \| null | |
+
+**`vehicle`**
+
+| field | type | notes |
+|-------|------|-------|
+| `electrique` | `"oui"` \| `"non"` | |
+| `materiel` | string[] | e.g. "J'ai la batterie", "J'ai le chargeur" |
+| `marque` | string | |
+| `modele` | string | B2B merges "Modèle et Cylindrée" into this field |
+| `cylindree` | number \| null | |
+| `annee` | number \| null | |
+| `kilometrage` | number \| null | |
+| `accessoires` | string | |
+
+**`keys`**
+
+| field | type |
+|-------|------|
+| `aClesContact` | `"oui"` \| `"non"` \| null |
+| `cleNoire`, `cleMarron`, `cleRouge` | number \| null |
+| `aTelecommande` | `"oui"` \| `"non"` \| null |
+| `telecommande` | number \| null |
+
+**`condition`**
+
+| field | type | notes |
+|-------|------|-------|
+| `etat` | enum \| null | `Bon état` \| `En Panne` \| `Fort kilométrage` \| `Refus au Contrôle Technique` \| `Mauvais Etat` \| `Accidenté` |
+| `naturePanne` | string | |
+
+**`papers`**
+
+| field | type |
+|-------|------|
+| `carteGrise`, `carteGriseAVotreNom` | `"oui"` \| `"non"` \| null |
+| `controleTechnique`, `ctMoins6Mois` | `"oui"` \| `"non"` \| null |
+| `resultatCT` | `"Favorable"` \| `"Défavorable"` \| null |
+| `certificatNonGage` | `"oui"` \| `"non"` \| null |
+| `carnetEntretien`, `factureEntretien` | `"oui"` \| `"non"` \| null |
+
+**`pricing`**
+
+| field | type | notes |
+|-------|------|-------|
+| `prix` | number \| null | seller's asking price (from the submission) |
+| `commentaires` | string | |
+
+### `dossiers/{dossierId}/messages/{messageId}`
+
+One chat per dossier, between the B2B company members and the Bike-eco team.
+
+| field | type | notes |
+|-------|------|-------|
+| `senderId` | uid | |
+| `senderName` | string | denormalized: `"[name] - [company]"` or `"[name] - Bike-eco"` |
+| `senderRole` | string | `b2b` \| `backoffice` |
+| `text` | string | |
+| `attachments` | array&lt;map&gt; | `{ type: "image" \| "pdf", url, name, size }` |
+| `createdAt` | timestamp | orders the thread |
+
+## Status → dashboard mapping
+
+`status` drives the three dashboards:
+
+- **Back office** splits `a_traiter` / `en_cours` / `cloture` into three sections.
+- **B2B "Dossiers en cours"** = `status in ['a_traiter', 'en_cours']`.
+- **B2B "Dossiers clos"** = `cloture`.
+
+## Storage layout
+
+Photos and chat attachments live in Cloud Storage:
+
+```
+dossiers/{dossierId}/photos/*
+dossiers/{dossierId}/chat/*
+```
+
+## Query patterns → indexes
+
+Single-field indexes are automatic in Standard edition. The dashboard queries
+need two composite indexes:
+
+| Query | Index |
+|-------|-------|
+| B2B dashboard: `where(companyId ==) + where(status in) + orderBy(createdAt desc)` | `(companyId, status, createdAt)` |
+| Back office: `where(region ==) + where(status ==) + orderBy(createdAt desc)` | `(region, status, createdAt)` |
+| Chat: `messages orderBy(createdAt)` | automatic (single-field) |
+
+## Access control (summary)
+
+- **dossiers** — read: B2B users where `companyId` matches their claim; team where
+  `region` matches. Create: B2B authed user. Update: team (status transitions +
+  `negotiatedPrice`), always combined with field validation — never
+  ownership-only.
+- **companies / users** — owner + team; PII locked to the owner.
+  `role` / `companyId` / `status` are server-set only.
+- **invitations / messages** — scoped to the company members and team involved.

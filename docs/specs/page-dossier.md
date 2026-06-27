@@ -16,6 +16,8 @@ A compact list of :
 
 ## Tab bar props
 
+### B2B
+
 - link 1 :
   - motorbike icon
   - "Dossier"
@@ -25,3 +27,20 @@ A compact list of :
   - mail icon
   - "Messages"
   - Link to current page-chat
+
+### Bike-eco Backoffice
+
+- link 1 :
+  - motorbike icon
+  - "Dossier"
+  - Link to current page-dossier
+
+- link 2 :
+  - mail icon
+  - "Messages"
+  - Link to current page-chat
+
+  - link 3 :
+  - folder-open icon
+  - "statut dossier"
+  - Link to current page-dossier-management

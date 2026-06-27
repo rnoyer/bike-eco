@@ -18,7 +18,7 @@ export default function Index() {
 
   return (
     <>
-      {/* No nav bar on the landing screen — same convention as formParticuliers. */}
+      {/* No nav bar on the landing screen — same convention as b2cSubmissionForm. */}
       <Stack.Screen options={{ headerShown: false }} />
 
       <ImageBackground
@@ -42,7 +42,7 @@ export default function Index() {
             <View style={styles.actions}>
               <TouchableOpacity
                 style={[styles.btn, styles.btnPrimary]}
-                onPress={() => router.push("/formParticuliers")}
+                onPress={() => router.push("/b2cSubmissionForm")}
                 activeOpacity={0.8}
                 accessibilityRole="button"
                 accessibilityLabel="Un particulier"

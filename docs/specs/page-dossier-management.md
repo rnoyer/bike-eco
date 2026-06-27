@@ -1,17 +1,34 @@
-# B2B and Back-office Chat page specifications
+# Back-office Dossier management specifications
+
+This page to manage status and store the negociated price.
 
 ## Navbar props
 
 - Left : Left arrow icon linked to current page-dossier
-- middle : "Messages"
+- middle : "Statut dossier"
 - right : None
 
 ## Main section
 
-From top to bottom
+From top to bottom :
 
-- scrollable view with all chats and file attached (represented by an file icon)
-- an input section for entering chat message. Left to the input section a "+" icon to add only pdf or photos from phone
+label : "Statut du dossier"
+Placeholder : none
+default value : "a traiter"
+type : dropdown
+
+- "a traiter"
+- "en cours"
+- "cloturé"
+
+  label : "Prix d’achat négocié"
+  placeholder : "€"
+  default value : null
+  type : Input number
+  unit : "€"
+  mandatory : no
+
+  Primary Button : "Mettre à jour", update dossier statut and negociated price
 
 ## Tab bar props
 

@@ -61,6 +61,11 @@ When card is clicked, the Dossier page opens. It contains, from top to Bottom :
 - (optional feature) Bottom section :
   - A button to add non given previously information.
 
+## Dossier management
+
+- status
+- price
+
 ## B2B Customer registration
 
 ### First registration (company + user)
