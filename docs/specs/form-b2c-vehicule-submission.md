@@ -194,7 +194,7 @@ type : dropdown
 - "non"
   mandatory : no
 
-condition : If "Avez-vous des clés de contact" === "oui"
+condition : If "Avez-vous une télécommande ou un Bip de démarrage?" === "oui"
 label : "Télécommande / Bip de démarrage"
 Placeholder : none
 default value : null
