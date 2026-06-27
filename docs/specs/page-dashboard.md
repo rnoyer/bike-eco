@@ -3,7 +3,7 @@
 ## Navbar props
 
 Left : none
-middle : "Tableau de bord"
+middle : "Dashboard"
 right : none
 
 ## Main section
@@ -12,7 +12,7 @@ right : none
 
 From top to Bottom :
 
-- Button : "Vendre une Moto", Link to: b2b-vehicule-submission-form
+- Button primary : "Vendre une Moto", Link to: b2b-vehicule-submission-form
 - Section "Dossiers en cours" props :
   - Title : "Dossiers en cours"
   - List of cards "Dossier" with state "A traiter" or "En cours"

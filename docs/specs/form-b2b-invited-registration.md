@@ -4,9 +4,8 @@ Layout vertical commun aux steps :
 - title : H1 24px bold black
 - subtitle : body 14px regular #71727A
 - {form fields}
-- button : "Précédent"
-- button : "Suivant" (step 1 and step 2 only)
-- button : "S'inscrire" (step 3 only)
+- button secondary : "Précédent"
+- button primary : "Suivant" (step 1 and step 2 only) / "S'inscrire" (step 3 only)
 
 ---
 
@@ -85,5 +84,5 @@ title : "Votre inscription est terminée !"
 
 ---
 
-Button : "Aller à l'accueil"
+Button primary : "Aller à l'accueil"
 Linkto : B2B Dashboard

@@ -4,8 +4,8 @@ Layout vertical commun aux steps 1 à 10 :
 - title : H1 24px bold black
 - subtitle : body 14px regular #71727A
 - {form fields}
-- button : "Précédent"
-- button : "Suivant"
+- button secondary : "Précédent"
+- button primary : "Suivant"
 
 ---
 
