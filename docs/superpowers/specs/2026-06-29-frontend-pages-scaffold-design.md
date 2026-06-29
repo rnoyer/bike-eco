@@ -100,7 +100,7 @@ real Firestore version (snapshot listeners) is a drop-in swap.
   section, ordered by `createdAt`, optionally filtered by region. One call per section
   (matches `component-dossiers-section.md`).
 - `useRegionFilter()` → `{ region: Region | null, setRegion }` — the back-office
-  "Territoire géré" setting (`NORTH` / `SOUTH` / `null` = Toute la France, the default).
+  "Région géré" setting (`NORTH` / `SOUTH` / `null` = Toute la France, the default).
   **Persisted locally and restored on app restart** via `expo-sqlite/kv-store` (the
   AsyncStorage-compatible, cross-platform key/value API; no extra non-Expo dependency).
   The BO dashboard passes `region` from this hook into each `useDossiers(...)` call; B2B
@@ -131,7 +131,7 @@ All wrapped in `Host`. Source of truth for props = the installed `@expo/ui` `.d.
 | Component / screen | `@expo/ui` primitives | Used by |
 |---|---|---|
 | `AccountInfoList` | `List` + `ListItem` (label/value rows) | page-my-account |
-| `SettingsList` | `List` + `Button` (Inviter un collègue / Supprimer son compte); BO variant adds a region `Picker` ("Territoire géré") wired to `useRegionFilter` | page-settings |
+| `SettingsList` | `List` + `Button` (Inviter un collègue / Supprimer son compte); BO variant adds a region `Picker` ("Région géré") wired to `useRegionFilter` | page-settings |
 | `DossierManagementForm` | `FieldGroup` + `Picker` (status) + `TextInput` (price, €) + `Button` | page-dossier-management |
 | `DossierInfoList` | `List` label/value (vehicle fields, compact) | page-dossier (below carousel) |
 | `SignInFields` | `FieldGroup` + `TextInput` (email/password) + `Button` | page-login-signup |

@@ -17,7 +17,7 @@ From top to bottom
 
 ### Bike-eco Backoffice
 
-label : "Territoire géré"
+label : "Région géré"
 Placeholder : none
 default value : "Toute la France"
 type : dropdown
