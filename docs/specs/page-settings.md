@@ -10,8 +10,24 @@
 
 From top to bottom
 
+### B2B
+
 - Button secondary : Inviter un collègue
 - Supprimer son compte
+
+### Bike-eco Backoffice
+
+label : "Territoire géré"
+Placeholder : none
+default value : "Toute la France"
+type : dropdown
+
+- "Moitié Nord" (maps to region `NORTH`)
+- "Moitié sud" (maps to region `SOUTH`)
+- "Toute la France" (no region filter)
+
+behaviour : filters the dossiers shown on the back-office dashboard by region. The chosen
+option is persisted locally and restored when the app is restarted.
 
 ## Tab bar props
 

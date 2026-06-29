@@ -24,6 +24,8 @@ From top to Bottom :
 
 ### Bike-eco Backoffice specificity
 
+All sections below are filtered by the "Région géré" region filter set on the back-office settings page (default "Toute la France" = no filter). The filter value is persisted and restored on app restart. See `page-settings.md`.
+
 From top to Bottom :
 
 - Section "Dossiers à traiter" props :

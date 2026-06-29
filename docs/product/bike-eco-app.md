@@ -29,6 +29,20 @@ All B2B submitted cases are listed and sorted in 3 catégories :
 - "Dossiers en cours" (submitted form, negociation still ongoing)
 - "Dossiers traités" (submitted form and closed negociation)
 
+#### Region filter
+
+A Bike-eco team member can filter the dashboard dossiers by region. A "Région géré"
+dropdown in the back-office settings page selects which region's dossiers appear in the
+dashboard:
+
+- "Moitié Nord" — only `NORTH` dossiers
+- "Moitié sud" — only `SOUTH` dossiers
+- "Toute la France" — all dossiers (default)
+
+The selected option is persisted locally and restored when the app is restarted. It
+applies to every dossier section on the back-office dashboard ("Dossiers à traiter",
+"Dossiers en cours", "Dossiers clos"). This filter is back-office only; B2B accounts do not see it.
+
 ## Chat feature
 
 A chat is available for B2B logued account and the Bike-eco team to discuss further and send files such as photos and PDF.
