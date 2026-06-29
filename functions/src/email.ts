@@ -21,8 +21,8 @@ export const B2C_EMAIL_SECRETS = [SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS];
  */
 const DEV_EMAIL_OVERRIDE = true;
 const DEV_EMAIL = "romain.noyer@gmail.com";
-const NORTH_MAILBOX = "nord@bike-eco.example"; // TODO: real NORTH mailbox
-const SOUTH_MAILBOX = "sud@bike-eco.example"; // TODO: real SOUTH mailbox
+const NORTH_MAILBOX = "romain.noyer@gmail.com"; // TODO: real NORTH mailbox
+const SOUTH_MAILBOX = "romain.noyer@gmail.com"; // TODO: real SOUTH mailbox
 
 /**
  * Sender address. Most SMTP providers (Gmail included) require the From to be
@@ -31,7 +31,7 @@ const SOUTH_MAILBOX = "sud@bike-eco.example"; // TODO: real SOUTH mailbox
  */
 function fromAddress(): string {
   if (smtpConfigured()) return `Bike-eco <${SMTP_USER.value()}>`;
-  return "Bike-eco <no-reply@bike-eco.example>";
+  return "Bike-eco <noreply@bike-eco.fr>";
 }
 
 function teamRecipient(departement: string): string {

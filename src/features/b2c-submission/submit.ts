@@ -17,7 +17,10 @@ function functionUrl(): string {
   const base = process.env.EXPO_PUBLIC_FUNCTIONS_URL;
   if (base) return `${base.replace(/\/$/, "")}/${FUNCTION}`;
   if (__DEV__) {
-    return `http://localhost:5001/${PROJECT_ID}/${REGION}/${FUNCTION}`;
+    // The Android emulator's `localhost` is its own loopback, not the host
+    // machine; `10.0.2.2` is the emulator's alias for the host's 127.0.0.1.
+    const host = Platform.OS === "android" ? "10.0.2.2" : "localhost";
+    return `http://${host}:5001/${PROJECT_ID}/${REGION}/${FUNCTION}`;
   }
   return `https://${REGION}-${PROJECT_ID}.cloudfunctions.net/${FUNCTION}`;
 }
