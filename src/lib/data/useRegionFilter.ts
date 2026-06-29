@@ -8,12 +8,16 @@ export function useRegionFilter() {
 
   useEffect(() => {
     let active = true;
-    loadRegion().then((r) => {
-      if (active) {
-        setRegionState(r);
-        setReady(true);
-      }
-    });
+    loadRegion()
+      .then((r) => {
+        if (active) {
+          setRegionState(r);
+          setReady(true);
+        }
+      })
+      .catch(() => {
+        if (active) setReady(true);
+      });
     return () => {
       active = false;
     };
@@ -21,7 +25,7 @@ export function useRegionFilter() {
 
   const setRegion = useCallback((r: Region | null) => {
     setRegionState(r);
-    void saveRegion(r);
+    void saveRegion(r).catch(console.error);
   }, []);
 
   return { region, setRegion, ready };

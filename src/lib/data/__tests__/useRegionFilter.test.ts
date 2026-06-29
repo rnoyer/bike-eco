@@ -29,3 +29,11 @@ test("restores a persisted 'SOUTH' value on mount", async () => {
   const { result } = await renderHook(() => useRegionFilter());
   await waitFor(() => expect(result.current.region).toBe("SOUTH"));
 });
+
+test("kv-store rejection still marks ready and region stays null", async () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (Storage.getItem as jest.Mock<any>).mockRejectedValue(new Error("kv down"));
+  const { result } = await renderHook(() => useRegionFilter());
+  await waitFor(() => expect(result.current.ready).toBe(true));
+  expect(result.current.region).toBeNull();
+});
