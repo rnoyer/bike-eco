@@ -54,3 +54,19 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## Local development
+
+### Start Expo Go
+
+```bash
+EXPO_PUBLIC_FUNCTIONS_URL=http://192.168.0.4:5001/bike-eco-641ed/us-central1 npx expo start --clear
+```
+
+### Start Firebase Emulator
+
+```bash
+cd functions/
+firebase build
+firebase emulators:start
+```
