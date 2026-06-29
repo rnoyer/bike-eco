@@ -3,15 +3,17 @@ import type { Message } from "@/lib/firestore/schema";
 import { messagesFor } from "./fixtures";
 
 export function useMessages(dossierId: string) {
-  const [data, setData] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [resolved, setResolved] = useState<{ id: string; data: Message[] } | null>(null);
   useEffect(() => {
-    setLoading(true);
+    let active = true;
     const t = setTimeout(() => {
-      setData(messagesFor(dossierId));
-      setLoading(false);
+      if (active) setResolved({ id: dossierId, data: messagesFor(dossierId) });
     }, 250);
-    return () => clearTimeout(t);
+    return () => {
+      active = false;
+      clearTimeout(t);
+    };
   }, [dossierId]);
-  return { data, loading };
+  const loading = resolved?.id !== dossierId;
+  return { data: loading ? [] : resolved!.data, loading };
 }

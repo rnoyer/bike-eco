@@ -5,23 +5,23 @@ import { filterDossiersByRegion, selectByStatus } from "./filter";
 
 /** Simulates an async fetch so the swap to a Firestore listener is invisible. */
 export function useDossiers(statuses: DossierStatus[], region?: Region | null) {
-  const [data, setData] = useState<WithId<Dossier>[]>([]);
-  const [loading, setLoading] = useState(true);
   const key = statuses.join(",") + "|" + (region ?? "ALL");
-
+  const [resolved, setResolved] = useState<{ key: string; data: WithId<Dossier>[] } | null>(null);
   useEffect(() => {
-    setLoading(true);
+    let active = true;
     const t = setTimeout(() => {
       const byStatus = selectByStatus(MOCK_DOSSIERS, statuses);
       const sorted = [...byStatus].sort(
         (a, b) => a.createdAt.toMillis() - b.createdAt.toMillis()
       );
-      setData(filterDossiersByRegion(sorted, region ?? null));
-      setLoading(false);
+      if (active) setResolved({ key, data: filterDossiersByRegion(sorted, region ?? null) });
     }, 250);
-    return () => clearTimeout(t);
+    return () => {
+      active = false;
+      clearTimeout(t);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
-
-  return { data, loading };
+  const loading = resolved?.key !== key;
+  return { data: loading ? [] : resolved!.data, loading };
 }

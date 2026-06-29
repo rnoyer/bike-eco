@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.sm,
     backgroundColor: tokens.colors.divider,
   },
-  body: { flex: 1, gap: 4 },
+  body: { flex: 1, gap: tokens.space.xs },
   title: { fontSize: 15, fontWeight: "600", color: tokens.colors.primary },
   subtitle: { fontSize: 13, color: tokens.colors.muted },
 });

@@ -3,15 +3,21 @@ import type { Dossier } from "@/lib/firestore/schema";
 import { MOCK_DOSSIERS, type WithId } from "./fixtures";
 
 export function useDossier(id: string) {
-  const [data, setData] = useState<WithId<Dossier> | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [resolved, setResolved] = useState<{
+    id: string;
+    data: WithId<Dossier> | null;
+  } | null>(null);
   useEffect(() => {
-    setLoading(true);
+    let active = true;
     const t = setTimeout(() => {
-      setData(MOCK_DOSSIERS.find((d) => d.id === id) ?? null);
-      setLoading(false);
+      if (active)
+        setResolved({ id, data: MOCK_DOSSIERS.find((d) => d.id === id) ?? null });
     }, 250);
-    return () => clearTimeout(t);
+    return () => {
+      active = false;
+      clearTimeout(t);
+    };
   }, [id]);
-  return { data, loading };
+  const loading = resolved?.id !== id;
+  return { data: loading ? null : resolved!.data, loading };
 }
