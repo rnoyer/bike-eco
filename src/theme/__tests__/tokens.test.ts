@@ -1,3 +1,5 @@
+import { expect, test } from "@jest/globals";
+
 import { tokens } from "@/theme/tokens";
 
 test("exposes the b2c-derived palette and metrics", () => {
