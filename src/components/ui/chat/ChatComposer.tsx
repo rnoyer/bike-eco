@@ -21,7 +21,7 @@ export default function ChatComposer({
   };
 
   return (
-    <View style={[styles.bar, { paddingBottom: insets.bottom + 8 }]}>
+    <View style={[styles.bar, { paddingBottom: insets.bottom + tokens.space.sm }]}>
       <TouchableOpacity
         style={styles.plus}
         onPress={() => setSheetOpen(true)}
@@ -76,13 +76,13 @@ const styles = StyleSheet.create({
     maxHeight: 120,
     minHeight: 40,
     paddingHorizontal: tokens.space.md,
-    paddingVertical: 8,
+    paddingVertical: tokens.space.sm,
     borderWidth: 1,
     borderColor: tokens.colors.border,
     borderRadius: tokens.radius.md,
     fontSize: 15,
   },
-  send: { height: 40, paddingHorizontal: 12, justifyContent: "center" },
+  send: { height: 40, paddingHorizontal: tokens.space.md, justifyContent: "center" },
   sendText: { color: tokens.colors.primary, fontWeight: "700" },
   sheetHost: { position: "absolute", width: 0, height: 0 },
 });

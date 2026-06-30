@@ -63,7 +63,7 @@ export default function PhotoCarousel({
 const styles = StyleSheet.create({
   wrap: { width: W, height: W * 0.75, backgroundColor: tokens.colors.divider },
   photo: { width: W, height: W * 0.75 },
-  badge: { position: "absolute", top: 12, right: 12 },
+  badge: { position: "absolute", top: tokens.space.md, right: tokens.space.md },
   dots: {
     position: "absolute",
     bottom: 10,
@@ -78,5 +78,5 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: "rgba(255,255,255,0.5)",
   },
-  dotActive: { backgroundColor: "#fff" },
+  dotActive: { backgroundColor: tokens.colors.bg },
 });

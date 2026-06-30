@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import { KeyboardAvoidingView, Platform, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import ChatComposer from "@/components/ui/chat/ChatComposer";
 import ChatThread from "@/components/ui/chat/ChatThread";
 import { useDossierMutations } from "@/lib/data/useDossierMutations";
@@ -13,14 +13,16 @@ export default function DossierChatScreen({ id }: { id: string }) {
   const { sendMessage } = useDossierMutations();
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={styles.flex}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <Stack.Screen options={headerOptions({ title: "Messages" })} />
-      <View style={{ flex: 1 }}>
+      <View style={styles.flex}>
         <ChatThread messages={data} currentUserId={user.id} />
         <ChatComposer onSend={(text) => sendMessage(id, text)} />
       </View>
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({ flex: { flex: 1 } });

@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     maxWidth: "82%",
     padding: tokens.space.md,
     borderRadius: tokens.radius.md,
-    gap: 4,
+    gap: tokens.space.xs,
   },
   mine: { backgroundColor: tokens.colors.primary },
   theirs: { backgroundColor: tokens.colors.divider },
