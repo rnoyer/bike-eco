@@ -14,6 +14,8 @@ export function useMessages(dossierId: string) {
       clearTimeout(t);
     };
   }, [dossierId]);
-  const loading = resolved?.id !== dossierId;
+  // Guard the empty-id case: `undefined !== undefined` is false, which would
+  // otherwise mark a missing id as "loaded" and dereference the null state.
+  const loading = !dossierId || resolved?.id !== dossierId;
   return { data: loading ? [] : resolved!.data, loading };
 }

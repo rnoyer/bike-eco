@@ -69,7 +69,6 @@ export default function DashboardScreen({ role, onOpenDossier, onSell }: Props) 
       thumbnailUrl={d.thumbnailUrl}
       title={`${d.vehicle.marque} ${d.vehicle.modele}`}
       subtitle={`${d.vehicle.cylindree ?? "—"} cc`}
-      status={d.status}
       onPress={() => onOpenDossier(d.id)}
     />
   );

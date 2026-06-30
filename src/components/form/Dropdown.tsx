@@ -6,9 +6,9 @@ import {
   Modal,
   FlatList,
   StyleSheet,
-  SafeAreaView,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface Props {
   label: string;

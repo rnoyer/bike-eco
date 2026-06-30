@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useGlobalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, Alert, ScrollView, StyleSheet } from "react-native";
 import DossierManagementForm from "@/components/native/DossierManagementForm";
 import { useDossier } from "@/lib/data/useDossier";
@@ -7,7 +7,7 @@ import { headerOptions } from "@/lib/navigation/headerOptions";
 import { tokens } from "@/theme/tokens";
 
 export default function BackofficeDossierManagement() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id } = useGlobalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data, loading } = useDossier(id);
   const { updateStatusAndPrice } = useDossierMutations();

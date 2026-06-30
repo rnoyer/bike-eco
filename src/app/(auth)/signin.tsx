@@ -2,6 +2,7 @@ import { type Href, useRouter } from "expo-router";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SignInFields from "@/components/native/SignInFields";
+import PhotoBackground from "@/components/ui/PhotoBackground";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
 import { useSession } from "@/lib/data/useSession";
 import { tokens } from "@/theme/tokens";
@@ -19,39 +20,41 @@ export default function SignInScreen() {
   const goToDashboard = () => router.replace(DASHBOARDS[role]);
 
   return (
-    <ScrollView
-      contentContainerStyle={[
-        styles.container,
-        { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
-      ]}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.card}>
-        <Text style={styles.title}>Bienvenue !</Text>
-        <SignInFields onSubmit={goToDashboard} onForgotPassword={() => {}} />
-        {/* TODO: route the selected provider into the real auth handler — the
-            stub discards it and just navigates to the dashboard. */}
-        <ThirdPartyAuthButtons onPress={goToDashboard} />
+    <PhotoBackground>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.card}>
+          <Text style={styles.title}>Bienvenue !</Text>
+          <SignInFields onSubmit={goToDashboard} onForgotPassword={() => {}} />
+          {/* TODO: route the selected provider into the real auth handler — the
+              stub discards it and just navigates to the dashboard. */}
+          <ThirdPartyAuthButtons onPress={goToDashboard} />
 
-        {__DEV__ ? (
-          <View style={styles.devRow}>
-            <Text style={styles.devLabel}>DEV — rôle :</Text>
-            <Text
-              style={[styles.devChip, role === "b2b" && styles.devChipOn]}
-              onPress={() => setRole("b2b")}
-            >
-              B2B
-            </Text>
-            <Text
-              style={[styles.devChip, role === "backoffice" && styles.devChipOn]}
-              onPress={() => setRole("backoffice")}
-            >
-              Back-office
-            </Text>
-          </View>
-        ) : null}
-      </View>
-    </ScrollView>
+          {__DEV__ ? (
+            <View style={styles.devRow}>
+              <Text style={styles.devLabel}>DEV — rôle :</Text>
+              <Text
+                style={[styles.devChip, role === "b2b" && styles.devChipOn]}
+                onPress={() => setRole("b2b")}
+              >
+                B2B
+              </Text>
+              <Text
+                style={[styles.devChip, role === "backoffice" && styles.devChipOn]}
+                onPress={() => setRole("backoffice")}
+              >
+                Back-office
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </ScrollView>
+    </PhotoBackground>
   );
 }
 
@@ -60,7 +63,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     paddingHorizontal: tokens.space.lg,
-    backgroundColor: tokens.colors.bg,
   },
   card: {
     gap: tokens.space.lg,

@@ -1,4 +1,4 @@
-import { Button, FieldGroup, Host, Picker } from "@expo/ui";
+import { Button, Column, Host, Picker, Text } from "@expo/ui";
 import type { UserRole } from "@/lib/firestore/schema";
 import { useRegionFilter } from "@/lib/data/useRegionFilter";
 import {
@@ -6,6 +6,8 @@ import {
   fromRegion,
   toRegion,
 } from "@/lib/navigation/regionOptions";
+
+const LABEL = { fontSize: 14, fontWeight: "600", color: "#111" } as const;
 
 interface Props {
   role: UserRole;
@@ -15,11 +17,14 @@ interface Props {
 
 export default function SettingsList({ role, onInvite, onDelete }: Props) {
   const { region, setRegion } = useRegionFilter();
+  // A non-scrolling Column (not FieldGroup): the screen's RN ScrollView owns
+  // scrolling; a native scroller here would crash on Android (infinite height).
   return (
     <Host matchContents>
-      <FieldGroup>
+      <Column spacing={16}>
         {role === "backoffice" ? (
-          <FieldGroup.Section title="Région gérée">
+          <>
+            <Text textStyle={LABEL}>Région gérée</Text>
             <Picker
               selectedValue={fromRegion(region)}
               onValueChange={(v) => setRegion(toRegion(v))}
@@ -28,13 +33,11 @@ export default function SettingsList({ role, onInvite, onDelete }: Props) {
                 <Picker.Item key={o.value} label={o.label} value={o.value} />
               ))}
             </Picker>
-          </FieldGroup.Section>
+          </>
         ) : null}
-        <FieldGroup.Section>
-          <Button variant="outlined" label="Inviter un collègue" onPress={onInvite} />
-          <Button variant="text" label="Supprimer son compte" onPress={onDelete} />
-        </FieldGroup.Section>
-      </FieldGroup>
+        <Button variant="outlined" label="Inviter un collègue" onPress={onInvite} />
+        <Button variant="text" label="Supprimer son compte" onPress={onDelete} />
+      </Column>
     </Host>
   );
 }

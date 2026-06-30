@@ -1,5 +1,8 @@
-import { Host, List, ListItem } from "@expo/ui";
+import { Column, Host, Row, Spacer, Text } from "@expo/ui";
 import type { Dossier } from "@/lib/firestore/schema";
+
+const LABEL = { fontSize: 14, color: "#71727A" } as const;
+const VALUE = { fontSize: 14, fontWeight: "500", color: "#111" } as const;
 
 const dash = (v: unknown) =>
   v === null || v === undefined || v === "" ? "—" : String(v);
@@ -20,15 +23,20 @@ export default function DossierInfoList({ dossier }: { dossier: Dossier }) {
     ["Prix souhaité", pricing.prix ? `${pricing.prix} €` : "—"],
     ["Commentaires", dash(pricing.commentaires)],
   ];
+  // A non-scrolling Column (not List): the screen's RN ScrollView owns
+  // scrolling, and a native scroller here would crash on Android when measured
+  // with unbounded height.
   return (
     <Host matchContents>
-      <List>
+      <Column spacing={12}>
         {rows.map(([label, value]) => (
-          <ListItem key={label} supportingText={value}>
-            {label}
-          </ListItem>
+          <Row key={label} spacing={16}>
+            <Text textStyle={LABEL}>{label}</Text>
+            <Spacer flexible />
+            <Text textStyle={VALUE}>{value}</Text>
+          </Row>
         ))}
-      </List>
+      </Column>
     </Host>
   );
 }

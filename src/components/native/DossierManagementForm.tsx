@@ -1,6 +1,8 @@
-import { Button, FieldGroup, Host, Picker, TextInput, useNativeState } from "@expo/ui";
+import { Button, Column, Host, Picker, Text, TextInput, useNativeState } from "@expo/ui";
 import { useState } from "react";
 import type { DossierStatus } from "@/lib/firestore/schema";
+
+const LABEL = { fontSize: 14, fontWeight: "600", color: "#111" } as const;
 
 const STATUS_OPTIONS: { label: string; value: DossierStatus }[] = [
   { label: "À traiter", value: "a_traiter" },
@@ -22,22 +24,19 @@ export default function DossierManagementForm({
   const [status, setStatus] = useState<DossierStatus>(initialStatus);
   const price = useNativeState(initialPrice != null ? String(initialPrice) : "");
 
+  // A non-scrolling Column (not FieldGroup): the screen's RN ScrollView owns
+  // scrolling; a native scroller here would crash on Android (infinite height).
   return (
     <Host matchContents>
-      <FieldGroup>
-        <FieldGroup.Section title="Statut du dossier">
-          <Picker
-            selectedValue={status}
-            onValueChange={(v) => setStatus(v)}
-          >
-            {STATUS_OPTIONS.map((o) => (
-              <Picker.Item key={o.value} label={o.label} value={o.value} />
-            ))}
-          </Picker>
-        </FieldGroup.Section>
-        <FieldGroup.Section title="Prix d'achat négocié">
-          <TextInput value={price} placeholder="€" keyboardType="numeric" />
-        </FieldGroup.Section>
+      <Column spacing={12}>
+        <Text textStyle={LABEL}>Statut du dossier</Text>
+        <Picker selectedValue={status} onValueChange={(v) => setStatus(v)}>
+          {STATUS_OPTIONS.map((o) => (
+            <Picker.Item key={o.value} label={o.label} value={o.value} />
+          ))}
+        </Picker>
+        <Text textStyle={LABEL}>Prix d&apos;achat négocié</Text>
+        <TextInput value={price} placeholder="€" keyboardType="numeric" />
         <Button
           label="Mettre à jour"
           onPress={() => {
@@ -45,7 +44,7 @@ export default function DossierManagementForm({
             onSubmit(status, digits ? Number(digits) : null);
           }}
         />
-      </FieldGroup>
+      </Column>
     </Host>
   );
 }

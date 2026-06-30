@@ -1,14 +1,11 @@
 import { Image } from "expo-image";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import type { DossierStatus } from "@/lib/firestore/schema";
 import { tokens } from "@/theme/tokens";
-import StatusBadge from "./StatusBadge";
 
 interface Props {
   thumbnailUrl: string | null;
   title: string;
   subtitle: string;
-  status?: DossierStatus;
   onPress: () => void;
 }
 
@@ -16,7 +13,6 @@ export default function DossierCard({
   thumbnailUrl,
   title,
   subtitle,
-  status,
   onPress,
 }: Props) {
   return (
@@ -34,7 +30,6 @@ export default function DossierCard({
         <Text style={styles.subtitle} numberOfLines={1}>
           {subtitle}
         </Text>
-        {status ? <StatusBadge status={status} /> : null}
       </View>
     </TouchableOpacity>
   );

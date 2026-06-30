@@ -18,6 +18,8 @@ export function useDossier(id: string) {
       clearTimeout(t);
     };
   }, [id]);
-  const loading = resolved?.id !== id;
+  // Guard the empty-id case: `undefined !== undefined` is false, which would
+  // otherwise mark a missing id as "loaded" and dereference the null state.
+  const loading = !id || resolved?.id !== id;
   return { data: loading ? null : resolved!.data, loading };
 }

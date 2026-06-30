@@ -17,8 +17,12 @@ contracts), `docs/tech/firestore-data-model.md` (data model).
     BottomNavigation.
   - Top header: the native expo-router Stack header, configured via `headerOptions`.
   - List/form/settings-shaped screens: **`@expo/ui`** universal components (`Host`,
-    `List`/`ListItem`, `FieldGroup`, `Picker`, `TextInput`, `Button`, …) which render real
-    SwiftUI / Jetpack Compose.
+    `Column`/`Row`, `Text`, `Picker`, `TextInput`, `Button`, …) which render real
+    SwiftUI / Jetpack Compose. These native islands use a **non-scrolling** layout
+    (`<Host matchContents>` + `Column`), never the scrollable `List`/`FieldGroup`: those
+    compile to a Compose `LazyColumn`, which crashes on Android when measured with
+    unbounded height (`matchContents`, or nested inside the screen's RN `ScrollView`).
+    The enclosing RN `ScrollView` owns scrolling for the whole screen.
   - Where no native universal primitive fits (chat bubbles, photo carousel, dossier card,
     landing/sign-in card), plain React Native + `StyleSheet`.
 - **Persistence:** `expo-sqlite/kv-store` (AsyncStorage-compatible) for the region filter.
@@ -102,9 +106,10 @@ Role differences handled inside the shared screens:
 - **DashboardScreen** — calls all hooks unconditionally (`useRegionFilter` + three
   `useDossiers`) *before* branching on role (rules-of-hooks safe). B2B: "Vendre une moto"
   CTA + two sections ("en cours" merges `a_traiter`+`en_cours`, "clos"), cards show
-  `marque modèle` / `cylindrée` with a status badge, no region filter. BO: three sections
+  `marque modèle` / `cylindrée`, no region filter. BO: three sections
   (à traiter / en cours / clos) filtered by the persisted region, cards show
-  `société - prénom nom` / `marque modèle`, no status badge.
+  `société - prénom nom` / `marque modèle`. Neither role's `DossierCard` shows a
+  status badge (badges live only on the dossier-detail photo carousel).
 - **SettingsScreen** — passes `role` to `SettingsList`, which shows the "Région gérée"
   picker only for back office. Wrappers supply `onInvite` (B2B pushes add-colleague; BO is
   a stub Alert) and `onDelete` (stub Alert).
