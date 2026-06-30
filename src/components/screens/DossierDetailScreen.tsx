@@ -1,16 +1,13 @@
-import { Stack } from "expo-router";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import DossierInfoList from "@/components/native/DossierInfoList";
 import PhotoCarousel from "@/components/ui/PhotoCarousel";
 import { useDossier } from "@/lib/data/useDossier";
-import { headerOptions } from "@/lib/navigation/headerOptions";
 import { tokens } from "@/theme/tokens";
 
 export default function DossierDetailScreen({ id }: { id: string }) {
   const { data, loading } = useDossier(id);
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={headerOptions({ title: "Dossier" })} />
       {loading || !data ? (
         <ActivityIndicator style={styles.spinner} color={tokens.colors.primary} />
       ) : (

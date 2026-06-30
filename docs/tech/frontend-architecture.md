@@ -68,7 +68,8 @@ src/
       fixtures, filter, region-store, useRegionFilter, useSession,
       useDossiers, useDossier, useMessages, useAccount, useDossierMutations
     navigation/
-      headerOptions.ts             # native Stack header from { title, back }
+      headerOptions.ts             # native Stack header from { title, back } (direct Stack children)
+      groupHeaders.tsx             # focused-tab title + tab-switching back arrow for NativeTabs screens
       regionOptions.ts             # REGION_OPTIONS + toRegion/fromRegion
   theme/tokens.ts                  # design tokens for the RN components
 ```
@@ -119,11 +120,21 @@ Role differences handled inside the shared screens:
 
 ## Navigation
 
-- **Header:** `headerOptions({ title, back })` returns `NativeStackNavigationOptions`
-  (imported from `expo-router`, which re-exports it). `back: false` suppresses the back
-  arrow for root tab screens — on a tab screen the dashboard is a sibling tab, not a
-  pop target, so there is nothing to go "back" to. Pushed screens (dossier, add-colleague)
-  keep the automatic back arrow. The `component-navbar.md` spec reflects this.
+- **Header:** the **root** Stack is `headerShown: false` so it never draws a header per
+  route group (that caused stacked `(b2b)` / `(tabs)` headers). Headers are owned per
+  group:
+  - Direct Stack children (e.g. add-colleague) set theirs inline with
+    `headerOptions({ title, back })` → `NativeStackNavigationOptions` (imported from
+    `expo-router`, which re-exports it).
+  - The `(tabs)` and `dossier/[id]` screens are `NativeTabs` navigators with no header of
+    their own, so the group `_layout` derives both title and left arrow from the focused
+    tab via the `useGroupHeaders` hook (`lib/navigation/groupHeaders.tsx`), which reads the
+    route reactively with `useSegments` (a native tab switch doesn't re-run the parent
+    Stack's `options` function).
+    Secondary tabs get a custom `headerLeft` (`HeaderBackButton`) that **switches tabs**
+    rather than popping: Mon Compte / Paramètres → Dashboard, Messages / Statut dossier →
+    Dossier. Dashboard has no arrow (post-login root); the Dossier tab keeps the native
+    back (it was pushed from the dashboard). The `component-navbar.md` spec has the table.
 - **Tabs:** declared in each context's `_layout.tsx` with `NativeTabs.Trigger` +
   `.Trigger.Icon` (`sf`/`md`) + `.Trigger.Label`. See `component-tab-bar.md`.
 - **Typed routes:** hrefs are group-qualified, e.g. `/(b2b)/(tabs)/dashboard`,

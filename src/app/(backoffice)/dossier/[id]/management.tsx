@@ -1,9 +1,8 @@
-import { Stack, useGlobalSearchParams, useRouter } from "expo-router";
+import { useGlobalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, Alert, ScrollView, StyleSheet } from "react-native";
 import DossierManagementForm from "@/components/native/DossierManagementForm";
 import { useDossier } from "@/lib/data/useDossier";
 import { useDossierMutations } from "@/lib/data/useDossierMutations";
-import { headerOptions } from "@/lib/navigation/headerOptions";
 import { tokens } from "@/theme/tokens";
 
 export default function BackofficeDossierManagement() {
@@ -14,7 +13,6 @@ export default function BackofficeDossierManagement() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={headerOptions({ title: "Statut dossier" })} />
       {loading || !data ? (
         <ActivityIndicator style={styles.spinner} color={tokens.colors.primary} />
       ) : (

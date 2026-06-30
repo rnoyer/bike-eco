@@ -1,4 +1,3 @@
-import { Stack } from "expo-router";
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
 import DossierCard from "@/components/ui/DossierCard";
 import DossiersSection from "@/components/ui/DossiersSection";
@@ -6,7 +5,6 @@ import type { WithId } from "@/lib/data/fixtures";
 import { useDossiers } from "@/lib/data/useDossiers";
 import { useRegionFilter } from "@/lib/data/useRegionFilter";
 import type { Dossier, UserRole } from "@/lib/firestore/schema";
-import { headerOptions } from "@/lib/navigation/headerOptions";
 import { tokens } from "@/theme/tokens";
 
 interface Props {
@@ -34,7 +32,6 @@ export default function DashboardScreen({ role, onOpenDossier, onSell }: Props) 
     );
     return (
       <ScrollView contentContainerStyle={styles.content}>
-        <Stack.Screen options={headerOptions({ title: "Dashboard", back: false })} />
         <DossiersSection
           title="Dossiers à traiter"
           dossiers={aTraiter.data}
@@ -74,7 +71,6 @@ export default function DashboardScreen({ role, onOpenDossier, onSell }: Props) 
   );
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={headerOptions({ title: "Dashboard", back: false })} />
       <TouchableOpacity style={styles.cta} activeOpacity={0.85} onPress={onSell}>
         <Text style={styles.ctaText}>Vendre une moto</Text>
       </TouchableOpacity>
