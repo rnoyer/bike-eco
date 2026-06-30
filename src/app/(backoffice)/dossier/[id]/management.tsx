@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, StyleSheet } from "react-native";
 import DossierManagementForm from "@/components/native/DossierManagementForm";
 import { useDossier } from "@/lib/data/useDossier";
 import { useDossierMutations } from "@/lib/data/useDossierMutations";
@@ -22,8 +22,15 @@ export default function BackofficeDossierManagement() {
           initialStatus={data.status}
           initialPrice={data.negotiatedPrice}
           onSubmit={async (status, price) => {
-            await updateStatusAndPrice(id, status, price);
-            router.replace("/(backoffice)/confirmation");
+            try {
+              await updateStatusAndPrice(id, status, price);
+              router.replace("/(backoffice)/confirmation");
+            } catch {
+              Alert.alert(
+                "Erreur",
+                "La mise à jour n'a pas pu être enregistrée. Veuillez réessayer."
+              );
+            }
           }}
         />
       )}

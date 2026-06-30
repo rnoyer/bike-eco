@@ -1,5 +1,5 @@
 import { Stack, useRouter } from "expo-router";
-import { ScrollView, StyleSheet } from "react-native";
+import { Alert, ScrollView, StyleSheet } from "react-native";
 import AddColleagueForm from "@/components/native/AddColleagueForm";
 import { useDossierMutations } from "@/lib/data/useDossierMutations";
 import { headerOptions } from "@/lib/navigation/headerOptions";
@@ -13,8 +13,15 @@ export default function B2bAddColleague() {
       <Stack.Screen options={headerOptions({ title: "Inviter un collègue" })} />
       <AddColleagueForm
         onSubmit={async (email) => {
-          await invite(email);
-          router.replace("/(b2b)/confirmation");
+          try {
+            await invite(email);
+            router.replace("/(b2b)/confirmation");
+          } catch {
+            Alert.alert(
+              "Erreur",
+              "L'invitation n'a pas pu être envoyée. Veuillez réessayer."
+            );
+          }
         }}
       />
     </ScrollView>
