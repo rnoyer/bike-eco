@@ -19,7 +19,7 @@ export default function SettingsList({ role, onInvite, onDelete }: Props) {
     <Host matchContents>
       <FieldGroup>
         {role === "backoffice" ? (
-          <FieldGroup.Section title="Région géré">
+          <FieldGroup.Section title="Région gérée">
             <Picker
               selectedValue={fromRegion(region)}
               onValueChange={(v) => setRegion(toRegion(v))}

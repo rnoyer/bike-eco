@@ -105,7 +105,7 @@ Role differences handled inside the shared screens:
   `marque modèle` / `cylindrée` with a status badge, no region filter. BO: three sections
   (à traiter / en cours / clos) filtered by the persisted region, cards show
   `société - prénom nom` / `marque modèle`, no status badge.
-- **SettingsScreen** — passes `role` to `SettingsList`, which shows the "Région géré"
+- **SettingsScreen** — passes `role` to `SettingsList`, which shows the "Région gérée"
   picker only for back office. Wrappers supply `onInvite` (B2B pushes add-colleague; BO is
   a stub Alert) and `onDelete` (stub Alert).
 - The simplest cases (`AccountScreen`, `DossierDetailScreen`, `DossierChatScreen`) are

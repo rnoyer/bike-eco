@@ -29,6 +29,8 @@ export default function SignInScreen() {
       <View style={styles.card}>
         <Text style={styles.title}>Bienvenue !</Text>
         <SignInFields onSubmit={goToDashboard} onForgotPassword={() => {}} />
+        {/* TODO: route the selected provider into the real auth handler — the
+            stub discards it and just navigates to the dashboard. */}
         <ThirdPartyAuthButtons onPress={goToDashboard} />
 
         {__DEV__ ? (
