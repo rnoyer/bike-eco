@@ -12,9 +12,7 @@ export default function Index() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // TODO: build the garagiste/concessionnaire sign-in screen at src/app/signin.tsx.
-  // Cast is required until that route exists, since typed routes only knows real files.
-  const SIGNIN_ROUTE = "/signin" as Href;
+  const SIGNIN_ROUTE: Href = "/(auth)/signin";
 
   return (
     <>
