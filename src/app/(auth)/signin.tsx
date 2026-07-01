@@ -1,7 +1,7 @@
 import { type Href, useRouter } from "expo-router";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import SignInFields from "@/components/native/SignInFields";
+import SignInFields from "@/components/form/SignInFields";
 import PhotoBackground from "@/components/ui/PhotoBackground";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
 import { useSession } from "@/lib/data/useSession";

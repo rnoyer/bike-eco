@@ -7,10 +7,19 @@ export const tokens = {
     muted: "#71727A",
     border: "#E5E7EB",
     divider: "#F3F4F6",
-    disabled: "#C1C1C6",
+    disabled: "#C1C1C6", // also the text-input placeholder colour
+    surfaceAlt: "#FAFAFA", // input / media-button fill
     surface: "#fff",
     bg: "#fff",
+    // Semantic feedback colours — single source for errors/success across the app.
     danger: "#DC2626",
+    success: "#16A34A",
+  },
+  // Per-status badge palette (background + foreground), keyed by DossierStatus.
+  status: {
+    a_traiter: { bg: "#FEF3C7", fg: "#92400E" },
+    en_cours: { bg: "#DBEAFE", fg: "#1E40AF" },
+    cloture: { bg: "#DCFCE7", fg: "#166534" },
   },
   radius: { sm: 8, md: 12, lg: 16 },
   space: { xs: 4, sm: 8, md: 12, lg: 24, xl: 28 },

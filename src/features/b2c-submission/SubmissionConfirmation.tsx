@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { tokens } from "@/theme/tokens";
 
 interface Props {
   onDone: () => void;
@@ -27,7 +28,7 @@ export default function SubmissionConfirmation({ onDone }: Props) {
         onPress={onDone}
         activeOpacity={0.8}
       >
-        <Text style={styles.btnText}>Retour à l'accueil</Text>
+        <Text style={styles.btnText}>Retour à l&apos;accueil</Text>
       </TouchableOpacity>
     </View>
   );
@@ -36,35 +37,31 @@ export default function SubmissionConfirmation({ onDone }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-    paddingHorizontal: 24,
+    backgroundColor: tokens.colors.surface,
+    paddingHorizontal: tokens.space.lg,
   },
   body: {
     flex: 1,
     justifyContent: "center",
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111",
-    marginBottom: 12,
+    ...tokens.text.title,
+    marginBottom: tokens.space.md,
   },
   subtitle: {
-    fontSize: 14,
-    fontWeight: "400",
-    color: "#71727A",
+    ...tokens.text.subtitle,
     lineHeight: 20,
   },
   btn: {
-    height: 52,
-    borderRadius: 12,
+    height: tokens.button.height,
+    borderRadius: tokens.radius.md,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#111",
+    backgroundColor: tokens.colors.primary,
   },
   btnText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#fff",
+    color: tokens.colors.primaryText,
   },
 });

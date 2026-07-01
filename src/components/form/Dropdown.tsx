@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import { useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
   FlatList,
+  Modal,
   StyleSheet,
+  Text,
   TextInput,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { tokens } from "@/theme/tokens";
 
 interface Props {
   label: string;
@@ -77,7 +78,7 @@ export default function Dropdown({
               <TextInput
                 style={styles.searchInput}
                 placeholder="Rechercher..."
-                placeholderTextColor="#C1C1C6"
+                placeholderTextColor={tokens.colors.disabled}
                 value={search}
                 onChangeText={setSearch}
                 autoFocus
@@ -111,98 +112,98 @@ export default function Dropdown({
 const styles = StyleSheet.create({
   label: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#111',
-    marginBottom: 8,
+    fontWeight: "500",
+    color: tokens.colors.primary,
+    marginBottom: tokens.space.sm,
   },
   trigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    height: tokens.button.height,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    backgroundColor: '#FAFAFA',
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    backgroundColor: tokens.colors.surfaceAlt,
     paddingHorizontal: 16,
   },
   triggerError: {
-    borderColor: '#EF4444',
+    borderColor: tokens.colors.danger,
   },
   triggerText: {
     flex: 1,
     fontSize: 16,
-    color: '#111',
+    color: tokens.colors.primary,
   },
   placeholderText: {
-    color: '#C1C1C6',
+    color: tokens.colors.disabled,
   },
   chevron: {
     fontSize: 20,
-    color: '#71727A',
-    transform: [{ rotate: '90deg' }],
+    color: tokens.colors.muted,
+    transform: [{ rotate: "90deg" }],
   },
   error: {
     fontSize: 12,
-    color: '#EF4444',
-    marginTop: 4,
+    color: tokens.colors.danger,
+    marginTop: tokens.space.xs,
   },
   modal: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: tokens.colors.surface,
   },
   modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: tokens.space.lg,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: tokens.colors.divider,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#111',
+    fontWeight: "600",
+    color: tokens.colors.primary,
   },
   closeBtn: {
     fontSize: 16,
-    color: '#71727A',
+    color: tokens.colors.muted,
   },
   searchWrap: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: tokens.space.md,
   },
   searchInput: {
     height: 44,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    borderColor: tokens.colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     fontSize: 16,
-    color: '#111',
-    backgroundColor: '#FAFAFA',
+    color: tokens.colors.primary,
+    backgroundColor: tokens.colors.surfaceAlt,
   },
   option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: tokens.space.lg,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F9FAFB',
+    borderBottomColor: "#F9FAFB",
   },
   optionSelected: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
   },
   optionText: {
     flex: 1,
     fontSize: 16,
-    color: '#111',
+    color: tokens.colors.primary,
   },
   optionTextSelected: {
-    fontWeight: '600',
+    fontWeight: "600",
   },
   check: {
     fontSize: 16,
-    color: '#111',
+    color: tokens.colors.primary,
   },
 });

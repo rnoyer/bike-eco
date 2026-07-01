@@ -1,6 +1,6 @@
 import { useGlobalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, Alert, ScrollView, StyleSheet } from "react-native";
-import DossierManagementForm from "@/components/native/DossierManagementForm";
+import DossierManagementForm from "@/components/form/DossierManagementForm";
 import { useDossier } from "@/lib/data/useDossier";
 import { useDossierMutations } from "@/lib/data/useDossierMutations";
 import { tokens } from "@/theme/tokens";

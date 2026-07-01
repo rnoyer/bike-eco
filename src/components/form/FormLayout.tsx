@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { tokens } from "@/theme/tokens";
 
 interface Props {
   progress: number;
@@ -90,24 +91,24 @@ export default function FormLayout({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: tokens.colors.surface,
   },
   header: {
-    paddingHorizontal: 24,
+    paddingHorizontal: tokens.space.lg,
     paddingBottom: 16,
-    backgroundColor: "#fff",
+    backgroundColor: tokens.colors.surface,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: tokens.space.lg,
     paddingTop: 8,
     paddingBottom: 32,
   },
   progressTrack: {
     height: 6,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: tokens.colors.border,
     borderRadius: 3,
     position: "relative",
     justifyContent: "center",
@@ -116,59 +117,55 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     height: "100%",
-    backgroundColor: "#111",
+    backgroundColor: tokens.colors.primary,
     borderRadius: 3,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111",
-    marginBottom: 8,
+    ...tokens.text.title,
+    marginBottom: tokens.space.sm,
   },
   subtitle: {
-    fontSize: 14,
-    fontWeight: "400",
-    color: "#71727A",
-    marginBottom: 28,
+    ...tokens.text.subtitle,
+    marginBottom: tokens.space.xl,
   },
   fields: {
     gap: 20,
   },
   buttons: {
     flexDirection: "row",
-    gap: 12,
-    paddingHorizontal: 24,
+    gap: tokens.space.md,
+    paddingHorizontal: tokens.space.lg,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
-    backgroundColor: "#fff",
+    borderTopColor: tokens.colors.divider,
+    backgroundColor: tokens.colors.surface,
   },
   btn: {
     flex: 1,
-    height: 52,
-    borderRadius: 12,
+    height: tokens.button.height,
+    borderRadius: tokens.radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
   btnPrimary: {
-    backgroundColor: "#111",
+    backgroundColor: tokens.colors.primary,
   },
   btnSecondary: {
     borderWidth: 1.5,
-    borderColor: "#E5E7EB",
+    borderColor: tokens.colors.border,
   },
   btnDisabled: {
-    borderColor: "#F3F4F6",
+    borderColor: tokens.colors.divider,
   },
   btnText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111",
+    color: tokens.colors.primary,
   },
   btnTextPrimary: {
-    color: "#fff",
+    color: tokens.colors.primaryText,
   },
   btnTextDisabled: {
-    color: "#C1C1C6",
+    color: tokens.colors.disabled,
   },
 });

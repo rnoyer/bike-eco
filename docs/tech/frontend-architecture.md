@@ -16,13 +16,20 @@ contracts), `docs/tech/firestore-data-model.md` (data model).
   - Bottom tabs: `expo-router/unstable-native-tabs` (`NativeTabs`) → real UITabBar /
     BottomNavigation.
   - Top header: the native expo-router Stack header, configured via `headerOptions`.
-  - List/form/settings-shaped screens: **`@expo/ui`** universal components (`Host`,
-    `Column`/`Row`, `Text`, `Picker`, `TextInput`, `Button`, …) which render real
-    SwiftUI / Jetpack Compose. These native islands use a **non-scrolling** layout
-    (`<Host matchContents>` + `Column`), never the scrollable `List`/`FieldGroup`: those
-    compile to a Compose `LazyColumn`, which crashes on Android when measured with
-    unbounded height (`matchContents`, or nested inside the screen's RN `ScrollView`).
-    The enclosing RN `ScrollView` owns scrolling for the whole screen.
+  - Read-only list-shaped screens (account info, dossier info): **`@expo/ui`** universal
+    components (`Host`, `Column`/`Row`, `Text`, …) which render real SwiftUI / Jetpack
+    Compose. These native islands use a **non-scrolling** layout (`<Host matchContents>` +
+    `Column`), never the scrollable `List`/`FieldGroup`: those compile to a Compose
+    `LazyColumn`, which crashes on Android when measured with unbounded height
+    (`matchContents`, or nested inside the screen's RN `ScrollView`). The enclosing RN
+    `ScrollView` owns scrolling for the whole screen.
+  - **All inputs go through the shared RN `form/` layer** — every text field, dropdown,
+    and checkbox (in the b2c funnel *and* the b2b/back-office forms: sign-in, add-colleague,
+    settings, dossier management) uses `ControlledField`/`ControlledDropdown`/… over
+    react-hook-form + Zod, with the shared `ui/Button`. We do **not** use `@expo/ui`
+    `TextInput`/`Picker`/`Button` for editable inputs, so validation and styling live in
+    one place. (You can't nest an RN input inside an `@expo/ui` `Host` tree, so any screen
+    with an input is a plain-RN screen.)
   - Where no native universal primitive fits (chat bubbles, photo carousel, dossier card,
     landing/sign-in card), plain React Native + `StyleSheet`.
 - **Persistence:** `expo-sqlite/kv-store` (AsyncStorage-compatible) for the region filter.
@@ -56,11 +63,14 @@ src/
       AccountScreen.tsx             # role-agnostic
       DossierDetailScreen.tsx       # id
       DossierChatScreen.tsx         # id
-    native/                         # @expo/ui screens/forms (native styling)
-      AccountInfoList, DossierInfoList, SettingsList,
-      DossierManagementForm, SignInFields, AddColleagueForm
+    native/                         # @expo/ui read-only list screens (native styling)
+      AccountInfoList, DossierInfoList
+    form/                           # shared RN inputs + composite forms (react-hook-form + Zod)
+      FormLayout, FormField, Dropdown, CheckboxGroup,
+      Controlled{Field,Dropdown,CheckboxGroup}, PhotoPicker,
+      SignInFields, AddColleagueForm, DossierManagementForm, SettingsList
     ui/                             # RN + StyleSheet components
-      StatusBadge, DossierCard, DossiersSection,
+      Button, StatusBadge, DossierCard, DossiersSection,
       PhotoCarousel, ConfirmationView, ThirdPartyAuthButtons,
       chat/{ChatThread, ChatComposer}
   lib/

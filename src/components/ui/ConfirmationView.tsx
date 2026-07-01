@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   },
   check: {
     fontSize: 56,
-    color: "#16A34A",
+    color: tokens.colors.success,
     fontWeight: "bold",
   },
   title: { ...tokens.text.title, textAlign: "center" },

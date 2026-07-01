@@ -1,6 +1,6 @@
 import { Stack, useRouter } from "expo-router";
 import { Alert, ScrollView, StyleSheet } from "react-native";
-import AddColleagueForm from "@/components/native/AddColleagueForm";
+import AddColleagueForm from "@/components/form/AddColleagueForm";
 import { useDossierMutations } from "@/lib/data/useDossierMutations";
 import { headerOptions } from "@/lib/navigation/headerOptions";
 import { tokens } from "@/theme/tokens";

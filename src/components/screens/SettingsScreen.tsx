@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet } from "react-native";
-import SettingsList from "@/components/native/SettingsList";
+import SettingsList from "@/components/form/SettingsList";
 import type { UserRole } from "@/lib/firestore/schema";
 import { tokens } from "@/theme/tokens";
 
