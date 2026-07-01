@@ -1,6 +1,6 @@
+import { tokens } from "@/theme/tokens";
 import { Image } from "expo-image";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { tokens } from "@/theme/tokens";
 
 interface Props {
   thumbnailUrl: string | null;
