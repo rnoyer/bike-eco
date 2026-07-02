@@ -1,0 +1,36 @@
+Split: 12 train, 8 test (holdout=0.4)
+
+============================================================
+Iteration 1/5
+Description: How to build, edit, or review forms in the bike-eco Expo app — the shared useStepForm + FormLayout multi-step engine, single-step react-hook-form screens, Zod v4 schemas, the Controlled* field wrappers, design tokens, and the French copy/validation conventions. Use this whenever you implement, edit, or review ANY form, multi-step funnel, registration/signup flow, form field, dropdown, checkbox group, photo picker, validation schema, or submit handler in this project — including the pending B2B vehicle-submission, company-registration, and invited-registration funnels — even if the user doesn't say the word "form".
+============================================================
+Train: 19/36 correct, precision=100% recall=6% accuracy=53% (42.3s)
+  [FAIL] rate=0/3 expected=True: Write the Zod schema for the b2b vehicle submission — marque
+  [FAIL] rate=1/3 expected=True: Add a searchable département dropdown to the coordonnées ste
+  [FAIL] rate=0/3 expected=True: On the état dropdown, when someone picks 'En Panne' also rev
+  [FAIL] rate=0/3 expected=True: stub out submitCompanyRegistration for now — simulate latenc
+  [FAIL] rate=0/3 expected=True: Let's build the 'Vendre une moto' funnel for logged-in B2B u
+  [PASS] rate=0/3 expected=False: The région dropdown on the back-office dashboard isn't resto
+  [FAIL] rate=0/3 expected=True: Add the company registration flow: SIRET + company name on s
+  [PASS] rate=0/3 expected=False: Generate the NORTH/SOUTH team notification email HTML for a 
+  [PASS] rate=0/3 expected=False: Set up the EAS build and submit profiles so we can ship the 
+  [PASS] rate=0/3 expected=False: Add a negotiatedPriceHistory array field to the Dossier type
+  [PASS] rate=0/3 expected=False: The DossiersSection empty-state text should be centered and 
+  [PASS] rate=0/3 expected=False: The DossierCard subtitle should display the cylindrée in cc 
+Test : 13/24 correct, precision=100% recall=8% accuracy=54% (0.0s)
+  [FAIL] rate=0/3 expected=True: Can you review my new steps.tsx for the invited registration
+  [FAIL] rate=0/3 expected=True: i need the phone field on the b2b signup to only accept 10 d
+  [FAIL] rate=0/3 expected=True: The invited-colleague signup needs to prefill the email from
+  [FAIL] rate=1/3 expected=True: The photos step should require at least one photo before the
+  [PASS] rate=0/3 expected=False: The chat composer's Envoyer button should be disabled while 
+  [PASS] rate=0/3 expected=False: The sign-in card's photo background looks stretched on iPad 
+  [PASS] rate=0/3 expected=False: Validate the incoming request body of the sendB2cSubmission 
+  [PASS] rate=0/3 expected=False: Write Firestore security rules so a b2b user can only read d
+
+Improving description...
+Proposed (12.2s): Use when working on any form, funnel, or data-entry flow in the bike-eco Expo app — building, editing, reviewing, wiring, or stubbing. This covers: multi-step submission funnels ("Vendre une moto", vehicle/moto submission) and registration/signup flows (company, invited, account, coordonnées steps); writing or changing a Zod validation schema; adding or fixing a field, dropdown (searchable, département, région), checkbox group, photo picker, or number/SIRET/phone input; conditional fields that reveal based on another value; and submit handlers (e.g. submitCompanyRegistration) — including stubbing them to simulate latency now and wire Firebase later. Reach for this whenever a task touches step-through flows, field validation, or French form copy, even if the user never says "form", "schema", or "validation" and just names a funnel, a field, a step, or a submit function.
+
+============================================================
+Iteration 2/5
+Description: Use when working on any form, funnel, or data-entry flow in the bike-eco Expo app — building, editing, reviewing, wiring, or stubbing. This covers: multi-step submission funnels ("Vendre une moto", vehicle/moto submission) and registration/signup flows (company, invited, account, coordonnées steps); writing or changing a Zod validation schema; adding or fixing a field, dropdown (searchable, département, région), checkbox group, photo picker, or number/SIRET/phone input; conditional fields that reveal based on another value; and submit handlers (e.g. submitCompanyRegistration) — including stubbing them to simulate latency now and wire Firebase later. Reach for this whenever a task touches step-through flows, field validation, or French form copy, even if the user never says "form", "schema", or "validation" and just names a funnel, a field, a step, or a submit function.
+============================================================

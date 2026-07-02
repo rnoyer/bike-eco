@@ -1,0 +1,78 @@
+Split: 12 train, 8 test (holdout=0.4)
+
+============================================================
+Iteration 1/5
+Description: How to build, edit, or review forms in the bike-eco Expo app — the shared useStepForm + FormLayout multi-step engine, single-step react-hook-form screens, Zod v4 schemas, the Controlled* field wrappers, design tokens, and the French copy/validation conventions. Use this whenever you implement, edit, or review ANY form, multi-step funnel, registration/signup flow, form field, dropdown, checkbox group, photo picker, validation schema, or submit handler in this project — including the pending B2B vehicle-submission, company-registration, and invited-registration funnels — even if the user doesn't say the word "form".
+============================================================
+Train: 20/36 correct, precision=100% recall=11% accuracy=56% (46.7s)
+  [FAIL] rate=0/3 expected=True: Add a searchable département dropdown to the coordonnées ste
+  [FAIL] rate=0/3 expected=True: Write the Zod schema for the b2b vehicle submission — marque
+  [FAIL] rate=1/3 expected=True: stub out submitCompanyRegistration for now — simulate latenc
+  [FAIL] rate=0/3 expected=True: On the état dropdown, when someone picks 'En Panne' also rev
+  [FAIL] rate=0/3 expected=True: Add the company registration flow: SIRET + company name on s
+  [FAIL] rate=1/3 expected=True: Let's build the 'Vendre une moto' funnel for logged-in B2B u
+  [PASS] rate=0/3 expected=False: The région dropdown on the back-office dashboard isn't resto
+  [PASS] rate=0/3 expected=False: Set up the EAS build and submit profiles so we can ship the 
+  [PASS] rate=0/3 expected=False: Generate the NORTH/SOUTH team notification email HTML for a 
+  [PASS] rate=0/3 expected=False: The DossiersSection empty-state text should be centered and 
+  [PASS] rate=0/3 expected=False: Add a negotiatedPriceHistory array field to the Dossier type
+  [PASS] rate=0/3 expected=False: The DossierCard subtitle should display the cylindrée in cc 
+Test : 13/24 correct, precision=100% recall=8% accuracy=54% (0.0s)
+  [FAIL] rate=1/3 expected=True: i need the phone field on the b2b signup to only accept 10 d
+  [FAIL] rate=0/3 expected=True: Can you review my new steps.tsx for the invited registration
+  [FAIL] rate=0/3 expected=True: The invited-colleague signup needs to prefill the email from
+  [FAIL] rate=0/3 expected=True: The photos step should require at least one photo before the
+  [PASS] rate=0/3 expected=False: The chat composer's Envoyer button should be disabled while 
+  [PASS] rate=0/3 expected=False: The sign-in card's photo background looks stretched on iPad 
+  [PASS] rate=0/3 expected=False: Validate the incoming request body of the sendB2cSubmission 
+  [PASS] rate=0/3 expected=False: Write Firestore security rules so a b2b user can only read d
+
+Improving description...
+Proposed (25.2s): Use when building, editing, or reviewing any data-entry experience in the bike-eco Expo app: multi-step funnels (registration/signup, company-registration, invited-registration, and B2B vehicle-submission / "Vendre une moto") and single-step forms. Covers adding or changing input fields (text, dropdown, checkbox group, photo picker, SIRET, département, coordonnées), wiring conditional fields that appear based on another answer, authoring or fixing Zod validation schemas, and stubbing or implementing submit handlers — even when the request names only a step, a field, or a French label and never says the word "form". Do NOT use for back-office dashboard filters/search, list or card display and styling components, Firestore data-model type definitions, notification-email HTML, or EAS/build configuration.
+
+============================================================
+Iteration 2/5
+Description: Use when building, editing, or reviewing any data-entry experience in the bike-eco Expo app: multi-step funnels (registration/signup, company-registration, invited-registration, and B2B vehicle-submission / "Vendre une moto") and single-step forms. Covers adding or changing input fields (text, dropdown, checkbox group, photo picker, SIRET, département, coordonnées), wiring conditional fields that appear based on another answer, authoring or fixing Zod validation schemas, and stubbing or implementing submit handlers — even when the request names only a step, a field, or a French label and never says the word "form". Do NOT use for back-office dashboard filters/search, list or card display and styling components, Firestore data-model type definitions, notification-email HTML, or EAS/build configuration.
+============================================================
+Train: 19/36 correct, precision=100% recall=6% accuracy=53% (32.1s)
+  [FAIL] rate=0/3 expected=True: Add a searchable département dropdown to the coordonnées ste
+  [FAIL] rate=0/3 expected=True: Write the Zod schema for the b2b vehicle submission — marque
+  [FAIL] rate=0/3 expected=True: stub out submitCompanyRegistration for now — simulate latenc
+  [FAIL] rate=1/3 expected=True: On the état dropdown, when someone picks 'En Panne' also rev
+  [FAIL] rate=0/3 expected=True: Let's build the 'Vendre une moto' funnel for logged-in B2B u
+  [FAIL] rate=0/3 expected=True: Add the company registration flow: SIRET + company name on s
+  [PASS] rate=0/3 expected=False: The région dropdown on the back-office dashboard isn't resto
+  [PASS] rate=0/3 expected=False: Generate the NORTH/SOUTH team notification email HTML for a 
+  [PASS] rate=0/3 expected=False: Add a negotiatedPriceHistory array field to the Dossier type
+  [PASS] rate=0/3 expected=False: Set up the EAS build and submit profiles so we can ship the 
+  [PASS] rate=0/3 expected=False: The DossiersSection empty-state text should be centered and 
+  [PASS] rate=0/3 expected=False: The DossierCard subtitle should display the cylindrée in cc 
+Test : 12/24 correct, precision=100% recall=0% accuracy=50% (0.0s)
+  [FAIL] rate=0/3 expected=True: Can you review my new steps.tsx for the invited registration
+  [FAIL] rate=0/3 expected=True: i need the phone field on the b2b signup to only accept 10 d
+  [FAIL] rate=0/3 expected=True: The invited-colleague signup needs to prefill the email from
+  [FAIL] rate=0/3 expected=True: The photos step should require at least one photo before the
+  [PASS] rate=0/3 expected=False: The chat composer's Envoyer button should be disabled while 
+  [PASS] rate=0/3 expected=False: The sign-in card's photo background looks stretched on iPad 
+  [PASS] rate=0/3 expected=False: Write Firestore security rules so a b2b user can only read d
+  [PASS] rate=0/3 expected=False: Validate the incoming request body of the sendB2cSubmission 
+
+Improving description...
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/romain/.claude/plugins/cache/claude-plugins-official/skill-creator/unknown/skills/skill-creator/scripts/run_loop.py", line 328, in <module>
+    main()
+  File "/home/romain/.claude/plugins/cache/claude-plugins-official/skill-creator/unknown/skills/skill-creator/scripts/run_loop.py", line 293, in main
+    output = run_loop(
+             ^^^^^^^^^
+  File "/home/romain/.claude/plugins/cache/claude-plugins-official/skill-creator/unknown/skills/skill-creator/scripts/run_loop.py", line 199, in run_loop
+    new_description = improve_description(
+                      ^^^^^^^^^^^^^^^^^^^^
+  File "/home/romain/.claude/plugins/cache/claude-plugins-official/skill-creator/unknown/skills/skill-creator/scripts/improve_description.py", line 144, in improve_description
+    text = _call_claude(prompt, model)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/romain/.claude/plugins/cache/claude-plugins-official/skill-creator/unknown/skills/skill-creator/scripts/improve_description.py", line 44, in _call_claude
+    raise RuntimeError(
+RuntimeError: claude -p exited 1
+stderr: 
