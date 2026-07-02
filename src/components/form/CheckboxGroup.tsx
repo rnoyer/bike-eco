@@ -1,4 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { tokens } from "@/theme/tokens";
 
 interface Props {
   label?: string;
@@ -54,43 +55,43 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#111",
-    marginBottom: 8,
+    color: tokens.colors.primary,
+    marginBottom: tokens.space.sm,
   },
   options: {
-    gap: 12,
+    gap: tokens.space.md,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: tokens.space.md,
   },
   box: {
     width: 24,
     height: 24,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FAFAFA",
+    borderColor: tokens.colors.border,
+    backgroundColor: tokens.colors.surfaceAlt,
     alignItems: "center",
     justifyContent: "center",
   },
   boxChecked: {
-    backgroundColor: "#111",
-    borderColor: "#111",
+    backgroundColor: tokens.colors.primary,
+    borderColor: tokens.colors.primary,
   },
   check: {
-    color: "#fff",
+    color: tokens.colors.primaryText,
     fontSize: 14,
     fontWeight: "700",
   },
   optionText: {
     fontSize: 16,
-    color: "#111",
+    color: tokens.colors.primary,
   },
   error: {
     fontSize: 12,
-    color: "#EF4444",
-    marginTop: 4,
+    color: tokens.colors.danger,
+    marginTop: tokens.space.xs,
   },
 });

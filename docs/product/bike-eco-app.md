@@ -31,7 +31,7 @@ All B2B submitted cases are listed and sorted in 3 catégories :
 
 #### Region filter
 
-A Bike-eco team member can filter the dashboard dossiers by region. A "Région géré"
+A Bike-eco team member can filter the dashboard dossiers by region. A "Région gérée"
 dropdown in the back-office settings page selects which region's dossiers appear in the
 dashboard:
 

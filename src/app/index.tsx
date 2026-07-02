@@ -1,34 +1,20 @@
 import { type Href, Stack, useRouter } from "expo-router";
-import {
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import PhotoBackground from "@/components/ui/PhotoBackground";
 
 export default function Index() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // TODO: build the garagiste/concessionnaire sign-in screen at src/app/signin.tsx.
-  // Cast is required until that route exists, since typed routes only knows real files.
-  const SIGNIN_ROUTE = "/signin" as Href;
+  const SIGNIN_ROUTE: Href = "/(auth)/signin";
 
   return (
     <>
       {/* No nav bar on the landing screen — same convention as b2cSubmissionForm. */}
       <Stack.Screen options={{ headerShown: false }} />
 
-      <ImageBackground
-        source={require("@/assets/images/bg-motos.jpg")}
-        style={styles.background}
-        resizeMode="cover"
-      >
-        {/* Darkens the photo so the card stays legible on top of it. */}
-        <View style={[StyleSheet.absoluteFill, styles.overlay]} />
-
+      <PhotoBackground>
         <View
           style={[
             styles.content,
@@ -64,18 +50,12 @@ export default function Index() {
             </View>
           </View>
         </View>
-      </ImageBackground>
+      </PhotoBackground>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-  },
-  overlay: {
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
   content: {
     flex: 1,
     alignItems: "center",

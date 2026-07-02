@@ -1,10 +1,14 @@
-# B2B and Back-office Tab bar specifications
+# Tab bar (bottom)
 
-Tab bar is at the bottom, always visible. Depending on the page it has different Links. Links are space-evenly
+Implemented with `expo-router` NativeTabs (`expo-router/unstable-native-tabs`) — a real
+native bottom tab bar (UITabBar on iOS, BottomNavigation on Android). Defined per context
+in a `(tabs)/_layout.tsx` or `dossier/[id]/_layout.tsx`.
 
-## Tab bar props:
+Each tab is a `<NativeTabs.Trigger name="<route>">` with:
+- `<NativeTabs.Trigger.Icon sf="<SF Symbol>" md="<Material icon>" />` (cross-platform)
+- `<NativeTabs.Trigger.Label>` (title)
 
-- an object containing all links. Links info are
-  - an icon
-  - a title
-  - a link to
+Contexts:
+- App level (B2B & BO): Dashboard · Mon compte · Paramètres.
+- Dossier level (B2B): Dossier · Messages.
+- Dossier level (BO): Dossier · Messages · Statut dossier.

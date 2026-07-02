@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TextInput, TextInputProps, StyleSheet } from 'react-native';
+import { StyleSheet, Text, TextInput, type TextInputProps, View } from "react-native";
+import { tokens } from "@/theme/tokens";
 
 interface Props extends TextInputProps {
   label: string;
@@ -20,7 +20,7 @@ export default function FormField({ label, error, suffix, style, multiline, ...p
       >
         <TextInput
           style={[styles.input, multiline && styles.inputMultiline, style]}
-          placeholderTextColor="#C1C1C6"
+          placeholderTextColor={tokens.colors.disabled}
           multiline={multiline}
           textAlignVertical={multiline ? 'top' : 'auto'}
           {...props}
@@ -35,45 +35,45 @@ export default function FormField({ label, error, suffix, style, multiline, ...p
 const styles = StyleSheet.create({
   label: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#111',
-    marginBottom: 8,
+    fontWeight: "500",
+    color: tokens.colors.primary,
+    marginBottom: tokens.space.sm,
   },
   inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    height: tokens.button.height,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    backgroundColor: '#FAFAFA',
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    backgroundColor: tokens.colors.surfaceAlt,
     paddingHorizontal: 16,
   },
   inputRowMultiline: {
     height: undefined,
     minHeight: 100,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
     paddingVertical: 14,
   },
   inputRowError: {
-    borderColor: '#EF4444',
+    borderColor: tokens.colors.danger,
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#111',
+    color: tokens.colors.primary,
   },
   inputMultiline: {
     minHeight: 72,
   },
   suffix: {
     fontSize: 14,
-    color: '#71727A',
-    marginLeft: 8,
+    color: tokens.colors.muted,
+    marginLeft: tokens.space.sm,
   },
   error: {
     fontSize: 12,
-    color: '#EF4444',
-    marginTop: 4,
+    color: tokens.colors.danger,
+    marginTop: tokens.space.xs,
   },
 });

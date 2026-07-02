@@ -6,6 +6,9 @@
     "react-native-best-practices@callstack-agent-skills": true,
     "superpowers@claude-plugins-official": true,
     "feature-dev@claude-plugins-official": true,
-    "firebase@claude-plugins-official": true
+    "firebase@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true
   }
 }

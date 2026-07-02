@@ -128,14 +128,19 @@ real Firestore version (snapshot listeners) is a drop-in swap.
 
 All wrapped in `Host`. Source of truth for props = the installed `@expo/ui` `.d.ts`.
 
+> **Non-scrolling layout, not `List`/`FieldGroup`.** These native islands sit inside each
+> screen's RN `ScrollView`, so they use `<Host matchContents>` + `Column`/`Row`/`Text` —
+> never the scrollable `List`/`FieldGroup`, which compile to a Compose `LazyColumn` and
+> crash on Android when measured with unbounded height. The RN `ScrollView` owns scrolling.
+
 | Component / screen | `@expo/ui` primitives | Used by |
 |---|---|---|
-| `AccountInfoList` | `List` + `ListItem` (label/value rows) | page-my-account |
-| `SettingsList` | `List` + `Button` (Inviter un collègue / Supprimer son compte); BO variant adds a region `Picker` ("Région géré") wired to `useRegionFilter` | page-settings |
-| `DossierManagementForm` | `FieldGroup` + `Picker` (status) + `TextInput` (price, €) + `Button` | page-dossier-management |
-| `DossierInfoList` | `List` label/value (vehicle fields, compact) | page-dossier (below carousel) |
-| `SignInFields` | `FieldGroup` + `TextInput` (email/password) + `Button` | page-login-signup |
-| `AddColleagueForm` | `FieldGroup` + `TextInput` (email) + `Button` | page-add-colleague |
+| `AccountInfoList` | `Column` of `Row` (label `Text` + `Spacer` + value `Text`) | page-my-account |
+| `SettingsList` | `Column` + `Button` (Inviter un collègue / Supprimer son compte); BO variant adds a region `Picker` ("Région gérée") wired to `useRegionFilter` | page-settings |
+| `DossierManagementForm` | `Column` + `Text` labels + `Picker` (status) + `TextInput` (price, €) + `Button` | page-dossier-management |
+| `DossierInfoList` | `Column` of `Row` label/value (vehicle fields, compact) | page-dossier (below carousel) |
+| `SignInFields` | `Column` + `Text` labels + `TextInput` (email/password) + `Button` | page-login-signup |
+| `AddColleagueForm` | `Column` + `Text` label + `TextInput` (email) + `Button` | page-add-colleague |
 | Chat attach menu | `BottomSheet` (Photo / PDF options) | page-chat composer |
 
 `@expo/ui` `TextInput` uses `useNativeState` (not a plain string) — noted for the four
@@ -151,7 +156,7 @@ Reuse extracted theme tokens. Live under `src/components/ui/`.
 | `PhotoCarousel` | no universal carousel → horizontal paged `ScrollView` + `expo-image` | page-dossier |
 | `DossierCard` | thumbnail-left + title + subtitle row → `expo-image` + custom layout | dashboard sections |
 | `DossiersSection` | title + cards + centered spinner + per-section empty message | page-dashboard |
-| `StatusBadge` | colored status pill (a_traiter / en_cours / cloture) | dossier card + dossier detail |
+| `StatusBadge` | colored status pill (a_traiter / en_cours / cloture) | dossier-detail photo carousel |
 | `ChatThread` (`ChatBubble`) | message bubbles, sender label, timestamp, attachment chip | page-chat |
 | `ChatComposer` | text input + `+` attach (opens `@expo/ui` `BottomSheet`) | page-chat |
 | `ThirdPartyAuthButtons` | Google / Apple / Facebook row + divider | page-login-signup |

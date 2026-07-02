@@ -1,0 +1,23 @@
+[
+  { "query": "Let's build the 'Vendre une moto' funnel for logged-in B2B users — it should step through the vehicle info, keys, papers, photos and price like the public one.", "should_trigger": true },
+  { "query": "Add the company registration flow: SIRET + company name on step 1, then the account step, then the nom/prénom/téléphone/département/ville coordonnées.", "should_trigger": true },
+  { "query": "The invited-colleague signup needs to prefill the email from the invite link and make it read-only, then ask for a password and their coordinates.", "should_trigger": true },
+  { "query": "i need the phone field on the b2b signup to only accept 10 digits and show a proper error if it's wrong", "should_trigger": true },
+  { "query": "Write the Zod schema for the b2b vehicle submission — marque or modèle required but not both, at least one photo, everything else optional.", "should_trigger": true },
+  { "query": "On the état dropdown, when someone picks 'En Panne' also reveal a text field asking about the nature of the breakdown.", "should_trigger": true },
+  { "query": "stub out submitCompanyRegistration for now — simulate latency and log in dev, we'll wire Firebase auth + firestore later", "should_trigger": true },
+  { "query": "Can you review my new steps.tsx for the invited registration? Want to make sure I'm using the controlled wrappers and useWatch correctly.", "should_trigger": true },
+  { "query": "The photos step should require at least one photo before the Suivant button works.", "should_trigger": true },
+  { "query": "Add a searchable département dropdown to the coordonnées step of the registration.", "should_trigger": true },
+
+  { "query": "Add a negotiatedPriceHistory array field to the Dossier type in the Firestore schema and keep the converter in collections.ts in sync.", "should_trigger": false },
+  { "query": "The région dropdown on the back-office dashboard isn't restoring the saved value after an app restart — fix the persistence.", "should_trigger": false },
+  { "query": "Write Firestore security rules so a b2b user can only read dossiers belonging to their own companyId.", "should_trigger": false },
+  { "query": "The chat composer's Envoyer button should be disabled while the message input is empty.", "should_trigger": false },
+  { "query": "Validate the incoming request body of the sendB2cSubmission Cloud Function with a Zod schema before it sends the emails.", "should_trigger": false },
+  { "query": "The sign-in card's photo background looks stretched on iPad — make it cover the screen properly.", "should_trigger": false },
+  { "query": "The DossiersSection empty-state text should be centered and use the muted color token.", "should_trigger": false },
+  { "query": "Set up the EAS build and submit profiles so we can ship the B2B app to TestFlight.", "should_trigger": false },
+  { "query": "Generate the NORTH/SOUTH team notification email HTML for a new vehicle submission.", "should_trigger": false },
+  { "query": "The DossierCard subtitle should display the cylindrée in cc next to the model name.", "should_trigger": false }
+]

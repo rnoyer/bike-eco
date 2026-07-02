@@ -8,6 +8,7 @@ import ControlledField from "@/components/form/ControlledField";
 import PhotoPicker from "@/components/form/PhotoPicker";
 import { DEPARTMENTS, isNord, isSud } from "@/constants/departments";
 import type { StepConfig } from "@/lib/forms/useStepForm";
+import { tokens } from "@/theme/tokens";
 import type { B2cSubmissionForm } from "./schema";
 
 export type B2cStep = StepConfig<B2cSubmissionForm> & { render: () => ReactNode };
@@ -259,13 +260,13 @@ export const B2C_SUBMISSION_STEPS: B2cStep[] = [
 const styles = StyleSheet.create({
   link: {
     fontSize: 13,
-    color: "#71727A",
+    color: tokens.colors.muted,
     textDecorationLine: "underline",
-    marginTop: 8,
+    marginTop: tokens.space.sm,
   },
   hint: {
     fontSize: 14,
-    color: "#71727A",
+    color: tokens.colors.muted,
     lineHeight: 20,
   },
 });

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { tokens } from "@/theme/tokens";
 
 interface Props {
   value: string[];
@@ -119,25 +120,25 @@ const styles = StyleSheet.create({
   },
   buttonsRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: tokens.space.md,
   },
   mediaBtn: {
     flex: 1,
     height: 72,
     borderWidth: 1.5,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    backgroundColor: "#FAFAFA",
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    backgroundColor: tokens.colors.surfaceAlt,
     alignItems: "center",
     justifyContent: "center",
   },
   mediaBtnLabel: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#111",
+    color: tokens.colors.primary,
   },
   carousel: {
-    gap: 12,
+    gap: tokens.space.md,
     paddingVertical: 2,
   },
   photoWrap: {
@@ -146,8 +147,8 @@ const styles = StyleSheet.create({
   photo: {
     width: 120,
     height: 120,
-    borderRadius: 12,
-    backgroundColor: "#F3F4F6",
+    borderRadius: tokens.radius.md,
+    backgroundColor: tokens.colors.divider,
   },
   deleteBtn: {
     position: "absolute",
@@ -161,21 +162,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   deleteBtnText: {
-    color: "#fff",
+    color: tokens.colors.primaryText,
     fontSize: 11,
     fontWeight: "700",
   },
   hint: {
     fontSize: 13,
-    color: "#71727A",
+    color: tokens.colors.muted,
     textAlign: "center",
   },
   hintComplete: {
-    color: "#22C55E",
+    color: tokens.colors.success,
   },
   error: {
     fontSize: 12,
-    color: "#EF4444",
+    color: tokens.colors.danger,
     textAlign: "center",
   },
 });

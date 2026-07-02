@@ -12,7 +12,8 @@
         "dark": "./assets/images/ios-icon-dark.png",
         "light": "./assets/images/ios-icon-default.png",
         "tinted": "./assets/images/ios-icon-tinted.png"
-      }
+      },
+      "bundleIdentifier": "com.rnoyer.bikeeco"
     },
     "android": {
       "adaptiveIcon": {
@@ -37,7 +38,8 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,
