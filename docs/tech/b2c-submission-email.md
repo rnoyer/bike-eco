@@ -32,33 +32,33 @@ path), and the funnel spec `docs/specs/form-b2c-vehicule-submission.md`.
 
 ## Files
 
-| File | Responsibility |
-|------|----------------|
-| `functions/src/index.ts` | `sendB2cSubmission` HTTP handler: multipart parsing, validation, status codes, send orchestration |
-| `functions/src/email.ts` | Pooled transport, recipient routing, customer + team HTML builders, secret definitions |
-| `functions/src/payload.ts` | Zod schema mirroring the funnel payload (server-side validation; photos excluded) |
-| `functions/src/regions.ts` | NORTH/SOUTH département mapping — duplicated from `src/constants/departments.ts` (keep in sync) |
-| `src/features/b2c-submission/submit.ts` | Client: builds the `FormData`, resolves the endpoint URL, posts, throws French errors |
-| `src/app/b2cSubmissionForm.tsx` | Funnel screen: calls `submitB2cSubmission` on submit, alerts on failure, guards double-send |
+| File                                    | Responsibility                                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `functions/src/index.ts`                | `sendB2cSubmission` HTTP handler: multipart parsing, validation, status codes, send orchestration |
+| `functions/src/email.ts`                | Pooled transport, recipient routing, customer + team HTML builders, secret definitions            |
+| `functions/src/payload.ts`              | Zod schema mirroring the funnel payload (server-side validation; photos excluded)                 |
+| `functions/src/regions.ts`              | NORTH/SOUTH département mapping — duplicated from `src/constants/departments.ts` (keep in sync)   |
+| `src/features/b2c-submission/submit.ts` | Client: builds the `FormData`, resolves the endpoint URL, posts, throws French errors             |
+| `src/app/b2cSubmissionForm.tsx`         | Funnel screen: calls `submitB2cSubmission` on submit, alerts on failure, guards double-send       |
 
 ## Request contract
 
 `POST sendB2cSubmission` — `Content-Type: multipart/form-data`
 
-| Part | Type | Notes |
-|------|------|-------|
-| `payload` | field (JSON string) | The funnel form minus `photos`. Validated by `b2cPayloadSchema`. |
-| `photos` | file × N | Image attachments. `image/*` only; non-images are dropped. At least 1 required. |
+| Part      | Type                | Notes                                                                           |
+| --------- | ------------------- | ------------------------------------------------------------------------------- |
+| `payload` | field (JSON string) | The funnel form minus `photos`. Validated by `b2cPayloadSchema`.                |
+| `photos`  | file × N            | Image attachments. `image/*` only; non-images are dropped. At least 1 required. |
 
 ### Responses
 
-| Status | When |
-|--------|------|
-| `200 {ok:true}` | Both emails sent (or logged in dev). |
-| `400` | Not multipart, bad `payload` JSON, failed schema validation, or zero photos. |
-| `405` | Method other than POST. |
-| `413` | A photo exceeds 8 MB, or more than 12 photos. |
-| `502` | Email transport failed (not auto-retried — surfaced to the client). |
+| Status          | When                                                                         |
+| --------------- | ---------------------------------------------------------------------------- |
+| `200 {ok:true}` | Both emails sent (or logged in dev).                                         |
+| `400`           | Not multipart, bad `payload` JSON, failed schema validation, or zero photos. |
+| `405`           | Method other than POST.                                                      |
+| `413`           | A photo exceeds 8 MB, or more than 12 photos.                                |
+| `502`           | Email transport failed (not auto-retried — surfaced to the client).          |
 
 Error bodies are `{ "error": "<message in French>" }` for client display.
 
@@ -67,14 +67,14 @@ Error bodies are `{ "error": "<message in French>" }` for client display.
 Image buffers are held in memory, so the endpoint is tuned to bound per-instance
 memory while letting autoscaling absorb bursts:
 
-| Setting | Value | Why |
-|---------|-------|-----|
-| `memory` | `512MiB` | Headroom for concurrent in-flight image buffers |
-| `concurrency` | `15` | Caps simultaneous requests per instance (memory safety) |
-| `maxInstances` | `10` (global) | Bounds the autoscaling blast radius |
-| busboy `fileSize` | `8 MB` | Rejects oversized photos instead of buffering them (`413`) |
-| busboy `files` | `12` | Max photos per submission (`413`) |
-| busboy `fieldSize` | `100 KB` | The JSON payload is a few KB |
+| Setting            | Value         | Why                                                        |
+| ------------------ | ------------- | ---------------------------------------------------------- |
+| `memory`           | `512MiB`      | Headroom for concurrent in-flight image buffers            |
+| `concurrency`      | `15`          | Caps simultaneous requests per instance (memory safety)    |
+| `maxInstances`     | `10` (global) | Bounds the autoscaling blast radius                        |
+| busboy `fileSize`  | `8 MB`        | Rejects oversized photos instead of buffering them (`413`) |
+| busboy `files`     | `12`          | Max photos per submission (`413`)                          |
+| busboy `fieldSize` | `100 KB`      | The JSON payload is a few KB                               |
 
 Because nothing is persisted, concurrent submissions share no mutable state — no
 transactions, no races. The transport is created once at module scope with
@@ -88,10 +88,10 @@ to avoid double-sends.
 `NORTH` (Montargis centre) or `SOUTH` (Vitrolles centre), defaulting to `NORTH`
 for unknown values so a submission is never dropped.
 
-| Recipient | Dev (`DEV_EMAIL_OVERRIDE = true`) | Production |
-|-----------|-----------------------------------|------------|
-| Team | `romain.noyer@gmail.com` | `NORTH_MAILBOX` / `SOUTH_MAILBOX` by region |
-| Customer | `romain.noyer@gmail.com` | the submitter's `email` |
+| Recipient | Dev (`DEV_EMAIL_OVERRIDE = true`) | Production                                  |
+| --------- | --------------------------------- | ------------------------------------------- |
+| Team      | `romain.noyer@gmail.com`          | `NORTH_MAILBOX` / `SOUTH_MAILBOX` by region |
+| Customer  | `romain.noyer@gmail.com`          | the submitter's `email`                     |
 
 ## Client endpoint resolution
 
@@ -99,9 +99,9 @@ for unknown values so a submission is never dropped.
 
 1. `EXPO_PUBLIC_FUNCTIONS_URL` (base up to but excluding the function name) — set
    this to reach the emulator from a physical device over the LAN, e.g.
-   `http://192.168.1.x:5001/bike-eco-641ed/us-central1`.
-2. Dev default: `http://localhost:5001/bike-eco-641ed/us-central1/sendB2cSubmission`.
-3. Production: `https://us-central1-bike-eco-641ed.cloudfunctions.net/sendB2cSubmission`.
+   `http://192.168.1.x:5001/bike-eco-43a84/us-central1`.
+2. Dev default: `http://localhost:5001/bike-eco-43a84/us-central1/sendB2cSubmission`.
+3. Production: `https://us-central1-bike-eco-43a84.cloudfunctions.net/sendB2cSubmission`.
 
 ## Local testing
 
@@ -109,7 +109,7 @@ The functions emulator runs `sendB2cSubmission` on port `5001`. With no SMTP
 secrets set, emails are logged (JSON transport) rather than sent. Example:
 
 ```bash
-URL="http://127.0.0.1:5001/bike-eco-641ed/us-central1/sendB2cSubmission"
+URL="http://127.0.0.1:5001/bike-eco-43a84/us-central1/sendB2cSubmission"
 curl -X POST "$URL" \
   -F "payload=<payload.json;type=application/json" \
   -F "photos=@photo.png;type=image/png"

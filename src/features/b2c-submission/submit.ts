@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 
 import type { B2cSubmissionForm } from "./schema";
 
-const PROJECT_ID = "bike-eco-641ed";
+const PROJECT_ID = "bike-eco-43a84";
 const REGION = "us-central1";
 const FUNCTION = "sendB2cSubmission";
 
