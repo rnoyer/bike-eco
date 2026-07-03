@@ -35,6 +35,13 @@ export default function SignInScreen() {
               stub discards it and just navigates to the dashboard. */}
           <ThirdPartyAuthButtons onPress={goToDashboard} />
 
+          <Text
+            style={styles.registerLink}
+            onPress={() => router.push("/(auth)/register")}
+          >
+            Pas encore de compte ? Créer un compte
+          </Text>
+
           {__DEV__ ? (
             <View style={styles.devRow}>
               <Text style={styles.devLabel}>DEV — rôle :</Text>
@@ -80,6 +87,12 @@ const styles = StyleSheet.create({
     }),
   },
   title: { ...tokens.text.title, textAlign: "center" },
+  registerLink: {
+    fontSize: 14,
+    color: tokens.colors.primary,
+    textAlign: "center",
+    textDecorationLine: "underline",
+  },
   devRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   devLabel: { fontSize: 12, color: tokens.colors.muted },
   devChip: {
