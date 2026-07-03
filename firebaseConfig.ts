@@ -3,13 +3,12 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCybLCVKrcssoW9YfyFN4Dl7RrOH2YwIMM",
-  authDomain: "bike-eco-641ed.firebaseapp.com",
-  projectId: "bike-eco-641ed",
-  storageBucket: "bike-eco-641ed.firebasestorage.app",
-  messagingSenderId: "671158589631",
-  appId: "1:671158589631:web:c0dae01529043978be4e0a",
-  measurementId: "G-L56NFYCBCL",
+  apiKey: "AIzaSyChXe-cQ1N3jMXI88vKMDlZj22Ep-PKjF4",
+  authDomain: "bike-eco-43a84.firebaseapp.com",
+  projectId: "bike-eco-43a84",
+  storageBucket: "bike-eco-43a84.firebasestorage.app",
+  messagingSenderId: "585450098034",
+  appId: "1:585450098034:web:a460a8347bb5251d18a1eb"
 };
 
 // Reuse the existing app instance across Fast Refresh / re-imports.
