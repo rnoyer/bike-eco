@@ -1,9 +1,9 @@
 # Frontend architecture — pages & components
 
 How the logged-in app surface (B2B dealer + Bike-eco back office, plus the shared
-sign-in) is built. Scope of this pass: **navigable pages and reusable components only**.
-Form funnels (multi-step submission/registration) are intentionally deferred and the
-data layer is mocked; both swap in later without touching the screens.
+sign-in) is built. The multi-step form funnels are now implemented (UI + Zod
+validation) with **stubbed submit handlers**; the data layer is mocked. Both swap in
+their real backend later without touching the screens.
 
 See also: `docs/product/bike-eco-app.md` (product), `docs/specs/*` (per-page/component
 contracts), `docs/tech/firestore-data-model.md` (data model).
@@ -165,6 +165,29 @@ resolve (a rejection shows an Alert, never a false "success").
 
 `dossiers` are B2B-only in the real model; the public B2C funnel remains email-only.
 
+## Forms
+
+All four multi-step funnels reuse the shared engine (`src/lib/forms/useStepForm.ts`
++ `src/components/form/*`): a Zod `schema.ts`, a declarative `steps.tsx`, and a
+`submit.ts`, rendered through `FormLayout`.
+
+- `src/features/b2c-submission/` — public B2C funnel (email-only via a Cloud
+  Function; the reference implementation).
+- `src/features/b2b-submission/` — logged-in "Vendre une moto" → `/(b2b)/vehicule-submission`.
+- `src/features/b2b-registration/` — company signup → `/(auth)/register`.
+- `src/features/b2b-invited-registration/` — invited teammate (prefilled disabled
+  email from `?email=`) → `/(auth)/register-invited`.
+
+Shared bits: option lists in `src/constants/vehicle.ts`, the digit transform in
+`src/lib/forms/transforms.ts`, the registration field groups in
+`src/features/registration/fields.tsx`, and the terminal screen
+`src/components/form/FormConfirmation.tsx`.
+
+The B2B `submit.ts` handlers are **stubbed** (simulate latency, log under `__DEV__`)
+— real Firebase Auth / Firestore writes / Storage uploads / Cloud Functions are a
+later milestone. Only the Zod schemas are unit-tested; step/route UI is gated by
+`tsc` + `expo lint`.
+
 ## Region filter (back office)
 
 - Choice persisted under one kv-store key as `NORTH | SOUTH | ALL`
@@ -186,7 +209,8 @@ resolve (a rejection shows an Alert, never a false "success").
 
 ## What's stubbed / deferred
 
-Real auth, the multi-step form funnels, photo/PDF uploads and message sending, server-set
+Real auth, the form funnels' **submit handlers** (schema + UI are implemented; the
+handlers are stubbed), photo/PDF uploads and message sending, server-set
 `role`/`companyId`/`status` claims, and thumbnail generation. The sign-in DEV role chips
 are dev-only (`__DEV__`). Swapping the mocked `lib/data` hooks for Firestore reads/writes
 is the next milestone and requires no screen changes.

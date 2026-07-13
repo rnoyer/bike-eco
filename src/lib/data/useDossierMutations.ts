@@ -1,14 +1,19 @@
 import { useCallback } from "react";
-import type { DossierStatus } from "@/lib/firestore/schema";
+import type { DossierStatus, Region } from "@/lib/firestore/schema";
 
 const delay = (ms = 300) => new Promise((r) => setTimeout(r, ms));
 
 /** Stubbed mutations — log + resolve. Swap to Firestore writes later. */
 export function useDossierMutations() {
-  const updateStatusAndPrice = useCallback(
-    async (id: string, status: DossierStatus, price: number | null) => {
+  const updateManagement = useCallback(
+    async (
+      id: string,
+      region: Region,
+      status: DossierStatus,
+      price: number | null
+    ) => {
       await delay();
-      console.log("[stub] update", { id, status, price });
+      console.log("[stub] update", { id, region, status, price });
     },
     []
   );
@@ -20,5 +25,5 @@ export function useDossierMutations() {
     await delay();
     console.log("[stub] invite", { email });
   }, []);
-  return { updateStatusAndPrice, sendMessage, invite };
+  return { updateManagement, sendMessage, invite };
 }

@@ -1,0 +1,51 @@
+import type { ReactNode } from "react";
+import { StyleSheet, Text } from "react-native";
+
+import ControlledField from "@/components/form/ControlledField";
+import { AccountFields, CoordonneesFields } from "@/features/registration/fields";
+import { digitsOnly } from "@/lib/forms/transforms";
+import type { StepConfig } from "@/lib/forms/useStepForm";
+import { tokens } from "@/theme/tokens";
+import type { B2bCompanyRegistrationForm } from "./schema";
+
+export type CompanyStep = StepConfig<B2bCompanyRegistrationForm> & {
+  render: () => ReactNode;
+};
+
+function EntrepriseFields() {
+  return (
+    <>
+      <ControlledField name="siret" label="Numéro SIRET *" placeholder="14 chiffres" keyboardType="numeric" maxLength={14} transform={digitsOnly(14)} returnKeyType="next" />
+      <ControlledField name="companyName" label="Nom de votre entreprise *" placeholder="Nom de votre entreprise" autoCapitalize="words" returnKeyType="done" />
+      <Text style={styles.note}>* Champs obligatoires</Text>
+    </>
+  );
+}
+
+export const B2B_COMPANY_REGISTRATION_STEPS: CompanyStep[] = [
+  {
+    progress: 25,
+    title: "Coordonnées Entreprise",
+    subtitle: "Indiquez le numéro SIRET de votre entreprise",
+    fields: ["siret", "companyName"],
+    render: () => <EntrepriseFields />,
+  },
+  {
+    progress: 50,
+    title: "Votre compte",
+    subtitle: "Informations relative à votre compte utilisateur",
+    fields: ["email", "password"],
+    render: () => <AccountFields />,
+  },
+  {
+    progress: 75,
+    title: "Vos coordonnées",
+    subtitle: "Informations relative à votre compte utilisateur",
+    fields: ["nom", "prenom", "telephone", "departement", "ville"],
+    render: () => <CoordonneesFields />,
+  },
+];
+
+const styles = StyleSheet.create({
+  note: { fontSize: 12, color: tokens.colors.muted },
+});

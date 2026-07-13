@@ -7,31 +7,22 @@ import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
 import PhotoPicker from "@/components/form/PhotoPicker";
 import { DEPARTMENTS, isNord, isSud } from "@/constants/departments";
+import {
+  COUNT_OPTIONS,
+  ETAT_OPTIONS,
+  MATERIEL_OPTIONS,
+  OUI_NON,
+  RESULTAT_CT_OPTIONS,
+} from "@/constants/vehicle";
+import { digitsOnly } from "@/lib/forms/transforms";
 import type { StepConfig } from "@/lib/forms/useStepForm";
 import { tokens } from "@/theme/tokens";
 import type { B2cSubmissionForm } from "./schema";
 
 export type B2cStep = StepConfig<B2cSubmissionForm> & { render: () => ReactNode };
 
-const COUNT_OPTIONS = ["0", "1", "2", "3", "4"];
-const OUI_NON = ["oui", "non"];
-const ETAT_OPTIONS = [
-  "Bon état",
-  "En Panne",
-  "Fort kilométrage",
-  "Refus au Contrôle Technique",
-  "Mauvais Etat",
-  "Accidenté",
-];
-const RESULTAT_CT_OPTIONS = ["Favorable", "Défavorable"];
-const MATERIEL_OPTIONS = ["J'ai la batterie", "J'ai le chargeur"];
 const NON_GAGE_URL =
   "https://siv.interieur.gouv.fr/map-usg-ui/do/accueil_certificat";
-
-const digitsOnly = (max?: number) => (text: string) => {
-  const digits = text.replace(/\D/g, "");
-  return max ? digits.slice(0, max) : digits;
-};
 
 // ─── step field layouts ──────────────────────────────────────────────────────
 
