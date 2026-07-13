@@ -3,7 +3,7 @@
  * data so both roles and the pending-gate are previewable without registration
  * (Slice 4). Run with `npm run seed` while the emulators are running.
  */
-import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 

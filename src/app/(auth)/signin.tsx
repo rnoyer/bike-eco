@@ -83,8 +83,8 @@ const styles = StyleSheet.create({
     }),
   },
   title: { ...tokens.text.title, textAlign: "center" },
-  error: { fontSize: 14, color: tokens.colors.danger, textAlign: "center" },
-  notice: { fontSize: 14, color: tokens.colors.primary, textAlign: "center" },
+  error: { ...tokens.text.subtitle, textAlign: "center", color: tokens.colors.danger },
+  notice: { ...tokens.text.subtitle, textAlign: "center", color: tokens.colors.primary },
   registerLink: {
     fontSize: 14, color: tokens.colors.primary, textAlign: "center",
     textDecorationLine: "underline",

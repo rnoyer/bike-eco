@@ -22,7 +22,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (route === "signin") {
       if (!inAuthGroup && !isPublic) router.replace("/(auth)/signin");
     } else if (route === "pending") {
-      router.replace("/(auth)/pending");
+      if (segments[1] !== "pending") router.replace("/(auth)/pending");
     } else if (route === "b2b") {
       if (inAuthGroup) router.replace("/(b2b)/(tabs)/dashboard");
     } else if (route === "backoffice") {

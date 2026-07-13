@@ -52,6 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (gen !== generation) return;
       const claims = parseClaims(token.claims as Record<string, unknown>);
       const profile = (snap.data() as AppUser | undefined) ?? null;
+      // No users/{uid} profile doc yet (e.g. mid-registration) → session stays null,
+      // which currently routes to sign-in via resolveAuthRoute. The Google/registration
+      // slice should instead route a claimless/profileless authenticated user to the
+      // pending gate; deferred to that slice, not changed here.
       setSession(profile ? buildSessionUser(user.uid, claims, profile) : null);
       setLoading(false);
     });

@@ -39,5 +39,5 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.lg, backgroundColor: tokens.colors.surface,
   },
   title: { ...tokens.text.title, textAlign: "center" },
-  body: { fontSize: 14, color: tokens.colors.muted, textAlign: "center", lineHeight: 20 },
+  body: { ...tokens.text.subtitle, textAlign: "center" },
 });

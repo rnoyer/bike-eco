@@ -1,8 +1,4 @@
-/* eslint-disable import/first -- jest.unmock must run before `firebase/firestore` is imported */
-import { afterAll, beforeAll, jest, test } from "@jest/globals";
-
-jest.unmock("firebase/firestore");
-
+import { afterAll, beforeAll, test } from "@jest/globals";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import {
