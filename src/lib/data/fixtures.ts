@@ -5,8 +5,9 @@ import type {
   Dossier,
   Message,
 } from "@/lib/firestore/schema";
+import type { WithId } from "@/lib/firestore/collections";
 
-export type WithId<T> = T & { id: string };
+export type { WithId } from "@/lib/firestore/collections";
 
 const ts = (iso: string) => Timestamp.fromDate(new Date(iso));
 const PHOTO = (seed: string) => `https://picsum.photos/seed/${seed}/800/600`;

@@ -1,10 +1,10 @@
 import { type Href, useRouter } from "expo-router";
+import { useState } from "react";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SignInFields from "@/components/form/SignInFields";
 import PhotoBackground from "@/components/ui/PhotoBackground";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
-import { useSession } from "@/lib/data/useSession";
 import { tokens } from "@/theme/tokens";
 
 const DASHBOARDS: Record<"b2b" | "backoffice", Href> = {
@@ -15,7 +15,9 @@ const DASHBOARDS: Record<"b2b" | "backoffice", Href> = {
 export default function SignInScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { role, setRole } = useSession();
+  // DEV-only dashboard preview toggle. Decoupled from the real session (Task 7
+  // wires real email/password sign-in and its own post-auth navigation).
+  const [role, setRole] = useState<"b2b" | "backoffice">("b2b");
 
   const goToDashboard = () => router.replace(DASHBOARDS[role]);
 

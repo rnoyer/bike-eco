@@ -1,10 +1,13 @@
-import { useState } from "react";
-import type { UserRole, AppUser } from "@/lib/firestore/schema";
-import { MOCK_USERS, type WithId } from "./fixtures";
+import { useAuth } from "@/lib/auth/AuthProvider";
 
-/** Stubbed session. `setRole` flips identity so both groups are previewable. */
+/** Real session, backed by Firebase Auth custom claims + the users/{uid} doc. */
 export function useSession() {
-  const [role, setRole] = useState<UserRole>("b2b");
-  const user = MOCK_USERS.find((u) => u.role === role) as WithId<AppUser>;
-  return { role, user, setRole };
+  const { session, status, loading, signOut } = useAuth();
+  return {
+    user: session,
+    role: session?.role ?? null,
+    status,
+    loading,
+    signOut,
+  };
 }

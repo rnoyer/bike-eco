@@ -9,6 +9,7 @@ export default function DossierChatScreen({ id }: { id: string }) {
   const { data } = useMessages(id);
   const { user } = useSession();
   const { sendMessage } = useDossierMutations();
+  if (!user) return null;
   return (
     <KeyboardAvoidingView
       style={styles.flex}

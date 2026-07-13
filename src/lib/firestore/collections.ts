@@ -15,6 +15,9 @@ import type {
   Message,
 } from "./schema";
 
+/** A Firestore document paired with its id (docs don't carry their own id). */
+export type WithId<T> = T & { id: string };
+
 export const COLLECTIONS = {
   companies: "companies",
   users: "users",

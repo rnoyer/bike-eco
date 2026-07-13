@@ -17,6 +17,10 @@ class Timestamp {
     return new Timestamp(seconds, nanoseconds);
   }
 
+  static now() {
+    return Timestamp.fromDate(new Date());
+  }
+
   toDate() {
     return new Date(this.seconds * 1000 + this.nanoseconds / 1_000_000);
   }
