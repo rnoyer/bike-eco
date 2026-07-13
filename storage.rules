@@ -1,0 +1,9 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Slice 3 opens dossier photo/attachment paths; everything is denied for now.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

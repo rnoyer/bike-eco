@@ -38,6 +38,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
     "@react-native/jest-preset": "^0.85.0",
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "^29.5.14",
@@ -58,12 +59,17 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "jest"
+    "test": "jest",
+    "test:rules": "firebase emulators:exec --only firestore --project bike-eco-43a84 \"jest --config jest.rules.config.js --runTestsByPath src/lib/firestore/__tests__/rules.test.ts\""
   },
   "jest": {
     "preset": "jest-expo",
     "setupFilesAfterEnv": [
       "<rootDir>/jest.setup.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/src/lib/firestore/__tests__/rules.test.ts"
     ],
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|firebase|@firebase/.*))"

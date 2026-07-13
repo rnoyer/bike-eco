@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function claims()      { return request.auth.token; }
+    function isSignedIn()  { return request.auth != null; }
+    function isBackoffice(){ return isSignedIn() && claims().role == 'backoffice'; }
+    function isActive()    { return isSignedIn() && claims().status == 'active'; }
+    function myCompany()   { return claims().companyId; }
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isBackoffice());
+      // Owner edits profile fields only; role/companyId/region/status/createdAt
+      // are server-set claims and must never be client-writable.
+      allow update: if request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys()
+             .hasAny(['role', 'companyId', 'region', 'status', 'createdAt']);
+      allow create, delete: if false;
+    }
+
+    match /companies/{companyId} {
+      allow read: if isBackoffice()
+        || (isSignedIn() && myCompany() == companyId);
+      allow write: if false;
+    }
+
+    match /dossiers/{dossierId} {
+      allow read: if isBackoffice()
+        || (isActive() && resource.data.companyId == myCompany());
+      allow create, update, delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isBackoffice()
+          || (isActive() && get(/databases/$(database)/documents/dossiers/$(dossierId))
+                .data.companyId == myCompany());
+        allow write: if false;
+      }
+    }
+
+    match /invitations/{invitationId} {
+      allow read, write: if false;
+    }
+  }
+}
