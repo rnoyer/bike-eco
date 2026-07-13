@@ -1233,7 +1233,8 @@ export default function SignInScreen() {
           <SignInFields onSubmit={handleSignIn} onForgotPassword={handleForgot} />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {notice ? <Text style={styles.notice}>{notice}</Text> : null}
-          <ThirdPartyAuthButtons onError={setError} />
+          {/* Interim no-op; Google is wired into this call site in Task 9. */}
+          <ThirdPartyAuthButtons onPress={() => {}} />
           <Text
             style={styles.registerLink}
             onPress={() => router.push("/(auth)/register")}
@@ -1349,7 +1350,7 @@ git commit -m "feat(auth): sign-out from settings"
 
 **Files:**
 - Create: `src/lib/auth/google.ts`, `src/lib/auth/google.web.ts`
-- Modify: `src/components/ui/ThirdPartyAuthButtons.tsx`, `app.json`, `package.json`
+- Modify: `src/components/ui/ThirdPartyAuthButtons.tsx`, `src/app/(auth)/signin.tsx` (swap the interim `onPress={() => {}}` to `onError={setError}`), `app.json`, `package.json`
 
 **Interfaces:**
 - Consumes: `auth` from `firebaseConfig`; `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`.
@@ -1485,6 +1486,12 @@ const styles = StyleSheet.create({
 });
 ```
 
+- [ ] **Step 5b: Swap the sign-in call site to `onError`**
+
+In `src/app/(auth)/signin.tsx`, replace the interim
+`<ThirdPartyAuthButtons onPress={() => {}} />` with `<ThirdPartyAuthButtons onError={setError} />`
+(`setError` already exists from Task 7). Run `npx tsc --noEmit` to confirm the prop contract lines up.
+
 - [ ] **Step 6: Rebuild the dev client (Manual setup Section C)**
 
 Run: `npx expo prebuild --clean` then `npx expo run:ios` (or `run:android`).
@@ -1501,7 +1508,7 @@ Expected: Firebase Auth shows the Google user; no crash.
 
 ```sh
 npx tsc --noEmit && npm run lint
-git add src/lib/auth/google.ts src/lib/auth/google.web.ts src/components/ui/ThirdPartyAuthButtons.tsx app.json package.json package-lock.json
+git add src/lib/auth/google.ts src/lib/auth/google.web.ts src/components/ui/ThirdPartyAuthButtons.tsx "src/app/(auth)/signin.tsx" app.json package.json package-lock.json
 git commit -m "feat(auth): Google sign-in (native + web), Apple/Facebook deferred"
 ```
 
