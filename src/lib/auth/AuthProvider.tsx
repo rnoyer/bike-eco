@@ -23,6 +23,8 @@ interface AuthState {
   session: SessionUser | null;
   status: UserStatus | null;
   loading: boolean;
+  /** True until auth resolves for the first time; false forever after. */
+  initializing: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -32,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [session, setSession] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
     let generation = 0;
@@ -41,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!user) {
         setSession(null);
         setLoading(false);
+        setInitializing(false);
         return;
       }
       setLoading(true);
@@ -58,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // pending gate; deferred to that slice, not changed here.
       setSession(profile ? buildSessionUser(user.uid, claims, profile) : null);
       setLoading(false);
+      setInitializing(false);
     });
   }, []);
 
@@ -67,9 +72,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       status: session?.status ?? null,
       loading,
+      initializing,
       signOut: () => fbSignOut(auth),
     }),
-    [firebaseUser, session, loading],
+    [firebaseUser, session, loading, initializing],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

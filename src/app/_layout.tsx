@@ -3,34 +3,30 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
-import { resolveAuthRoute } from "@/lib/auth/routeGuard";
-
-const PUBLIC_SEGMENTS = new Set(["index", "b2cSubmissionForm"]);
+import { redirectFor, resolveAuthRoute } from "@/lib/auth/routeGuard";
 
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { loading, session, status } = useAuth();
+  const { loading, initializing, session, status } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     if (loading) return;
-    const route = resolveAuthRoute({ loading, role: session?.role ?? null, status });
-    const top = segments[0] ?? "index";
-    const inAuthGroup = top === "(auth)";
-    const isPublic = PUBLIC_SEGMENTS.has(top);
-
-    if (route === "signin") {
-      if (!inAuthGroup && !isPublic) router.replace("/(auth)/signin");
-    } else if (route === "pending") {
-      if (segments[1] !== "pending") router.replace("/(auth)/pending");
-    } else if (route === "b2b") {
-      if (inAuthGroup) router.replace("/(b2b)/(tabs)/dashboard");
-    } else if (route === "backoffice") {
-      if (inAuthGroup) router.replace("/(backoffice)/(tabs)/dashboard");
-    }
+    const route = resolveAuthRoute({
+      loading,
+      role: session?.role ?? null,
+      status,
+    });
+    const target = redirectFor(route, segments);
+    if (target) router.replace(target);
   }, [loading, session, status, segments, router]);
 
-  if (loading) {
+  // Splash only until auth first resolves. We intentionally do NOT unmount the
+  // navigator on later `loading` flips (a token refresh re-sets loading=true) —
+  // unmounting <Stack> resets the router to its initial route (index) and would
+  // strand a just-signed-in user there. `initializing` latches false after the
+  // first resolution and never flips back.
+  if (initializing) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator />
