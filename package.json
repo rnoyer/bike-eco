@@ -46,10 +46,12 @@
     "eslint": "^9.0.0",
     "eslint-config-expo": "~56.0.4",
     "expo-mcp": "~0.2.1",
+    "firebase-admin": "^14.1.0",
     "jest": "^29.7.0",
     "jest-expo": "^56.0.5",
     "react-test-renderer": "19.2.3",
     "test-renderer": "^1.2.0",
+    "tsx": "^4.23.1",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -60,7 +62,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
-    "test:rules": "firebase emulators:exec --only firestore --project bike-eco-43a84 \"jest --config jest.rules.config.js --runTestsByPath src/lib/firestore/__tests__/rules.test.ts\""
+    "test:rules": "firebase emulators:exec --only firestore --project bike-eco-43a84 \"jest --config jest.rules.config.js --runTestsByPath src/lib/firestore/__tests__/rules.test.ts\"",
+    "seed": "FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 tsx scripts/seed.ts"
   },
   "jest": {
     "preset": "jest-expo",
