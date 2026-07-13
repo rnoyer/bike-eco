@@ -3,8 +3,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function claims()      { return request.auth.token; }
     function isSignedIn()  { return request.auth != null; }
-    function isBackoffice(){ return isSignedIn() && claims().role == 'backoffice'; }
     function isActive()    { return isSignedIn() && claims().status == 'active'; }
+    function isBackoffice(){ return isActive() && claims().role == 'backoffice'; }
     function myCompany()   { return claims().companyId; }
 
     match /users/{uid} {
