@@ -34,7 +34,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let generation = 0;
     return onAuthStateChanged(auth, async (user) => {
+      const gen = ++generation;
       setFirebaseUser(user);
       if (!user) {
         setSession(null);
@@ -46,6 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user.getIdTokenResult(true),
         getDoc(userDoc(user.uid)),
       ]);
+      // A newer auth event superseded this one while we awaited — drop this result.
+      if (gen !== generation) return;
       const claims = parseClaims(token.claims as Record<string, unknown>);
       const profile = (snap.data() as AppUser | undefined) ?? null;
       setSession(profile ? buildSessionUser(user.uid, claims, profile) : null);
