@@ -1,7 +1,9 @@
 /**
  * Manual Jest mock for firebase/firestore.
  * Provides a lightweight Timestamp class compatible with the real API surface
- * used in fixtures (Timestamp.fromDate, seconds/nanoseconds).
+ * used in fixtures (Timestamp.fromDate, seconds/nanoseconds), plus no-op
+ * stubs for the init/emulator functions `firebase.core.ts` calls at import
+ * time so requiring it in tests doesn't need a live Firestore instance.
  */
 class Timestamp {
   constructor(seconds, nanoseconds) {
@@ -24,4 +26,8 @@ class Timestamp {
   }
 }
 
-module.exports = { Timestamp };
+module.exports = {
+  Timestamp,
+  getFirestore: () => ({}),
+  connectFirestoreEmulator: () => {},
+};

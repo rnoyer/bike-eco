@@ -1,20 +1,31 @@
-import { getApp, getApps, initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  connectAuthEmulator,
+  getReactNativePersistence,
+  initializeAuth,
+} from "firebase/auth";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyChXe-cQ1N3jMXI88vKMDlZj22Ep-PKjF4",
-  authDomain: "bike-eco-43a84.firebaseapp.com",
-  projectId: "bike-eco-43a84",
-  storageBucket: "bike-eco-43a84.firebasestorage.app",
-  messagingSenderId: "585450098034",
-  appId: "1:585450098034:web:a460a8347bb5251d18a1eb"
-};
+import {
+  app,
+  connectDataEmulators,
+  db,
+  emulatorHost,
+  storage,
+  USE_EMULATORS,
+} from "./firebase.core";
 
-// Reuse the existing app instance across Fast Refresh / re-imports.
-export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+// React Native has no browser storage; persist the session via AsyncStorage so
+// users stay signed in across reloads. `initializeAuth` (not `getAuth`) is
+// required to inject the persistence layer on native.
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage),
+});
 
-/** App data lives in the named `bike-eco-db` database, not `(default)`. */
-export const db = getFirestore(app, "bike-eco-db");
+if (USE_EMULATORS) {
+  connectAuthEmulator(auth, `http://${emulatorHost()}:9099`, {
+    disableWarnings: true,
+  });
+  connectDataEmulators();
+}
 
-export const storage = getStorage(app);
+export { app, db, storage };
