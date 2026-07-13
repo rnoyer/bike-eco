@@ -17,9 +17,10 @@ interface Props {
   role: UserRole;
   onInvite: () => void;
   onDelete: () => void;
+  onSignOut: () => void;
 }
 
-export default function SettingsList({ role, onInvite, onDelete }: Props) {
+export default function SettingsList({ role, onInvite, onDelete, onSignOut }: Props) {
   const { region, setRegion } = useRegionFilter();
   const currentLabel =
     REGION_OPTIONS.find((o) => o.value === fromRegion(region))?.label ?? null;
@@ -43,6 +44,7 @@ export default function SettingsList({ role, onInvite, onDelete }: Props) {
         onPress={onInvite}
       />
       <Button variant="text" label="Supprimer son compte" onPress={onDelete} />
+      <Button variant="text" label="Se déconnecter" onPress={onSignOut} />
     </View>
   );
 }
