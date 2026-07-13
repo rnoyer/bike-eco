@@ -12,6 +12,18 @@ This page to manage status and store the negociated price.
 
 From top to bottom :
 
+label : "Région attribuée"
+Placeholder : none
+default value : the dossier's current region — "Nord" (NORTH) or "Sud" (SOUTH)
+type : dropdown
+
+- "Nord"
+- "Sud"
+
+A Bike-eco team member can reassign the dossier to the other region here. On
+"Mettre à jour" the dossier's `region` is updated accordingly (which moves it
+between the region-filtered dossier lists on the back-office dashboard).
+
 label : "Statut du dossier"
 Placeholder : none
 default value : "a traiter"
@@ -28,7 +40,7 @@ type : dropdown
   unit : "€"
   mandatory : no
 
-  Primary Button : "Mettre à jour", update dossier statut and negociated price
+  Primary Button : "Mettre à jour", update dossier region, statut and negociated price
 
 ## Tab bar props
 

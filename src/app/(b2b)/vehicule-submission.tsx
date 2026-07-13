@@ -1,7 +1,7 @@
 import { Stack, useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { Alert } from "react-native";
 import { FormProvider } from "react-hook-form";
+import { Alert } from "react-native";
 
 import FormConfirmation from "@/components/form/FormConfirmation";
 import FormLayout from "@/components/form/FormLayout";
@@ -33,7 +33,7 @@ export default function B2bVehiculeSubmission() {
         } catch (err) {
           Alert.alert(
             "Envoi impossible",
-            err instanceof Error ? err.message : "Veuillez réessayer."
+            err instanceof Error ? err.message : "Veuillez réessayer.",
           );
         } finally {
           submitting.current = false;
@@ -57,7 +57,7 @@ export default function B2bVehiculeSubmission() {
         <Stack.Screen options={{ headerShown: false }} />
         <FormConfirmation
           title="Demande envoyée !"
-          message="Un email récapitulatif va vous parvenir. Vous serez recontacté très prochainement par notre équipe."
+          message="Un email récapitulatif va vous parvenir. Vous pouvez suivre l'avancement du dossier et contacter notre équipe, depuis le tableau de bord."
           buttonLabel="Retour au tableau de bord"
           onDone={goToDashboard}
         />

@@ -9,7 +9,7 @@ export default function BackofficeDossierManagement() {
   const { id } = useGlobalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data, loading } = useDossier(id);
-  const { updateStatusAndPrice } = useDossierMutations();
+  const { updateManagement } = useDossierMutations();
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -17,11 +17,12 @@ export default function BackofficeDossierManagement() {
         <ActivityIndicator style={styles.spinner} color={tokens.colors.primary} />
       ) : (
         <DossierManagementForm
+          initialRegion={data.region}
           initialStatus={data.status}
           initialPrice={data.negotiatedPrice}
-          onSubmit={async (status, price) => {
+          onSubmit={async (region, status, price) => {
             try {
-              await updateStatusAndPrice(id, status, price);
+              await updateManagement(id, region, status, price);
               router.replace("/(backoffice)/confirmation");
             } catch {
               Alert.alert(
