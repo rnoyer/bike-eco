@@ -33,7 +33,7 @@ These require Firebase/Google console access, secret files, and a native rebuild
 3. Enable **Google** (pick a support email). Leave it enabled — Task 9 uses it, verified live.
 
 ### B. Google OAuth config files & client IDs _(before Task 9)_
-1. Firebase console → **Project settings → Your apps**. Ensure an **Android app** (`com.rnoyer.bikeeco`) and an **iOS app** (`com.rnoyer.bikeeco`) exist; create them if missing.
+1. Firebase console → **Project settings → Your apps**. Ensure an **Android app** (`com.bikeeco.app`) and an **iOS app** (`com.bikeeco.app`) exist; create them if missing. This identifier must match `expo.android.package` / `expo.ios.bundleIdentifier` in `app.json` exactly — Gradle's Google Services plugin fails the build ("No matching client found for package name") when it doesn't.
 2. **Android:** add your debug + release **SHA-1** fingerprints (Project settings → Android app → "Add fingerprint"). Get debug SHA-1 with:
    ```sh
    keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
@@ -1374,8 +1374,8 @@ In `expo.plugins`, add:
 ```
 Also add, at the `expo.ios` / `expo.android` level:
 ```json
-"ios": { "googleServicesFile": "./GoogleService-Info.plist", "bundleIdentifier": "com.rnoyer.bikeeco" },
-"android": { "googleServicesFile": "./google-services.json", "package": "com.rnoyer.bikeeco", … }
+"ios": { "googleServicesFile": "./GoogleService-Info.plist", "bundleIdentifier": "com.bikeeco.app" },
+"android": { "googleServicesFile": "./google-services.json", "package": "com.bikeeco.app", … }
 ```
 (Keep the existing icon config; only add the `googleServicesFile` keys.)
 

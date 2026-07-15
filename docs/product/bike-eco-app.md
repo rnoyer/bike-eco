@@ -1,3 +1,5 @@
+claude --resume a8a89977-82ec-4388-9581-ddd16e879f43
+
 ## Bike-eco app paths.
 
 Bike-eco app has three distinct paths.
