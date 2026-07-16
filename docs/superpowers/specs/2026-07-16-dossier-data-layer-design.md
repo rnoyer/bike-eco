@@ -53,6 +53,8 @@ working before writes land on top.
 | 6 | Storage path | **Keyed by `companyId`** so rules decide from claims with no cross-service read. |
 | 7 | Write path | **Direct client writes + narrow rules.** Cloud Functions stay scoped to slice 4 (registration). |
 | 8 | Thumbnails | **Client-side downscale** at upload via `expo-image-manipulator`. |
+| 9 | Failed uploads | **Cleaned up client-side** in a `catch`; `allow delete` scoped to the same principals as `write`. Orphans are not kept. |
+| 10 | Photo access control | **None needed** — owner-confirmed there is no privacy issue with dossier photos. |
 
 ### On Decision 4 (client-set region)
 
@@ -136,9 +138,18 @@ walkthrough — see Testing.
 2. Downscale photo 0 → thumbnail; upload it and every full photo under that id.
 3. `setDoc(ref, payload)` **last**, with `photos` and `thumbnailUrl` resolved.
 
-The document is written last so a failed upload leaves no dossier. The cost is
-orphaned Storage objects, which is preferable to a dossier pointing at photos that
-do not exist. Orphan cleanup is out of scope (see below).
+The document is written last so a failed upload can never leave a dossier pointing at
+photos that do not exist.
+
+**Failed uploads clean up after themselves.** Any upload that succeeded before the
+failure is deleted in a `catch` before the error is re-thrown; the submission leaves
+nothing behind. Objects orphaned by a failed submission have no use-case and are not
+kept.
+
+This is best-effort by nature: it covers a failed upload, a cancelled submission, or
+a permission error, but not the app being killed or losing the network outright
+mid-upload, where the `catch` never runs. That residue is rare enough to leave to a
+future scheduled sweep (see Out of scope) rather than build one now.
 
 **Storage layout** — keyed by company, so rules read claims only:
 
@@ -220,18 +231,36 @@ with no access to `firestore.rules`' helpers, so `claims()`/`isActive()`/
 
 ```
 match /dossiers/{companyId}/{dossierId}/{allPaths=**} {
-  allow read:  if isActive() && (isBackoffice() || claims().companyId == companyId);
-  allow write: if isActive() && (isBackoffice() || claims().companyId == companyId)
+  function canAccess() {
+    return isActive() && (isBackoffice() || claims().companyId == companyId);
+  }
+  allow read: if canAccess();
+  allow write: if canAccess()
     && request.resource.size < 10 * 1024 * 1024
     && request.resource.contentType.matches('image/.*|application/pdf');
-  allow delete: if false;
+  allow delete: if canAccess();
 }
 ```
 
-**Known, accepted:** `getDownloadURL` returns a tokenized URL that bypasses these
-read rules, and `schema.ts` already specifies `photos: string[] // Storage download
-URLs`. Anyone holding a URL can fetch the object. The schema is unchanged here; this
-is recorded so it is a decision rather than a surprise.
+**On `allow delete`.** Delete is granted to the same principals as `write`, which is
+what makes the cleanup above possible. It grants no new power: Storage `write`
+already covers overwriting an existing object, and clients control `metadata` (so a
+download token can be preserved across an overwrite). Anyone who can upload to a
+path can therefore already replace what is there — denying delete would block
+cleanup while blocking no attack. Genuinely immutable photos would require
+server-mediated uploads (signed URLs from a Cloud Function), which is not warranted
+here: the only reachable target is a company's own dossiers.
+
+The narrower guard — "allow delete only while no dossier document exists yet" — is
+**not available**: Storage rules can read Firestore via `firestore.get()`, but only
+from the `(default)` database, and app data lives in the named `bike-eco-db`.
+
+**Download URLs bypass the read rule — accepted, no privacy issue.** `getDownloadURL`
+returns a tokenized URL fetchable by anyone holding it, and `schema.ts` already
+specifies `photos: string[] // Storage download URLs`. Confirmed with the owner
+(2026-07-16) that dossier photos need no access control, so the schema stands and the
+`read` rule above is defence-in-depth for path-based access rather than the real
+boundary.
 
 ### Error handling
 
@@ -264,7 +293,12 @@ Cases: create pinned to claims; create rejected for another company / with a
 seeded `negotiatedPrice` / with `status != 'a_traiter'`; update field allow-list;
 b2b update rejected; message create as each role; cross-company message denied;
 Storage write allowed in own company path, denied in another's, denied over-size,
-denied on a disallowed content type.
+denied on a disallowed content type; Storage delete allowed in own company path
+(the cleanup path) and denied in another's.
+
+The failed-submission cleanup is covered by an emulator test that stubs the final
+`setDoc` into failure and asserts nothing remains under the dossier's Storage
+prefix — the behaviour that matters is "no orphans", not the call sequence.
 
 **Hooks** get an emulator walkthrough rather than mock-heavy unit tests; mocking
 `onSnapshot` would assert the mock, not the query.
@@ -279,7 +313,9 @@ is exercisable by hand.
 - **Registration Cloud Functions**, `submit*Registration`, `invite` — slice 4.
   `useInvite` stays stubbed.
 - **Apple & Facebook** providers.
-- **Orphaned Storage cleanup** for failed submissions — needs a scheduled function.
+- **Scheduled sweep for orphaned Storage objects.** Failed submissions now clean up
+  after themselves (see Phase B), so the only residue is an app killed mid-upload.
+  Revisit only if that ever shows up in the Storage bill.
 - **Pagination** of closed dossiers — no spec calls for it; revisit when real volume exists.
 - **Offline write queueing** beyond what the Firestore SDK does by default.
 - **`lastMessageAt` / `assignedTo`** — deleted, per Decision 5.
