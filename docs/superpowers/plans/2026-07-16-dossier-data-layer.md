@@ -21,6 +21,8 @@
 - **Expo SDK 56 APIs only.** `ImageManipulator.manipulateAsync` is **deprecated** — use `ImageManipulator.manipulate(uri)` → `.resize()` → `renderAsync()` → `saveAsync()`. Verify anything else at https://docs.expo.dev/versions/v56.0.0/.
 - **Pure logic under test MUST NOT import `firebaseConfig` or `@/lib/firestore/collections`.** The `jest-expo` config maps `firebase/firestore` to `__mocks__/firebase/firestore.js`, which exports **only** `Timestamp`, `getFirestore`, `connectFirestoreEmulator`. Anything importing `collection`/`doc`/`onSnapshot` at module scope crashes under the main test config. `import type` is erased and always safe.
 - Rules tests run under `jest.rules.config.js` (node env, real SDK), never the `jest-expo` preset.
+- **Do NOT leave an emulator running while running `npm run test:rules`.** It uses `firebase emulators:exec`, which starts and stops its own Firestore + Storage emulators; a long-running one on 8080/9199 collides with it. `emulators:start` is only for the Tasks 5/13 walkthroughs.
+- **Java version (verified 2026-07-16): this machine has JDK 17; `firebase-tools@latest` emulators want JDK 21.** Slice 1 found the Firestore-only emulator works on 17 but the **Auth** emulator does not. Whether the **Storage** emulator (new in this plan's `test:rules`) works on 17 is **unverified** — if Task 7 Step 6 fails with a Java error, do NOT redesign the tests: install a local JDK 21 (e.g. Temurin into the scratchpad) and set `JAVA_HOME` for that command, or fall back to `npx firebase-tools@13`. Report it either way so this line can be corrected.
 - Département→region helpers are `isNord` / `isSud` (French names) in `src/constants/departments.ts`.
 - **Out of scope:** `invite` and registration Cloud Functions (slice 4 — `useInvite` stays stubbed); Google sign-in (slice 1 Task 9, owner-blocked); Apple/Facebook; a scheduled sweep for orphans.
 
@@ -279,29 +281,26 @@ import { mapDataError } from "./dataErrors";
  * France); it has no meaning for b2b, whose dossiers are company-scoped.
  */
 export function useDossiers(statuses: DossierStatus[], region?: Region | null) {
-  const { session, loading: authLoading } = useAuth();
-  const [data, setData] = useState<WithId<Dossier>[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+  const { session } = useAuth();
   const role = session?.role ?? null;
   const companyId = session?.companyId ?? null;
-  // `statuses` is a fresh array on every render; key the effect on its contents.
-  const key = statuses.join(",") + "|" + (region ?? "ALL");
+
+  // Identity of the query being observed. `statuses` is a fresh array on every
+  // render, so key on its contents; role/companyId change the query too.
+  const key = `${statuses.join(",")}|${region ?? "ALL"}|${role ?? ""}|${companyId ?? ""}`;
+
+  const [resolved, setResolved] = useState<{
+    key: string;
+    data: WithId<Dossier>[];
+    error: string | null;
+  } | null>(null);
 
   useEffect(() => {
-    if (authLoading || !role) {
-      setLoading(true);
-      return;
-    }
-    // A b2b user with no company cannot form a legal query; show nothing.
-    if (role === "b2b" && !companyId) {
-      setData([]);
-      setLoading(false);
-      return;
-    }
+    if (!role) return;
+    // A b2b user with no company cannot form a legal query; `noCompany` below
+    // resolves them to empty rather than leaving them to spin.
+    if (role === "b2b" && !companyId) return;
 
-    setLoading(true);
     const constraints: QueryConstraint[] =
       role === "b2b"
         ? [where("companyId", "==", companyId), where("status", "in", statuses)]
@@ -311,23 +310,38 @@ export function useDossiers(statuses: DossierStatus[], region?: Region | null) {
 
     return onSnapshot(
       query(dossiersRef, ...constraints, orderBy("createdAt")),
-      (snap) => {
-        setData(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
-        setError(null);
-        setLoading(false);
-      },
-      (err: FirestoreError) => {
-        setError(mapDataError(err.code));
-        setData([]);
-        setLoading(false);
-      },
+      (snap) =>
+        setResolved({
+          key,
+          data: snap.docs.map((d) => ({ ...d.data(), id: d.id })),
+          error: null,
+        }),
+      (err: FirestoreError) =>
+        setResolved({ key, data: [], error: mapDataError(err.code) }),
     );
     // `statuses` and `region` are captured by `key`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, role, companyId, key]);
+  }, [role, companyId, key]);
 
-  return { data, loading, error };
+  const noCompany = role === "b2b" && !companyId;
+  const loading = !noCompany && resolved?.key !== key;
+
+  return {
+    data: loading || noCompany ? [] : resolved!.data,
+    loading,
+    error: loading || noCompany ? null : resolved!.error,
+  };
 }
+```
+
+> **Two constraints shape this, do not "simplify" them away.**
+> 1. `loading` is **derived** from a resolved-key, never `setState`-ed inside the
+>    effect body. `expo lint` (React Compiler) flags synchronous setState-in-effect;
+>    setState inside the async `onSnapshot` callbacks is fine. This is why the stub
+>    it replaces used the same resolved-key shape.
+> 2. The effect gates on `role`, **not** on `useAuth().loading`. That flag flips
+>    true on every token refresh, which would tear down and rebuild every listener
+>    and flash the dashboard. Session presence is the real precondition.
 ```
 
 - [ ] **Step 3: Declare the composite indexes**
@@ -411,33 +425,37 @@ import { mapDataError } from "./dataErrors";
 
 /** Live single dossier. Stays loading for an empty id (route params resolve late). */
 export function useDossier(id: string) {
-  const { loading: authLoading } = useAuth();
-  const [data, setData] = useState<WithId<Dossier> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { session } = useAuth();
+  const [resolved, setResolved] = useState<{
+    key: string;
+    data: WithId<Dossier> | null;
+    error: string | null;
+  } | null>(null);
 
   useEffect(() => {
-    if (authLoading || !id) {
-      setLoading(true);
-      return;
-    }
-    setLoading(true);
+    if (!session || !id) return;
     return onSnapshot(
       dossierDoc(id),
-      (snap) => {
-        setData(snap.exists() ? { ...snap.data(), id: snap.id } : null);
-        setError(null);
-        setLoading(false);
-      },
-      (err: FirestoreError) => {
-        setError(mapDataError(err.code));
-        setData(null);
-        setLoading(false);
-      },
+      (snap) =>
+        setResolved({
+          key: id,
+          data: snap.exists() ? { ...snap.data(), id: snap.id } : null,
+          error: null,
+        }),
+      (err: FirestoreError) =>
+        setResolved({ key: id, data: null, error: mapDataError(err.code) }),
     );
-  }, [authLoading, id]);
+  }, [session, id]);
 
-  return { data, loading, error };
+  // Guard the empty-id case: `undefined !== undefined` is false, which would
+  // otherwise mark a missing id as "loaded" and dereference the null state.
+  const loading = !id || resolved?.key !== id;
+
+  return {
+    data: loading ? null : resolved!.data,
+    loading,
+    error: loading ? null : resolved!.error,
+  };
 }
 ```
 
@@ -460,33 +478,35 @@ import { mapDataError } from "./dataErrors";
 
 /** Live chat thread for a dossier, oldest first. */
 export function useMessages(dossierId: string) {
-  const { loading: authLoading } = useAuth();
-  const [data, setData] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { session } = useAuth();
+  const [resolved, setResolved] = useState<{
+    key: string;
+    data: Message[];
+    error: string | null;
+  } | null>(null);
 
   useEffect(() => {
-    if (authLoading || !dossierId) {
-      setLoading(true);
-      return;
-    }
-    setLoading(true);
+    if (!session || !dossierId) return;
     return onSnapshot(
       query(messagesRef(dossierId), orderBy("createdAt")),
-      (snap) => {
-        setData(snap.docs.map((d) => d.data()));
-        setError(null);
-        setLoading(false);
-      },
-      (err: FirestoreError) => {
-        setError(mapDataError(err.code));
-        setData([]);
-        setLoading(false);
-      },
+      (snap) =>
+        setResolved({
+          key: dossierId,
+          data: snap.docs.map((d) => d.data()),
+          error: null,
+        }),
+      (err: FirestoreError) =>
+        setResolved({ key: dossierId, data: [], error: mapDataError(err.code) }),
     );
-  }, [authLoading, dossierId]);
+  }, [session, dossierId]);
 
-  return { data, loading, error };
+  const loading = !dossierId || resolved?.key !== dossierId;
+
+  return {
+    data: loading ? [] : resolved!.data,
+    loading,
+    error: loading ? null : resolved!.error,
+  };
 }
 ```
 
