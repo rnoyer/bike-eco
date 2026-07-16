@@ -342,7 +342,6 @@ export function useDossiers(statuses: DossierStatus[], region?: Region | null) {
 > 2. The effect gates on `role`, **not** on `useAuth().loading`. That flag flips
 >    true on every token refresh, which would tear down and rebuild every listener
 >    and flash the dashboard. Session presence is the real precondition.
-```
 
 - [ ] **Step 3: Declare the composite indexes**
 
