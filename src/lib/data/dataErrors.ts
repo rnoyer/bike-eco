@@ -8,12 +8,9 @@ const MESSAGES: Record<string, string> = {
   "permission-denied": "Vous n'avez pas accès à ce dossier.",
   "not-found": "Ce dossier n'existe plus.",
   unavailable: "Connexion impossible. Vérifiez votre réseau.",
-  cancelled: "Opération annulée.",
   // Storage
   "storage/unauthorized": "Vous n'avez pas accès à ce fichier.",
   "storage/retry-limit-exceeded": "Connexion impossible. Vérifiez votre réseau.",
-  "storage/canceled": "Envoi annulé.",
-  "storage/quota-exceeded": "Espace de stockage insuffisant.",
 };
 
 /** Map a Firestore/Storage error code to French user copy. */
