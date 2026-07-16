@@ -17,8 +17,17 @@
  */
 module.exports = {
   rootDir: __dirname,
+  // Restrict Jest's haste/mock crawl to `src`. The project root also holds
+  // `__mocks__/firebase/firestore.js` (a manual mock for the jest-expo main
+  // suite); Jest auto-applies manual mocks of node_modules found under `roots`
+  // to EVERY config that shares that root, which would silently replace the
+  // real `firebase/firestore` these rules tests need to talk to the emulator.
+  roots: ["<rootDir>/src"],
   testEnvironment: "node",
-  testMatch: ["<rootDir>/src/lib/firestore/__tests__/rules.test.ts"],
+  testMatch: [
+    "<rootDir>/src/lib/firestore/__tests__/rules.test.ts",
+    "<rootDir>/src/lib/firestore/__tests__/storageRules.test.ts",
+  ],
   transform: {
     "^.+\\.tsx?$": ["babel-jest", { presets: ["babel-preset-expo"] }],
   },

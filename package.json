@@ -64,7 +64,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
-    "test:rules": "firebase emulators:exec --only firestore --project bike-eco-43a84 \"jest --config jest.rules.config.js --runTestsByPath src/lib/firestore/__tests__/rules.test.ts\"",
+    "test:rules": "firebase emulators:exec --only firestore,storage --project bike-eco-43a84 \"jest --config jest.rules.config.js\"",
     "seed": "FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 tsx scripts/seed.ts"
   },
   "jest": {
@@ -74,7 +74,8 @@
     ],
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "<rootDir>/src/lib/firestore/__tests__/rules.test.ts"
+      "<rootDir>/src/lib/firestore/__tests__/rules.test.ts",
+      "<rootDir>/src/lib/firestore/__tests__/storageRules.test.ts"
     ],
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|firebase|@firebase/.*))"
