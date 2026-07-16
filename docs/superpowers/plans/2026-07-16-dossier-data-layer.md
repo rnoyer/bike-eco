@@ -563,18 +563,43 @@ Expected: three sections ("à traiter" / "en cours" / "clos") across all compani
 With the b2b dashboard open, edit a dossier's `status` directly in the Emulator UI (Firestore tab).
 Expected: the card moves between sections **without touching the app** — proving a listener, not a fetch.
 
-- [ ] **Step 7: Check for missing-index errors**
+- [ ] **Step 7: Understand what this walkthrough does NOT prove**
 
-Watch the Metro console throughout.
-Expected: no `FAILED_PRECONDITION: The query requires an index` errors. If one appears, the emulator prints the required index — add it to `firestore.indexes.json`, then re-run this task.
+**The emulator does not enforce composite indexes.** It serves any valid query and
+never raises `FAILED_PRECONDITION`, so a green walkthrough is **no evidence** that
+`firestore.indexes.json` is correct or complete. Only a real Firestore instance can
+tell you that — in production, a query missing an index fails with an error carrying
+a create-index link.
 
-- [ ] **Step 8: Commit any index fix**
+Do **not** add an "check for index errors" step here; it would report success
+regardless. The Task 3 indexes are correct by construction (equality fields —
+including `in` — precede the `orderBy` field), and are verified for real in Step 8.
+
+- [ ] **Step 8: Deploy the indexes and verify against the live project (owner)**
+
+This step deploys to the real project, so it needs the owner's go-ahead — it is the
+only way to prove the index config. Rules are deployed alongside, since the live
+database currently has none.
+
+```sh
+npx -y firebase-tools@latest deploy --only firestore:indexes --project bike-eco-43a84
+```
+Expected: the three `dossiers` indexes are created (building may take a few minutes
+on a populated collection; it is instant on an empty one).
+
+Then run the app **without** `EXPO_PUBLIC_USE_EMULATORS` against the live project and
+open both dashboards. Expected: no `FAILED_PRECONDITION: The query requires an index`
+in the Metro console. If one appears, it carries a create-index link — add the
+matching entry to `firestore.indexes.json`, redeploy, and commit:
 
 ```sh
 git add firestore.indexes.json
-git commit -m "fix(data): add missing composite index found in the Phase A walkthrough"
+git commit -m "fix(data): add composite index required by the live dossier queries"
 ```
-(Skip if Step 7 was clean.)
+
+> **Deferring this is legitimate** — nothing else in the plan depends on it, and the
+> emulator path stays green without it. But it must happen before any real user hits
+> a dashboard, or every dossier query fails. If deferred, keep it on the Task 13 list.
 
 ---
 
@@ -2570,6 +2595,23 @@ git commit -m "chore(dev): seed a second company and a chat thread for walkthrou
 - [ ] `npm run test:rules` — Firestore + Storage rules suites pass.
 - [ ] `git grep -n "fixtures\|MOCK_DOSSIERS\|useDossierMutations\|lastMessageAt\|assignedTo" -- src scripts` returns nothing.
 - [ ] Phase A walkthrough (Task 5) and Phase B walkthrough (Task 13) both observed.
+
+### Before this ships to real users (owner-gated, deploys to production)
+
+Everything above is emulator-only: **none of it touches the live project**, and a
+green run proves nothing about production. As of 2026-07-16 the live project has
+**no active Firestore rules** (slice 1 only ever dry-ran the deploy) and no indexes,
+so both must land before anyone signs in for real:
+
+- [ ] Confirm in the console whether `bike-eco-db` currently has any ruleset. A
+      database left on its creation-mode default is either deny-all (harmless) or
+      open-until-a-date (**not** harmless — anyone with the public API key can read
+      every dossier). The MCP reports rules for the *default* instance, not the named
+      one, so this needs human eyes.
+- [ ] `npx -y firebase-tools@latest deploy --only firestore:rules,storage:rules,firestore:indexes --project bike-eco-43a84`
+- [ ] Re-run the Phase A + B walkthroughs against the live project (no
+      `EXPO_PUBLIC_USE_EMULATORS`) to confirm the indexes cover every query — the
+      only way to verify them, since the emulator ignores composite indexes entirely.
 
 ## Self-review notes (author)
 
