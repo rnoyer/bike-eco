@@ -84,7 +84,7 @@ async function main() {
   ] as const) {
     await db.doc(`dossiers/${id}`).set({
       status, region, companyId: "comp_nord", submittedBy: "user_b2b",
-      assignedTo: null, negotiatedPrice: null,
+      negotiatedPrice: null,
       submitter: { nom: "Durand", prenom: "Camille", companyName: "Garage du Nord" },
       vehicle: {
         electrique: "non", materiel: [], marque, modele,
@@ -99,7 +99,7 @@ async function main() {
       },
       pricing: { prix: 5000, commentaires: "" },
       photos: [], thumbnailUrl: null,
-      createdAt: now, updatedAt: now, lastMessageAt: null,
+      createdAt: now, updatedAt: now,
     });
   }
 

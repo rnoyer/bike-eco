@@ -101,7 +101,6 @@ function makeDossier(
     region,
     companyId: "comp_nord",
     submittedBy: "user_b2b",
-    assignedTo: null,
     negotiatedPrice: status === "cloture" ? 4200 : null,
     submitter: { nom: "Durand", prenom: "Camille", companyName: "Garage du Nord" },
     vehicle: { ...baseVehicle, marque, modele },
@@ -113,7 +112,6 @@ function makeDossier(
     thumbnailUrl: THUMB(id + "a"),
     createdAt: ts("2026-06-20"),
     updatedAt: ts("2026-06-21"),
-    lastMessageAt: ts("2026-06-22"),
   };
 }
 
