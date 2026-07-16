@@ -92,7 +92,6 @@ B2B only. Form sections are grouped into nested maps for readability.
 | `region` | string | `NORTH` \| `SOUTH`, derived from the submitter's `departement` (reuses `isNord`/`isSud`) |
 | `companyId` | string | owner company |
 | `submittedBy` | uid | |
-| `assignedTo` | uid \| null | team member handling it |
 | `negotiatedPrice` | number \| null | back-office deal outcome (page-dossier-management) |
 | `submitter` | map | denormalized display: `{ nom, prenom, companyName }` (for cards/chat) |
 | `vehicle` | map | see below |
@@ -103,7 +102,6 @@ B2B only. Form sections are grouped into nested maps for readability.
 | `photos` | string[] | Storage download URLs |
 | `thumbnailUrl` | string \| null | low-res first photo (card spec) |
 | `createdAt`, `updatedAt` | timestamp | `createdAt` orders the dashboards |
-| `lastMessageAt` | timestamp \| null | |
 
 **`vehicle`**
 

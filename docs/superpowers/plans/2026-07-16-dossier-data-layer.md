@@ -24,6 +24,7 @@
 - **Do NOT leave an emulator running while running `npm run test:rules`.** It uses `firebase emulators:exec`, which starts and stops its own Firestore + Storage emulators; a long-running one on 8080/9199 collides with it. `emulators:start` is only for the Tasks 5/13 walkthroughs.
 - **Java version (verified 2026-07-16): this machine has JDK 17; `firebase-tools@latest` emulators want JDK 21.** Slice 1 found the Firestore-only emulator works on 17 but the **Auth** emulator does not. Whether the **Storage** emulator (new in this plan's `test:rules`) works on 17 is **unverified** — if Task 7 Step 6 fails with a Java error, do NOT redesign the tests: install a local JDK 21 (e.g. Temurin into the scratchpad) and set `JAVA_HOME` for that command, or fall back to `npx firebase-tools@13`. Report it either way so this line can be corrected.
 - Département→region helpers are `isNord` / `isSud` (French names) in `src/constants/departments.ts`.
+- **`docs/tech/firestore-data-model.md` documents the live `Dossier`/`Message` shape and MUST be kept in sync in the same change that alters the model** (AGENTS.md rule). `docs/specs/` and `docs/product/` describe product behaviour and need no change in this plan.
 - **Out of scope:** `invite` and registration Cloud Functions (slice 4 — `useInvite` stays stubbed); Google sign-in (slice 1 Task 9, owner-blocked); Apple/Facebook; a scheduled sweep for orphans.
 
 ---
