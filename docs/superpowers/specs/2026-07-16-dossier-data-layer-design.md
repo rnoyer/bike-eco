@@ -296,9 +296,15 @@ Storage write allowed in own company path, denied in another's, denied over-size
 denied on a disallowed content type; Storage delete allowed in own company path
 (the cleanup path) and denied in another's.
 
-The failed-submission cleanup is covered by an emulator test that stubs the final
-`setDoc` into failure and asserts nothing remains under the dossier's Storage
-prefix — the behaviour that matters is "no orphans", not the call sequence.
+The failed-submission cleanup is covered by a **pure** test of the orchestrator
+that owns it. `submitB2bSubmission` cannot be loaded in either test environment —
+it imports `firebaseConfig`, which pulls AsyncStorage and `initializeAuth` — so
+the "delete what was uploaded if anything throws" logic lives in
+`cleanUpOnFailure(work, remove)`, with the uploads and the final `setDoc` both
+inside `work`. Injected fakes then assert the behaviour that matters — **no
+orphans**, whether an upload or the commit fails — without any Firebase at all.
+The real thing is observed against the emulators in the Phase B walkthrough
+(stop Firestore, leave Storage up, submit, confirm nothing is left behind).
 
 **Hooks** get an emulator walkthrough rather than mock-heavy unit tests; mocking
 `onSnapshot` would assert the mock, not the query.
