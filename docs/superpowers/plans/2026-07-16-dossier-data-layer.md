@@ -835,6 +835,10 @@ test("a cleanup that itself fails does not mask the original error", async () =>
       throw original;
     }, remove),
   ).rejects.toBe(original);
+
+  // Without this, an implementation that never attempted cleanup would pass:
+  // the rejection alone only re-proves the rethrow covered above.
+  expect(remove).toHaveBeenCalledWith("dossiers/c/d/photos/0.jpg");
 });
 ```
 
