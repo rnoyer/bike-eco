@@ -138,7 +138,15 @@ test("region must be a real region", async () => {
 
 test("a pending account cannot file anything", async () => {
   const db = env.authenticatedContext("user_pending", pendingClaims).firestore();
-  await assertFails(addDoc(collection(db, "dossiers"), newDossier()));
+  // `submittedBy` must be this caller's own uid: with the fixture default
+  // ("user_b2b") the create is denied for impersonation, and the status gate —
+  // the thing under test — never gets a say.
+  await assertFails(
+    addDoc(
+      collection(db, "dossiers"),
+      newDossier({ submittedBy: "user_pending" }),
+    ),
+  );
 });
 
 test("backoffice does not file dossiers", async () => {

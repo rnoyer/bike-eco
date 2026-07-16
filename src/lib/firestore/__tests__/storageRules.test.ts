@@ -76,6 +76,19 @@ test("only images and pdfs are accepted", async () => {
   );
 });
 
+// The rule leans on `matches()` being whole-string: the pattern's top-level
+// alternation is only safe because RE2 anchors it. `text/html` and `image/svg+xml`
+// would be rejected under partial-match semantics too, so neither proves it —
+// a contentType that merely *starts* with an accepted type does.
+test("a content type that only prefixes an accepted one is rejected", async () => {
+  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  await assertFails(
+    uploadBytes(ref(storage, "dossiers/comp_1/dos_1/photos/x.pdfx"), jpeg, {
+      contentType: "application/pdfx",
+    }),
+  );
+});
+
 // `image/.*` would admit this; the app only ever produces jpeg/png/heic/heif/
 // webp, and svg can carry an executable <script> if its download URL is ever
 // opened directly, so it must stay outside the accepted content-type set.
