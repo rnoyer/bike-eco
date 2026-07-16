@@ -75,6 +75,20 @@ test("numeric strings are coerced and blanks become null", () => {
   expect(d.vehicle.cylindree).toBeNull();
 });
 
+test("input with no digits is unanswered, not zero", () => {
+  const d = toDossierPayload(
+    { ...B2B_SUBMISSION_DEFAULTS, annee: "abc", kilometrage: "  ", prix: "" },
+    session,
+    company,
+    photos,
+  );
+  // `Number("")` is 0, so a naive coercion would record year 0 and a free bike
+  // rather than "not answered".
+  expect(d.vehicle.annee).toBeNull();
+  expect(d.vehicle.kilometrage).toBeNull();
+  expect(d.pricing.prix).toBeNull();
+});
+
 test("free text is trimmed and oui/non answers are narrowed", () => {
   const d = toDossierPayload(
     {

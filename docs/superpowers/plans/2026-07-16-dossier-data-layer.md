@@ -1576,10 +1576,18 @@ import type { B2bSubmissionForm } from "./schema";
  */
 export type DossierWrite = Omit<Dossier, "createdAt" | "updatedAt">;
 
-/** Blank/unparseable → null, so "not answered" stays distinct from 0. */
+/**
+ * Blank/unparseable → null, so "not answered" stays distinct from 0.
+ *
+ * The emptiness check runs on the *stripped* digits, not the raw input:
+ * `Number("")` is 0, so testing the raw value would turn "abc" into year 0
+ * rather than "not answered".
+ */
 function toNumber(value: string | null): number | null {
-  if (value == null || value.trim() === "") return null;
-  const parsed = Number(value.replace(/[^0-9.-]/g, ""));
+  if (value == null) return null;
+  const digits = value.replace(/[^0-9.-]/g, "");
+  if (digits === "") return null;
+  const parsed = Number(digits);
   return Number.isNaN(parsed) ? null : parsed;
 }
 
