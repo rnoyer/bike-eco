@@ -104,6 +104,8 @@ async function main() {
   }
 
   console.log("Seed complete: user_b2b / user_bo / user_pending (password123).");
+  // The Emulator UI opens on `(default)`, which this project never writes to.
+  console.log(`Data is in "${DB_ID}": http://localhost:4000/firestore/${DB_ID}/data`);
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
