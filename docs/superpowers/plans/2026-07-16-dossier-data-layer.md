@@ -2594,12 +2594,23 @@ Expected: the message appears live on both sides; the sender reads "Alex Martin 
 
 - [ ] **Step 7: Verify the rules actually enforce isolation**
 
-Signed in as `b2b@garage-nord.fr`, open the app's JS console and attempt a cross-company read:
-```js
-// Should be rejected by the rules, not merely hidden by the UI.
-firebase.firestore().doc("dossiers/dos_sud").get()
-```
-Expected: `permission-denied`. The dashboard also never lists `dos_sud`.
+Cross-company read denial is proven authoritatively by the rules unit test
+`src/lib/firestore/__tests__/rules.test.ts` → "a b2b user reads only their company's
+dossiers", which `assertFails(getDoc(doc(db, "dossiers/dos_2")))` for a `comp_1`
+dealer against a `comp_2` dossier — run green against the emulator with the real
+`firestore.rules` in the `test:rules` suite. That IS the "denied by the rules, not
+merely hidden by the UI" proof.
+
+(There is no in-app JS-console check: this app uses the modular Firebase JS SDK v12,
+which has no global `firebase` namespace — `firebase.firestore()...` does not exist —
+and the app's `db` is not exposed to the console.)
+
+In-app observable: signed in as `b2b@garage-nord.fr`, the dashboard never lists
+`dos_sud` (the `comp_sud` Ducati Monster). Note: force-navigating to that dossier's
+detail route would just spin — `DossierDetailScreen` renders `loading || !data` and
+does not surface `useDossier`'s `error`, so a denied read shows a permanent spinner
+rather than "Vous n'avez pas accès à ce dossier." That path is unreachable via the
+UI (no link to another company's dossier); the error-state gap is logged as Minor.
 
 - [ ] **Step 8: Full green sweep**
 
