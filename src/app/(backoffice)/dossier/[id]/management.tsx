@@ -2,14 +2,14 @@ import { useGlobalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, Alert, ScrollView, StyleSheet } from "react-native";
 import DossierManagementForm from "@/components/form/DossierManagementForm";
 import { useDossier } from "@/lib/data/useDossier";
-import { useDossierMutations } from "@/lib/data/useDossierMutations";
+import { useDossierManagement } from "@/lib/data/useDossierManagement";
 import { tokens } from "@/theme/tokens";
 
 export default function BackofficeDossierManagement() {
   const { id } = useGlobalSearchParams<{ id: string }>();
   const router = useRouter();
   const { data, loading } = useDossier(id);
-  const { updateManagement } = useDossierMutations();
+  const { updateManagement } = useDossierManagement();
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -24,10 +24,12 @@ export default function BackofficeDossierManagement() {
             try {
               await updateManagement(id, region, status, price);
               router.replace("/(backoffice)/confirmation");
-            } catch {
+            } catch (err) {
               Alert.alert(
                 "Erreur",
-                "La mise à jour n'a pas pu être enregistrée. Veuillez réessayer."
+                err instanceof Error
+                  ? err.message
+                  : "La mise à jour n'a pas pu être enregistrée. Veuillez réessayer."
               );
             }
           }}

@@ -1,13 +1,13 @@
 import { Stack, useRouter } from "expo-router";
 import { Alert, ScrollView, StyleSheet } from "react-native";
 import AddColleagueForm from "@/components/form/AddColleagueForm";
-import { useDossierMutations } from "@/lib/data/useDossierMutations";
+import { useInvite } from "@/lib/data/useInvite";
 import { headerOptions } from "@/lib/navigation/headerOptions";
 import { tokens } from "@/theme/tokens";
 
 export default function B2bAddColleague() {
   const router = useRouter();
-  const { invite } = useDossierMutations();
+  const { invite } = useInvite();
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Stack.Screen options={headerOptions({ title: "Inviter un collègue" })} />
