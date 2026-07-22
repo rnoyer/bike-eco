@@ -13,7 +13,7 @@ shared.
 ## Goals
 
 - Chat **image** attachments render as a real, tappable thumbnail that opens a
-  full-screen, swipeable image gallery.
+  full-screen, swipeable image gallery spanning every photo in the thread.
 - Chat **PDF** attachments render as a prominent, tappable icon that opens the
   device's default PDF handler.
 - The dossier **`PhotoCarousel`** photos become tappable and open the *same*
@@ -66,15 +66,18 @@ pure helper and unit-tested.
 ### `ChatThread` — `Attachment` (modified — `src/components/ui/chat/ChatThread.tsx`)
 
 - **Image attachment:** a `Pressable` wrapping an `expo-image` thumbnail (small
-  rounded square). Tapping opens the gallery with **that message's image
-  attachments** (PDFs in the same message are excluded), starting at the tapped
-  image's position among them.
+  rounded square). Tapping opens the gallery over **every image attachment in the
+  whole thread** — all messages' image URLs flattened in thread order, PDFs
+  excluded — starting at the tapped image's position in that flattened list. So
+  the viewer lets you swipe through the entire conversation's photos, not just one
+  message's.
 - **PDF attachment:** a `Pressable` with a larger PDF icon + filename →
   `Linking.openURL(a.url)`; on failure, a French `Alert` ("Impossible d'ouvrir le
   PDF.").
 - `ChatThread` owns the gallery state (`images`, `initialIndex`, `visible`) so a
   tap in any bubble drives the one shared `ImageGalleryModal` instance rendered
-  once at the thread level.
+  once at the thread level. The flattened thread-image list is derived from
+  `messages` (a pure helper — see Testing).
 
 ### `PhotoCarousel` (modified — `src/components/ui/PhotoCarousel.tsx`)
 
@@ -98,11 +101,17 @@ the modal renders from those props. PDF taps call `Linking.openURL` directly.
 ## Testing
 
 This is almost entirely `Modal` / `ScrollView` / native-open UI — not meaningfully
-unit-testable, consistent with `PhotoCarousel` and the pickers today. The one pure
-helper (clamping `initialIndex`) gets a unit test. Everything else is verified in
-the interactive walkthrough (open a chat image → full-screen + swipe; open a PDF →
-system reader; tap a dossier carousel photo → full-screen + swipe). No mock-only
-tests that assert nothing.
+unit-testable, consistent with `PhotoCarousel` and the pickers today. The pure
+logic gets unit tests:
+- clamping `initialIndex` into `[0, images.length)` in `ImageGalleryModal`;
+- flattening a thread's messages into an ordered list of image-attachment URLs
+  and locating a tapped attachment's index within it (drives the whole-thread
+  gallery scope).
+
+Everything else is verified in the interactive walkthrough (open a chat image →
+full-screen + swipe across the thread's photos; open a PDF → system reader; tap a
+dossier carousel photo → full-screen + swipe). No mock-only tests that assert
+nothing.
 
 ## Spec sync
 
