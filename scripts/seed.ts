@@ -103,7 +103,57 @@ async function main() {
     });
   }
 
-  console.log("Seed complete: user_b2b / user_bo / user_pending (password123).");
+  // A second company so cross-company isolation is checkable by hand.
+  await db.doc(`companies/comp_sud`).set({
+    siret: "98765432100022",
+    name: "Garage du Sud",
+    status: "active",
+    createdBy: "user_b2b_sud",
+    createdAt: now,
+  });
+  await upsertUser("user_b2b_sud", "b2b@garage-sud.fr", "password123", {
+    role: "b2b",
+    companyId: "comp_sud",
+    status: "active",
+  });
+  await db.doc(`users/user_b2b_sud`).set({
+    role: "b2b", companyId: "comp_sud", region: null,
+    nom: "Blanc", prenom: "Dominique", email: "b2b@garage-sud.fr",
+    telephone: "0621222324", departement: "13 - Bouches-du-Rhône",
+    ville: "Marseille", status: "active", createdAt: now, updatedAt: now,
+  });
+  await db.doc(`dossiers/dos_sud`).set({
+    status: "a_traiter", region: "SOUTH", companyId: "comp_sud",
+    submittedBy: "user_b2b_sud", negotiatedPrice: null,
+    submitter: { nom: "Blanc", prenom: "Dominique", companyName: "Garage du Sud" },
+    vehicle: {
+      electrique: "non", materiel: [], marque: "Ducati", modele: "Monster",
+      cylindree: 937, annee: 2021, kilometrage: 9200, accessoires: "",
+    },
+    keys: { aClesContact: "oui", cleNoire: 1, cleMarron: 0, cleRouge: 0, aTelecommande: "non", telecommande: null },
+    condition: { etat: "Bon état", naturePanne: "" },
+    papers: {
+      carteGrise: "oui", carteGriseAVotreNom: "oui", controleTechnique: "oui",
+      ctMoins6Mois: "oui", resultatCT: "Favorable", certificatNonGage: "oui",
+      carnetEntretien: "oui", factureEntretien: "non",
+    },
+    pricing: { prix: 7000, commentaires: "" },
+    photos: [], thumbnailUrl: null,
+    createdAt: now, updatedAt: now,
+  });
+
+  await db.doc(`dossiers/dos_1/messages/msg_1`).set({
+    senderId: "user_b2b",
+    senderName: "Camille Durand - Garage du Nord",
+    senderRole: "b2b",
+    text: "Bonjour, la moto est disponible immédiatement.",
+    attachments: [],
+    createdAt: now,
+  });
+
+  console.log(
+    "Seed complete: user_b2b / user_b2b_sud / user_bo / user_pending (password123).",
+  );
   // The Emulator UI opens on `(default)`, which this project never writes to.
   console.log(`Data is in "${DB_ID}": http://localhost:4000/firestore/${DB_ID}/data`);
 }
