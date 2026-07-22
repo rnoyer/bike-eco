@@ -13,7 +13,8 @@ shared.
 ## Goals
 
 - Chat **image** attachments render as a real, tappable thumbnail that opens a
-  full-screen, swipeable image gallery spanning every photo in the thread.
+  full-screen, swipeable image gallery spanning every photo in the thread, with
+  **pinch-to-zoom** (and the double-tap-zoom / swipe-to-close that come with it).
 - Chat **PDF** attachments render as a prominent, tappable icon that opens the
   device's default PDF handler.
 - The dossier **`PhotoCarousel`** photos become tappable and open the *same*
@@ -21,8 +22,6 @@ shared.
 
 ## Non-goals (YAGNI)
 
-- Pinch-to-zoom in the viewer (can be added later; needs gesture-handler wiring).
-- Swipe-down-to-dismiss gesture (a close button + tap-background-to-close suffice).
 - In-app PDF rendering / download-to-device (the owner chose the system default
   handler via `Linking.openURL`).
 - Any change to how attachments are picked, uploaded, or stored — that data layer
@@ -34,10 +33,32 @@ shared.
    attachments and the dossier carousel.
 2. **PDFs → `Linking.openURL(url)`** — the OS opens its default handler (a PDF app
    if set, otherwise the browser, which renders the PDF). The user leaves the app.
-3. **Implementation:** a custom full-screen `Modal` + horizontal paging
-   `ScrollView` (the pattern `PhotoCarousel` already uses), rendered with
-   `expo-image`. No new dependencies (`expo-image` and `expo-linking` are already
-   installed).
+3. **Images → pinch-to-zoom**, chosen over a static viewer. This makes the
+   swipe/pinch gesture coordination the hard part.
+4. **Image viewer → a gallery library** (`react-native-awesome-gallery`) built on
+   the already-installed `react-native-gesture-handler` + `react-native-reanimated`,
+   giving swipe + pinch + double-tap-zoom + swipe-to-close out of the box — subject
+   to the compatibility spike below. `expo-linking` (PDFs) and `expo-image`
+   (thumbnails) are already installed.
+
+## Dependency risk & first step (must be resolved before building the rest)
+
+`react-native-awesome-gallery@0.4.3` (latest) declares a peer of
+`react-native-reanimated: ^3.2.0`; this project is on **reanimated 4.3.1** (a
+major version with breaking changes). It is therefore **not verified compatible**,
+and there is no newer release targeting v4.
+
+The plan's **first task is a compatibility spike**: install it (`--legacy-peer-deps`),
+wrap the app root in `GestureHandlerRootView`, render a minimal gallery, and
+confirm swipe + pinch + swipe-to-close work on-device against reanimated 4. Also
+gate on `expo-doctor` / a dev-client build succeeding.
+
+- **If it works:** proceed with the library.
+- **If it does not:** fall back to a hand-rolled viewer using the installed
+  gesture-handler + reanimated directly (per-image pinch + pan on a paging
+  container; horizontal paging disabled while zoomed). Same `ImageGalleryModal`
+  public interface either way, so the call sites (chat, carousel) are unaffected
+  by which path wins.
 
 ## Components
 
@@ -46,19 +67,20 @@ shared.
 A single-responsibility full-screen viewer. It does not know about chat or
 dossiers — it shows a list of image URLs, swipeable, starting at an index.
 
-- **Props:**
+- **Props (stable across both the library and fallback implementations):**
   - `images: string[]` — image URLs to show.
   - `initialIndex: number` — which one to open on (clamped into `[0, images.length)`).
   - `visible: boolean`
   - `onClose: () => void`
-- **Behavior:** full-screen dark `Modal`; a horizontal `pagingEnabled`
-  `ScrollView` scrolled to `initialIndex` on open; one `expo-image`
-  (`contentFit="contain"`) per page; page dots when `images.length > 1`; a close
-  “✕” affordance and tap-background-to-close. Horizontal swipe moves between
-  images. An image that fails to load shows `expo-image`'s placeholder rather than
-  crashing.
+- **Behavior:** a full-screen presentation (Modal / full-screen overlay) wrapping
+  the gallery library's component, opened at `initialIndex`, with swipe between
+  images, pinch- and double-tap-zoom, and swipe-to-close (calling `onClose`); a
+  visible close “✕” as well. An image that fails to load shows a placeholder
+  rather than crashing.
 - **Interface contract:** both call sites drive it purely through props; it owns
-  no attachment/dossier knowledge.
+  no attachment/dossier knowledge. This interface is identical whether the library
+  or the hand-rolled fallback backs it, so the spike's outcome never touches the
+  call sites.
 
 The only non-UI logic is clamping `initialIndex` into range — extracted as a tiny
 pure helper and unit-tested.
