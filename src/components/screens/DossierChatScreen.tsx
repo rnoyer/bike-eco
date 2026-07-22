@@ -33,8 +33,8 @@ export default function DossierChatScreen({ id }: { id: string }) {
       <View style={styles.flex}>
         <ChatThread messages={messages} currentUserId={user.id} />
         <ChatComposer
-          onSend={(text) => {
-            send(text).catch((err: Error) =>
+          onSend={(text, files) => {
+            send(text, files).catch((err: Error) =>
               Alert.alert("Envoi impossible", err.message),
             );
           }}
