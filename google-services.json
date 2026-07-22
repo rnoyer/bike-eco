@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "585450098034",
+    "project_id": "bike-eco-43a84",
+    "storage_bucket": "bike-eco-43a84.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:585450098034:android:39e43da1f2a6f4f318a1eb",
+        "android_client_info": {
+          "package_name": "com.bikeeco.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "585450098034-uhcdohf3kjihs6tibom3hd4herc7eorq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bikeeco.app",
+            "certificate_hash": "b0149e4e910ed4d4236d881ee23028e3b51a891a"
+          }
+        },
+        {
+          "client_id": "585450098034-jefdvstq3tebuknvjkl7qspgo89vddnm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDtaXBXBlw4_275qEmZWL8wqbMlhPsvGnc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "585450098034-jefdvstq3tebuknvjkl7qspgo89vddnm.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "585450098034-kbjcat3undmr36b5ubj5iuknvb2lnlto.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.bikeeco.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

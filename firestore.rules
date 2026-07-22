@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function claims()      { return request.auth.token; }
+    function isSignedIn()  { return request.auth != null; }
+    function isActive()    { return isSignedIn() && claims().status == 'active'; }
+    function isBackoffice(){ return isActive() && claims().role == 'backoffice'; }
+    function myCompany()   { return claims().companyId; }
+
+    // Named helper so the messages `read` and `create` rules cannot drift apart.
+    function isDossierParticipant(dossierId) {
+      return isBackoffice()
+        || (isActive()
+            && get(/databases/$(database)/documents/dossiers/$(dossierId))
+                 .data.companyId == myCompany());
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isBackoffice());
+      // Owner edits profile fields only; role/companyId/region/status/createdAt
+      // are server-set claims and must never be client-writable.
+      allow update: if request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys()
+             .hasAny(['role', 'companyId', 'region', 'status', 'createdAt']);
+      allow create, delete: if false;
+    }
+
+    match /companies/{companyId} {
+      allow read: if isBackoffice()
+        || (isSignedIn() && myCompany() == companyId);
+      allow write: if false;
+    }
+
+    match /dossiers/{dossierId} {
+      allow read: if isBackoffice()
+        || (isActive() && resource.data.companyId == myCompany());
+
+      // A dealer may only file a dossier for their own company, as themselves,
+      // as new work. `region` is client-derived from the submitter's département
+      // and is reassignable by the back-office (page-dossier-management), so only
+      // its domain is enforced here — a wrong value is a correctable routing
+      // nuisance, not an access boundary.
+      allow create: if isActive() && claims().role == 'b2b'
+        && request.resource.data.companyId == myCompany()
+        && request.resource.data.submittedBy == request.auth.uid
+        && request.resource.data.status == 'a_traiter'
+        && request.resource.data.negotiatedPrice == null
+        && request.resource.data.region in ['NORTH', 'SOUTH'];
+
+      // Exactly the fields DossierManagementForm submits — nothing more —
+      // and, unlike the key allow-list alone, each value must stay in the
+      // same domain the create rule already enforces. Without this, a
+      // hasOnly()-only rule would let a value be swapped for anything
+      // (e.g. status: 'banana', region: 'MARS', a negative price) while
+      // still passing the key check — a classic create/update inconsistency.
+      allow update: if isBackoffice()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'region', 'negotiatedPrice', 'updatedAt'])
+        && request.resource.data.status in ['a_traiter', 'en_cours', 'cloture']
+        && request.resource.data.region in ['NORTH', 'SOUTH']
+        && (request.resource.data.negotiatedPrice == null
+            || (request.resource.data.negotiatedPrice is number
+                && request.resource.data.negotiatedPrice >= 0));
+
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isDossierParticipant(dossierId);
+        allow create: if isDossierParticipant(dossierId)
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.senderRole == claims().role;
+        allow update, delete: if false;
+      }
+    }
+
+    match /invitations/{invitationId} {
+      allow read, write: if false;
+    }
+  }
+}

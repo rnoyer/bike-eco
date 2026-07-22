@@ -1,0 +1,40 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function claims()      { return request.auth.token; }
+    function isSignedIn()  { return request.auth != null; }
+    function isActive()    { return isSignedIn() && claims().status == 'active'; }
+    function isBackoffice(){ return isActive() && claims().role == 'backoffice'; }
+
+    // Keyed by company because Storage rules can only reach Firestore's
+    // `(default)` database, and app data lives in the named `bike-eco-db` —
+    // so authorization has to come from claims alone. Back-office users carry no
+    // companyId claim and are admitted by role.
+    match /dossiers/{companyId}/{dossierId}/{allPaths=**} {
+      function canAccess() {
+        return isActive()
+          && (isBackoffice() || claims().companyId == companyId);
+      }
+
+      allow read: if canAccess();
+
+      // Enumerate concrete subtypes rather than `image/.*`: the wildcard also
+      // admits `image/svg+xml`, which — unlike raster formats — can carry an
+      // embedded <script> that executes if the stored object's download URL
+      // is ever opened as a top-level navigation. The list below matches
+      // exactly what `mimeForExtension` (src/lib/storage/paths.ts) produces
+      // for photo uploads, plus the PDF message attachments.
+      allow write: if canAccess()
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches(
+             '(image/(jpeg|png|heic|heif|webp)|application/pdf)');
+
+      // Lets a failed submission delete what it already uploaded. This grants no
+      // new power: `write` above already covers overwriting an object at a known
+      // path, so anyone who can upload can already replace what is there.
+      // (`write` alone cannot authorize a delete — `request.resource` is null on
+      // delete, so its size/contentType checks fail. Hence this separate rule.)
+      allow delete: if canAccess();
+    }
+  }
+}

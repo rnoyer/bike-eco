@@ -15,6 +15,9 @@ import type {
   Message,
 } from "./schema";
 
+/** A Firestore document paired with its id (docs don't carry their own id). */
+export type WithId<T> = T & { id: string };
+
 export const COLLECTIONS = {
   companies: "companies",
   users: "users",
@@ -27,7 +30,13 @@ export const COLLECTIONS = {
 function typed<T extends DocumentData>(): FirestoreDataConverter<T> {
   return {
     toFirestore: (data) => data as DocumentData,
-    fromFirestore: (snap: QueryDocumentSnapshot) => snap.data() as T,
+    // `estimate` so a pending `serverTimestamp()` reads back as an estimated
+    // local Timestamp instead of null: the just-written dossier/message arrives
+    // through the live listener before the server resolves its timestamp, and
+    // consumers call `.toMillis()`/`.toDate()` on `createdAt` (dashboard sort,
+    // ChatThread) which would throw on null.
+    fromFirestore: (snap: QueryDocumentSnapshot) =>
+      snap.data({ serverTimestamps: "estimate" }) as T,
   };
 }
 

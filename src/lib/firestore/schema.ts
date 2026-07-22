@@ -140,7 +140,6 @@ export interface Dossier {
   region: Region; // initially derived from the submitter's departement; reassignable by the back-office (page-dossier-management)
   companyId: string;
   submittedBy: string; // uid
-  assignedTo: string | null; // team member handling it
   negotiatedPrice: number | null; // back-office deal outcome (page-dossier-management)
   submitter: DossierSubmitter;
   vehicle: DossierVehicle;
@@ -152,7 +151,6 @@ export interface Dossier {
   thumbnailUrl: string | null; // low-res first photo
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  lastMessageAt: Timestamp | null;
 }
 
 // ─── messages (subcollection of dossiers) ────────────────────────────────────

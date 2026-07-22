@@ -1,21 +1,45 @@
 import { useEffect, useState } from "react";
-import type { Message } from "@/lib/firestore/schema";
-import { messagesFor } from "./fixtures";
+import {
+  onSnapshot,
+  orderBy,
+  query,
+  type FirestoreError,
+} from "firebase/firestore";
 
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { messagesRef } from "@/lib/firestore/collections";
+import type { Message } from "@/lib/firestore/schema";
+import { mapDataError } from "./dataErrors";
+
+/** Live chat thread for a dossier, oldest first. */
 export function useMessages(dossierId: string) {
-  const [resolved, setResolved] = useState<{ id: string; data: Message[] } | null>(null);
+  const { session } = useAuth();
+  const [resolved, setResolved] = useState<{
+    key: string;
+    data: Message[];
+    error: string | null;
+  } | null>(null);
+
   useEffect(() => {
-    let active = true;
-    const t = setTimeout(() => {
-      if (active) setResolved({ id: dossierId, data: messagesFor(dossierId) });
-    }, 250);
-    return () => {
-      active = false;
-      clearTimeout(t);
-    };
-  }, [dossierId]);
-  // Guard the empty-id case: `undefined !== undefined` is false, which would
-  // otherwise mark a missing id as "loaded" and dereference the null state.
-  const loading = !dossierId || resolved?.id !== dossierId;
-  return { data: loading ? [] : resolved!.data, loading };
+    if (!session || !dossierId) return;
+    return onSnapshot(
+      query(messagesRef(dossierId), orderBy("createdAt")),
+      (snap) =>
+        setResolved({
+          key: dossierId,
+          data: snap.docs.map((d) => d.data()),
+          error: null,
+        }),
+      (err: FirestoreError) =>
+        setResolved({ key: dossierId, data: [], error: mapDataError(err.code) }),
+    );
+  }, [session, dossierId]);
+
+  const loading = !dossierId || resolved?.key !== dossierId;
+
+  return {
+    data: loading ? [] : resolved!.data,
+    loading,
+    error: loading ? null : resolved!.error,
+  };
 }

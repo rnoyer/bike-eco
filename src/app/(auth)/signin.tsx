@@ -1,23 +1,48 @@
-import { type Href, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { auth } from "../../../firebaseConfig";
 import SignInFields from "@/components/form/SignInFields";
 import PhotoBackground from "@/components/ui/PhotoBackground";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
-import { useSession } from "@/lib/data/useSession";
+import { mapAuthError } from "@/lib/auth/authErrors";
 import { tokens } from "@/theme/tokens";
-
-const DASHBOARDS: Record<"b2b" | "backoffice", Href> = {
-  b2b: "/(b2b)/(tabs)/dashboard",
-  backoffice: "/(backoffice)/(tabs)/dashboard",
-};
 
 export default function SignInScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { role, setRole } = useSession();
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const goToDashboard = () => router.replace(DASHBOARDS[role]);
+  const handleSignIn = async (email: string, password: string) => {
+    setError(null);
+    setNotice(null);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // The root AuthGate redirects on the resulting auth-state change.
+    } catch (e) {
+      setError(mapAuthError((e as { code?: string }).code ?? ""));
+    }
+  };
+
+  const handleForgot = async (email: string) => {
+    setError(null);
+    if (!email) {
+      setError("Saisissez d’abord votre email pour réinitialiser le mot de passe.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setNotice("Email de réinitialisation envoyé. Vérifiez votre boîte de réception.");
+    } catch (e) {
+      setError(mapAuthError((e as { code?: string }).code ?? ""));
+    }
+  };
 
   return (
     <PhotoBackground>
@@ -30,35 +55,17 @@ export default function SignInScreen() {
       >
         <View style={styles.card}>
           <Text style={styles.title}>Bienvenue !</Text>
-          <SignInFields onSubmit={goToDashboard} onForgotPassword={() => {}} />
-          {/* TODO: route the selected provider into the real auth handler — the
-              stub discards it and just navigates to the dashboard. */}
-          <ThirdPartyAuthButtons onPress={goToDashboard} />
-
+          <SignInFields onSubmit={handleSignIn} onForgotPassword={handleForgot} />
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+          {/* Interim no-op; Google is wired into this call site in Task 9. */}
+          <ThirdPartyAuthButtons onPress={() => {}} />
           <Text
             style={styles.registerLink}
             onPress={() => router.push("/(auth)/register")}
           >
             Pas encore de compte ? Créer un compte
           </Text>
-
-          {__DEV__ ? (
-            <View style={styles.devRow}>
-              <Text style={styles.devLabel}>DEV — rôle :</Text>
-              <Text
-                style={[styles.devChip, role === "b2b" && styles.devChipOn]}
-                onPress={() => setRole("b2b")}
-              >
-                B2B
-              </Text>
-              <Text
-                style={[styles.devChip, role === "backoffice" && styles.devChipOn]}
-                onPress={() => setRole("backoffice")}
-              >
-                Back-office
-              </Text>
-            </View>
-          ) : null}
         </View>
       </ScrollView>
     </PhotoBackground>
@@ -66,42 +73,20 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: tokens.space.lg,
-  },
+  container: { flexGrow: 1, justifyContent: "center", paddingHorizontal: tokens.space.lg },
   card: {
-    gap: tokens.space.lg,
-    padding: tokens.space.lg,
-    borderRadius: tokens.radius.lg,
+    gap: tokens.space.lg, padding: tokens.space.lg, borderRadius: tokens.radius.lg,
     backgroundColor: tokens.colors.surface,
     ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.12,
-        shadowRadius: 16,
-      },
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 16 },
       android: { elevation: 6 },
     }),
   },
   title: { ...tokens.text.title, textAlign: "center" },
+  error: { ...tokens.text.subtitle, textAlign: "center", color: tokens.colors.danger },
+  notice: { ...tokens.text.subtitle, textAlign: "center", color: tokens.colors.primary },
   registerLink: {
-    fontSize: 14,
-    color: tokens.colors.primary,
-    textAlign: "center",
+    fontSize: 14, color: tokens.colors.primary, textAlign: "center",
     textDecorationLine: "underline",
   },
-  devRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  devLabel: { fontSize: 12, color: tokens.colors.muted },
-  devChip: {
-    fontSize: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: tokens.radius.sm,
-    backgroundColor: tokens.colors.divider,
-    color: tokens.colors.primary,
-  },
-  devChipOn: { backgroundColor: tokens.colors.primary, color: "#fff" },
 });

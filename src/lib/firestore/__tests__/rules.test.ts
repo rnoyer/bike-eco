@@ -1,0 +1,253 @@
+import { afterAll, beforeAll, test } from "@jest/globals";
+import { readFileSync } from "fs";
+import { resolve } from "path";
+import {
+  assertFails,
+  assertSucceeds,
+  initializeTestEnvironment,
+  type RulesTestEnvironment,
+} from "@firebase/rules-unit-testing";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
+
+let env: RulesTestEnvironment;
+
+const b2bClaims = { role: "b2b", companyId: "comp_1", status: "active" };
+const boClaims = { role: "backoffice", region: "NORTH", status: "active" };
+const pendingClaims = { role: "b2b", companyId: "comp_1", status: "pending" };
+
+/** Minimal dossier the create rule accepts; override to probe each clause. */
+const newDossier = (overrides: Record<string, unknown> = {}) => ({
+  status: "a_traiter",
+  region: "NORTH",
+  companyId: "comp_1",
+  submittedBy: "user_b2b",
+  negotiatedPrice: null,
+  photos: [],
+  thumbnailUrl: null,
+  ...overrides,
+});
+
+const newMessage = (overrides: Record<string, unknown> = {}) => ({
+  senderId: "user_b2b",
+  senderName: "Camille Durand - Garage du Nord",
+  senderRole: "b2b",
+  text: "Bonjour",
+  attachments: [],
+  ...overrides,
+});
+
+beforeAll(async () => {
+  env = await initializeTestEnvironment({
+    projectId: "bike-eco-43a84",
+    firestore: {
+      rules: readFileSync(
+        resolve(__dirname, "../../../../firestore.rules"),
+        "utf8",
+      ),
+    },
+  });
+  // Seed docs bypassing rules.
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, "dossiers/dos_1"), {
+      companyId: "comp_1",
+      status: "a_traiter",
+      region: "NORTH",
+      negotiatedPrice: null,
+    });
+    await setDoc(doc(db, "dossiers/dos_2"), {
+      companyId: "comp_2",
+      status: "a_traiter",
+      region: "SOUTH",
+      negotiatedPrice: null,
+    });
+    await setDoc(doc(db, "users/user_b2b"), { nom: "Durand" });
+  });
+});
+
+afterAll(async () => env.cleanup());
+
+// ── reads ──────────────────────────────────────────────────────────────────
+
+test("unauthenticated reads are denied", async () => {
+  const db = env.unauthenticatedContext().firestore();
+  await assertFails(getDoc(doc(db, "dossiers/dos_1")));
+});
+
+test("a b2b user reads only their company's dossiers", async () => {
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertSucceeds(getDoc(doc(db, "dossiers/dos_1")));
+  await assertFails(getDoc(doc(db, "dossiers/dos_2")));
+});
+
+test("backoffice reads any dossier", async () => {
+  const db = env.authenticatedContext("bo_1", boClaims).firestore();
+  await assertSucceeds(getDoc(doc(db, "dossiers/dos_2")));
+});
+
+test("owner cannot escalate their own claims fields", async () => {
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertSucceeds(updateDoc(doc(db, "users/user_b2b"), { ville: "Lyon" }));
+  await assertFails(updateDoc(doc(db, "users/user_b2b"), { role: "backoffice" }));
+});
+
+// ── dossier create ─────────────────────────────────────────────────────────
+
+test("a dealer files a dossier for their own company", async () => {
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertSucceeds(addDoc(collection(db, "dossiers"), newDossier()));
+});
+
+test("a dealer cannot file against another company", async () => {
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertFails(
+    addDoc(collection(db, "dossiers"), newDossier({ companyId: "comp_2" })),
+  );
+});
+
+test("a dealer cannot file as someone else", async () => {
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertFails(
+    addDoc(collection(db, "dossiers"), newDossier({ submittedBy: "user_bo" })),
+  );
+});
+
+test("a dossier cannot be born already in progress or priced", async () => {
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertFails(
+    addDoc(collection(db, "dossiers"), newDossier({ status: "en_cours" })),
+  );
+  await assertFails(
+    addDoc(collection(db, "dossiers"), newDossier({ negotiatedPrice: 4200 })),
+  );
+});
+
+test("region must be a real region", async () => {
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertFails(
+    addDoc(collection(db, "dossiers"), newDossier({ region: "EAST" })),
+  );
+});
+
+test("a pending account cannot file anything", async () => {
+  const db = env.authenticatedContext("user_pending", pendingClaims).firestore();
+  // `submittedBy` must be this caller's own uid: with the fixture default
+  // ("user_b2b") the create is denied for impersonation, and the status gate —
+  // the thing under test — never gets a say.
+  await assertFails(
+    addDoc(
+      collection(db, "dossiers"),
+      newDossier({ submittedBy: "user_pending" }),
+    ),
+  );
+});
+
+test("backoffice does not file dossiers", async () => {
+  const db = env.authenticatedContext("bo_1", boClaims).firestore();
+  await assertFails(
+    addDoc(collection(db, "dossiers"), newDossier({ companyId: "comp_1" })),
+  );
+});
+
+// ── dossier update ─────────────────────────────────────────────────────────
+
+test("backoffice updates status, region and negotiated price", async () => {
+  const db = env.authenticatedContext("bo_1", boClaims).firestore();
+  await assertSucceeds(
+    updateDoc(doc(db, "dossiers/dos_1"), {
+      status: "en_cours",
+      region: "SOUTH",
+      negotiatedPrice: 4200,
+    }),
+  );
+});
+
+test("backoffice cannot move a dossier between companies", async () => {
+  const db = env.authenticatedContext("bo_1", boClaims).firestore();
+  await assertFails(
+    updateDoc(doc(db, "dossiers/dos_1"), { companyId: "comp_2" }),
+  );
+});
+
+test("backoffice cannot write an out-of-domain status, region or price", async () => {
+  const db = env.authenticatedContext("bo_1", boClaims).firestore();
+  await assertFails(updateDoc(doc(db, "dossiers/dos_1"), { status: "banana" }));
+  await assertFails(updateDoc(doc(db, "dossiers/dos_1"), { region: "MARS" }));
+  await assertFails(
+    updateDoc(doc(db, "dossiers/dos_1"), { negotiatedPrice: -50 }),
+  );
+  await assertFails(
+    updateDoc(doc(db, "dossiers/dos_1"), { negotiatedPrice: "cher" }),
+  );
+});
+
+test("a dealer cannot update their own dossier", async () => {
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertFails(
+    updateDoc(doc(db, "dossiers/dos_1"), { negotiatedPrice: 99999 }),
+  );
+});
+
+// ── messages ───────────────────────────────────────────────────────────────
+
+test("a dealer messages on their own dossier", async () => {
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertSucceeds(
+    addDoc(collection(db, "dossiers/dos_1/messages"), newMessage()),
+  );
+});
+
+test("a dealer cannot message on another company's dossier", async () => {
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertFails(
+    addDoc(collection(db, "dossiers/dos_2/messages"), newMessage()),
+  );
+});
+
+test("a sender cannot impersonate someone else", async () => {
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertFails(
+    addDoc(
+      collection(db, "dossiers/dos_1/messages"),
+      newMessage({ senderId: "user_bo" }),
+    ),
+  );
+  await assertFails(
+    addDoc(
+      collection(db, "dossiers/dos_1/messages"),
+      newMessage({ senderRole: "backoffice" }),
+    ),
+  );
+});
+
+test("backoffice messages on any dossier", async () => {
+  const db = env.authenticatedContext("bo_1", boClaims).firestore();
+  await assertSucceeds(
+    addDoc(
+      collection(db, "dossiers/dos_2/messages"),
+      newMessage({ senderId: "bo_1", senderRole: "backoffice" }),
+    ),
+  );
+});
+
+test("messages are immutable once sent", async () => {
+  let id = "";
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const ref = await addDoc(
+      collection(ctx.firestore(), "dossiers/dos_1/messages"),
+      newMessage(),
+    );
+    id = ref.id;
+  });
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertFails(
+    updateDoc(doc(db, `dossiers/dos_1/messages/${id}`), { text: "edited" }),
+  );
+});

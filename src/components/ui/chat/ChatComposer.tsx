@@ -1,50 +1,134 @@
 import { BottomSheet, Button, Host } from "@expo/ui";
+import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { PickedFile } from "@/lib/data/useSendMessage";
 import { tokens } from "@/theme/tokens";
 
 export default function ChatComposer({
   onSend,
 }: {
-  onSend: (text: string) => void;
+  onSend: (text: string, files: PickedFile[]) => void;
 }) {
   const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
+  const [files, setFiles] = useState<PickedFile[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const send = () => {
     const t = text.trim();
-    if (!t) return;
-    onSend(t);
+    if (!t && files.length === 0) return;
+    onSend(t, files);
     setText("");
+    setFiles([]);
   };
+
+  async function pickPhoto() {
+    setSheetOpen(false);
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission refusée", "L'accès à la galerie est nécessaire.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    setFiles((current) => [
+      ...current,
+      {
+        uri: asset.uri,
+        name: asset.fileName ?? "photo.jpg",
+        size: asset.fileSize ?? 0,
+        mimeType: asset.mimeType ?? "image/jpeg",
+        type: "image",
+      },
+    ]);
+  }
+
+  async function pickPdf() {
+    setSheetOpen(false);
+    // `copyToCacheDirectory` so the file is readable straight away.
+    const result = await DocumentPicker.getDocumentAsync({
+      type: "application/pdf",
+      copyToCacheDirectory: true,
+    });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    setFiles((current) => [
+      ...current,
+      {
+        uri: asset.uri,
+        name: asset.name,
+        size: asset.size ?? 0,
+        mimeType: asset.mimeType ?? "application/pdf",
+        type: "pdf",
+      },
+    ]);
+  }
 
   return (
     <View style={[styles.bar, { paddingBottom: insets.bottom + tokens.space.sm }]}>
-      <TouchableOpacity
-        style={styles.plus}
-        onPress={() => setSheetOpen(true)}
-        accessibilityLabel="Ajouter une pièce jointe"
-      >
-        <Text style={styles.plusText}>＋</Text>
-      </TouchableOpacity>
-      <TextInput
-        style={styles.input}
-        value={text}
-        onChangeText={setText}
-        placeholder="Votre message"
-        placeholderTextColor={tokens.colors.muted}
-        multiline
-      />
-      <TouchableOpacity style={styles.send} onPress={send}>
-        <Text style={styles.sendText}>Envoyer</Text>
-      </TouchableOpacity>
+      {files.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.pending}
+        >
+          {files.map((file, index) => (
+            <TouchableOpacity
+              key={`${file.uri}-${index}`}
+              style={styles.chip}
+              onPress={() =>
+                setFiles((current) => current.filter((_, i) => i !== index))
+              }
+              accessibilityLabel={`Retirer ${file.name}`}
+            >
+              <Text style={styles.chipText} numberOfLines={1}>
+                {file.type === "pdf" ? "📄" : "🖼️"} {file.name} ✕
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
+      <View style={styles.row}>
+        <TouchableOpacity
+          style={styles.plus}
+          onPress={() => setSheetOpen(true)}
+          accessibilityLabel="Ajouter une pièce jointe"
+        >
+          <Text style={styles.plusText}>＋</Text>
+        </TouchableOpacity>
+        <TextInput
+          style={styles.input}
+          value={text}
+          onChangeText={setText}
+          placeholder="Votre message"
+          placeholderTextColor={tokens.colors.muted}
+          multiline
+        />
+        <TouchableOpacity style={styles.send} onPress={send}>
+          <Text style={styles.sendText}>Envoyer</Text>
+        </TouchableOpacity>
+      </View>
 
       <Host style={styles.sheetHost}>
         <BottomSheet isPresented={sheetOpen} onDismiss={() => setSheetOpen(false)}>
-          <Button label="Photo" onPress={() => setSheetOpen(false)} />
-          <Button label="PDF" onPress={() => setSheetOpen(false)} />
+          <Button label="Photo" onPress={pickPhoto} />
+          <Button label="PDF" onPress={pickPdf} />
         </BottomSheet>
       </Host>
     </View>
@@ -53,8 +137,6 @@ export default function ChatComposer({
 
 const styles = StyleSheet.create({
   bar: {
-    flexDirection: "row",
-    alignItems: "flex-end",
     gap: tokens.space.sm,
     paddingHorizontal: tokens.space.md,
     paddingTop: tokens.space.sm,
@@ -62,6 +144,23 @@ const styles = StyleSheet.create({
     borderTopColor: tokens.colors.divider,
     backgroundColor: tokens.colors.surface,
   },
+  row: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: tokens.space.sm,
+  },
+  pending: {
+    gap: tokens.space.sm,
+    paddingBottom: tokens.space.sm,
+  },
+  chip: {
+    maxWidth: 200,
+    paddingHorizontal: tokens.space.sm,
+    paddingVertical: 6,
+    borderRadius: tokens.radius.sm,
+    backgroundColor: tokens.colors.surfaceAlt,
+  },
+  chipText: { fontSize: 12, color: tokens.colors.primary },
   plus: {
     width: 40,
     height: 40,

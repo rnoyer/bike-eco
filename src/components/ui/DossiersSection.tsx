@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import type { Dossier } from "@/lib/firestore/schema";
-import type { WithId } from "@/lib/data/fixtures";
+import type { WithId } from "@/lib/firestore/collections";
 import { tokens } from "@/theme/tokens";
 
 interface Props {

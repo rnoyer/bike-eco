@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
 import DossierCard from "@/components/ui/DossierCard";
 import DossiersSection from "@/components/ui/DossiersSection";
-import type { WithId } from "@/lib/data/fixtures";
+import type { WithId } from "@/lib/firestore/collections";
 import { useDossiers } from "@/lib/data/useDossiers";
 import { useRegionFilter } from "@/lib/data/useRegionFilter";
 import type { Dossier, UserRole } from "@/lib/firestore/schema";

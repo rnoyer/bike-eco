@@ -4,7 +4,8 @@ import { useAccount } from "@/lib/data/useAccount";
 import { tokens } from "@/theme/tokens";
 
 export default function AccountScreen() {
-  const { data } = useAccount();
+  const { data, loading } = useAccount();
+  if (loading || !data) return null; // guard shows briefly; layout splash covers first paint
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <AccountInfoList user={data} />

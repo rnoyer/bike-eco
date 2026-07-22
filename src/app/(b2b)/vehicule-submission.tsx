@@ -12,12 +12,14 @@ import {
 } from "@/features/b2b-submission/schema";
 import { B2B_SUBMISSION_STEPS } from "@/features/b2b-submission/steps";
 import { submitB2bSubmission } from "@/features/b2b-submission/submit";
+import { useSession } from "@/lib/data/useSession";
 import { useStepForm } from "@/lib/forms/useStepForm";
 
 export default function B2bVehiculeSubmission() {
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
   const submitting = useRef(false);
+  const { user } = useSession();
 
   const { form, step, isFirst, isLast, meta, next, prev } =
     useStepForm<B2bSubmissionForm>({
@@ -28,7 +30,8 @@ export default function B2bVehiculeSubmission() {
         if (submitting.current) return;
         submitting.current = true;
         try {
-          await submitB2bSubmission(values);
+          if (!user) throw new Error("Votre session a expiré. Reconnectez-vous.");
+          await submitB2bSubmission(values, user);
           setSubmitted(true);
         } catch (err) {
           Alert.alert(

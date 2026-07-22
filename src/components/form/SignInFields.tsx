@@ -15,7 +15,7 @@ type FormValues = z.infer<typeof schema>;
 
 interface Props {
   onSubmit: (email: string, password: string) => void;
-  onForgotPassword: () => void;
+  onForgotPassword: (email: string) => void;
 }
 
 export default function SignInFields({ onSubmit, onForgotPassword }: Props) {
@@ -46,7 +46,7 @@ export default function SignInFields({ onSubmit, onForgotPassword }: Props) {
         <Button
           variant="text"
           label="Mot de passe oublié"
-          onPress={onForgotPassword}
+          onPress={() => onForgotPassword(form.getValues("email"))}
         />
         <Button
           label="Login"
