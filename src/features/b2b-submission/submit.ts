@@ -45,19 +45,19 @@ export async function submitB2bSubmission(
 
     await cleanUpOnFailure(async (track) => {
       const thumbPath = dossierThumbnailPath(companyId, ref.id);
+      track(thumbPath);
       const thumbnailUrl = await uploadLocalFile(
         await makeThumbnail(values.photos[0]),
         thumbPath,
         "image/jpeg",
       );
-      track(thumbPath);
 
       const urls: string[] = [];
       for (const [index, uri] of values.photos.entries()) {
         const ext = extensionForUri(uri);
         const path = dossierPhotoPath(companyId, ref.id, index, ext);
-        urls.push(await uploadLocalFile(uri, path, mimeForExtension(ext)));
         track(path);
+        urls.push(await uploadLocalFile(uri, path, mimeForExtension(ext)));
       }
 
       await setDoc(ref, {

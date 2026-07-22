@@ -48,8 +48,8 @@ export function useSendMessage(
               ref.id,
               file.name,
             );
-            const url = await uploadLocalFile(file.uri, path, file.mimeType);
             track(path);
+            const url = await uploadLocalFile(file.uri, path, file.mimeType);
             attachments.push({
               type: file.type,
               url,

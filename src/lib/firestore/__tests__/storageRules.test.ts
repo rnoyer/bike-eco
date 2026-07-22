@@ -92,6 +92,17 @@ test("a content type that only prefixes an accepted one is rejected", async () =
 // `image/.*` would admit this; the app only ever produces jpeg/png/heic/heif/
 // webp, and svg can carry an executable <script> if its download URL is ever
 // opened directly, so it must stay outside the accepted content-type set.
+// The left alternation branch must be end-anchored too: a type that merely
+// prefixes an accepted image subtype must be rejected. Proves the grouping.
+test("a content type prefixing an accepted image type is rejected", async () => {
+  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  await assertFails(
+    uploadBytes(ref(storage, "dossiers/comp_1/dos_1/photos/x.jpgx"), jpeg, {
+      contentType: "image/jpegx",
+    }),
+  );
+});
+
 test("svg images are rejected even though they are `image/*`", async () => {
   const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
   await assertFails(

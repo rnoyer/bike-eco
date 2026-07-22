@@ -27,7 +27,7 @@ service firebase.storage {
       allow write: if canAccess()
         && request.resource.size < 10 * 1024 * 1024
         && request.resource.contentType.matches(
-             'image/(jpeg|png|heic|heif|webp)|application/pdf');
+             '(image/(jpeg|png|heic|heif|webp)|application/pdf)');
 
       // Lets a failed submission delete what it already uploaded. This grants no
       // new power: `write` above already covers overwriting an object at a known
