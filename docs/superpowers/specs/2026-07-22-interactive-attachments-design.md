@@ -14,7 +14,7 @@ shared.
 
 - Chat **image** attachments render as a real, tappable thumbnail that opens a
   full-screen, swipeable image gallery spanning every photo in the thread, with
-  **pinch-to-zoom** (and the double-tap-zoom / swipe-to-close that come with it).
+  **pinch-to-zoom** and double-tap-zoom (dismissed via a close button / tap).
 - Chat **PDF** attachments render as a prominent, tappable icon that opens the
   device's default PDF handler.
 - The dossier **`PhotoCarousel`** photos become tappable and open the *same*
@@ -35,52 +35,65 @@ shared.
    if set, otherwise the browser, which renders the PDF). The user leaves the app.
 3. **Images → pinch-to-zoom**, chosen over a static viewer. This makes the
    swipe/pinch gesture coordination the hard part.
-4. **Image viewer → a gallery library** (`react-native-awesome-gallery`) built on
-   the already-installed `react-native-gesture-handler` + `react-native-reanimated`,
-   giving swipe + pinch + double-tap-zoom + swipe-to-close out of the box — subject
-   to the compatibility spike below. `expo-linking` (PDFs) and `expo-image`
-   (thumbnails) are already installed.
+4. **Image viewer → hand-rolled with `react-native-gesture-handler` +
+   `react-native-reanimated`** (both already installed), *not* a third-party
+   gallery library. Reanimated 4 + Gesture Handler 2 run gestures on the UI
+   thread, so a lightweight custom viewer avoids third-party lock-in and the
+   reanimated-4 peer mismatch a gallery library would bring
+   (`react-native-awesome-gallery@0.4.3` peers `react-native-reanimated ^3.2.0`;
+   this project is on 4.3.1). **Zero new dependencies.** `expo-linking` (PDFs) and
+   `expo-image` (thumbnails) are already installed.
 
-## Dependency risk & first step (must be resolved before building the rest)
+## Hard part & first step (de-risk before the call sites)
 
-`react-native-awesome-gallery@0.4.3` (latest) declares a peer of
-`react-native-reanimated: ^3.2.0`; this project is on **reanimated 4.3.1** (a
-major version with breaking changes). It is therefore **not verified compatible**,
-and there is no newer release targeting v4.
+The one genuinely tricky piece is coordinating two gestures: horizontal
+**swipe-between-images** (paging) vs. **pan-while-zoomed** (moving inside a zoomed
+image). The rule: paging is live only while the current image sits at scale 1;
+once pinched in (`scale > 1`) paging is suppressed and pan moves within the image;
+zooming back to 1 re-enables paging. Bridging the UI-thread `scale` to the
+JS-thread paging toggle is done with `useAnimatedReaction` + `runOnJS`.
 
-The plan's **first task is a compatibility spike**: install it (`--legacy-peer-deps`),
-wrap the app root in `GestureHandlerRootView`, render a minimal gallery, and
-confirm swipe + pinch + swipe-to-close work on-device against reanimated 4. Also
-gate on `expo-doctor` / a dev-client build succeeding.
-
-- **If it works:** proceed with the library.
-- **If it does not:** fall back to a hand-rolled viewer using the installed
-  gesture-handler + reanimated directly (per-image pinch + pan on a paging
-  container; horizontal paging disabled while zoomed). Same `ImageGalleryModal`
-  public interface either way, so the call sites (chat, carousel) are unaffected
-  by which path wins.
+The plan's **first task builds and de-risks exactly this**: wrap the app root in
+`GestureHandlerRootView` (nothing uses gesture-handler yet), build the per-image
+`ZoomableImage` and the paging container, and verify on-device that (a) swiping
+pages between images at rest, (b) pinch / double-tap zoom and pan work when zoomed,
+and (c) paging is suppressed while zoomed. Everything else (thumbnails, call sites,
+PDFs) is straightforward once this holds.
 
 ## Components
+
+### `ZoomableImage` (new — `src/components/ui/ZoomableImage.tsx`)
+
+One full-screen page: a single `expo-image` with pinch-, double-tap-, and
+pan-when-zoomed gestures. Built directly on `react-native-gesture-handler` +
+`react-native-reanimated` shared values (`scale`/`translateX`/`translateY` + their
+saved counterparts), composing `Gesture.Race(doubleTap, Gesture.Simultaneous(pinch,
+pan))`. Pan only moves the image while `scale > 1`; zooming fully out resets the
+translation. Refinements over the bare version: clamp `scale` to a max and clamp
+pan so the image can't be flung entirely off-screen.
+
+- **Props:** `uri: string`; `onZoomChange?: (zoomed: boolean) => void` — reports
+  (via `runOnJS`) whether this page is currently zoomed, so the gallery can
+  suppress paging.
 
 ### `ImageGalleryModal` (new — `src/components/ui/ImageGalleryModal.tsx`)
 
 A single-responsibility full-screen viewer. It does not know about chat or
 dossiers — it shows a list of image URLs, swipeable, starting at an index.
 
-- **Props (stable across both the library and fallback implementations):**
+- **Props:**
   - `images: string[]` — image URLs to show.
   - `initialIndex: number` — which one to open on (clamped into `[0, images.length)`).
   - `visible: boolean`
   - `onClose: () => void`
-- **Behavior:** a full-screen presentation (Modal / full-screen overlay) wrapping
-  the gallery library's component, opened at `initialIndex`, with swipe between
-  images, pinch- and double-tap-zoom, and swipe-to-close (calling `onClose`); a
-  visible close “✕” as well. An image that fails to load shows a placeholder
-  rather than crashing.
-- **Interface contract:** both call sites drive it purely through props; it owns
-  no attachment/dossier knowledge. This interface is identical whether the library
-  or the hand-rolled fallback backs it, so the spike's outcome never touches the
-  call sites.
+- **Behavior:** a full-screen dark `Modal` containing a horizontal `pagingEnabled`
+  container of `ZoomableImage` pages, scrolled to `initialIndex` on open; page dots
+  when `images.length > 1`; a close “✕”. Horizontal swipe pages between images; the
+  container's paging is disabled while the current page reports itself zoomed (so
+  pan works within the image), and re-enabled on zoom-out. An image that fails to
+  load shows `expo-image`'s placeholder rather than crashing.
+- **Interface contract:** both call sites drive it purely through props; it owns no
+  attachment/dossier knowledge.
 
 The only non-UI logic is clamping `initialIndex` into range — extracted as a tiny
 pure helper and unit-tested.
