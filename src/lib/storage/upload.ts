@@ -12,18 +12,32 @@ import { storage } from "../../../firebaseConfig";
 const THUMBNAIL_WIDTH = 400;
 
 /**
- * Upload a local file URI and return its download URL.
+ * Read a local file URI into a Blob.
  *
- * React Native has no `File`, so the URI is read through `fetch` into a Blob —
- * the standard path for the Firebase JS SDK on native.
+ * On React Native `fetch(uri).blob()` throws "Creating blobs from 'ArrayBuffer'
+ * … are not supported": RN reads the file body into an ArrayBuffer that its Blob
+ * polyfill cannot wrap. XMLHttpRequest with `responseType: "blob"` yields a real
+ * native Blob directly — the approach in Expo's Firebase Storage example — which
+ * the Firebase SDK can then upload without reconstructing it from bytes.
  */
+function blobFromUri(uri: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => resolve(xhr.response as Blob);
+    xhr.onerror = () => reject(new TypeError("Lecture du fichier impossible."));
+    xhr.responseType = "blob";
+    xhr.open("GET", uri, true);
+    xhr.send(null);
+  });
+}
+
+/** Upload a local file URI and return its download URL. */
 export async function uploadLocalFile(
   uri: string,
   path: string,
   contentType: string,
 ): Promise<string> {
-  const response = await fetch(uri);
-  const blob = await response.blob();
+  const blob = await blobFromUri(uri);
   const target = storageRef(storage, path);
   await uploadBytes(target, blob, { contentType });
   return getDownloadURL(target);
