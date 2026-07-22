@@ -1,7 +1,11 @@
 import { useCallback } from "react";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { deleteDoc, doc, serverTimestamp, setDoc } from "firebase/firestore";
 
 import { messagesRef } from "@/lib/firestore/collections";
+import {
+  WRITE_TIMEOUT_MS,
+  writeWithTimeout,
+} from "@/lib/firestore/writeWithTimeout";
 import type {
   AttachmentType,
   MessageAttachment,
@@ -58,14 +62,21 @@ export function useSendMessage(
             });
           }
 
-          await setDoc(ref, {
-            senderId,
-            senderName,
-            senderRole,
-            text: text.trim(),
-            attachments,
-            createdAt: serverTimestamp(),
-          });
+          // Fail fast rather than let an unreachable Firestore buffer the write
+          // and hang the send; compensate undoes it if it commits later.
+          await writeWithTimeout(
+            () =>
+              setDoc(ref, {
+                senderId,
+                senderName,
+                senderRole,
+                text: text.trim(),
+                attachments,
+                createdAt: serverTimestamp(),
+              }),
+            () => void deleteDoc(ref).catch(() => {}),
+            WRITE_TIMEOUT_MS,
+          );
         }, removeStorageObject);
       } catch (error) {
         throw new Error(mapDataError((error as { code?: string }).code ?? ""));

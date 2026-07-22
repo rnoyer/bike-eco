@@ -17,6 +17,10 @@ export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 /** App data lives in the named `bike-eco-db` database, not `(default)`. */
 export const db = getFirestore(app, "bike-eco-db");
 export const storage = getStorage(app);
+// Fail an unreachable upload in seconds instead of retrying for the default two
+// minutes, so an offline submit surfaces its error fast. This caps only the
+// retry window for a *failing* upload — a slow but succeeding one is unaffected.
+storage.maxUploadRetryTime = 20000;
 
 /** Dev opt-in: point every SDK at the local emulators. */
 export const USE_EMULATORS =

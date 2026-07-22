@@ -1,8 +1,18 @@
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  deleteDoc,
+  doc,
+  getDocFromServer,
+  serverTimestamp,
+  setDoc,
+} from "firebase/firestore";
 
 import type { SessionUser } from "@/lib/auth/session";
 import { mapDataError } from "@/lib/data/dataErrors";
 import { companyDoc, dossiersRef } from "@/lib/firestore/collections";
+import {
+  WRITE_TIMEOUT_MS,
+  writeWithTimeout,
+} from "@/lib/firestore/writeWithTimeout";
 import { cleanUpOnFailure } from "@/lib/storage/cleanup";
 import {
   dossierPhotoPath,
@@ -27,6 +37,12 @@ import { toDossierPayload } from "./toDossier";
  * written last so a failed upload can never leave a dossier pointing at photos
  * that do not exist. `cleanUpOnFailure` deletes whatever landed if any step —
  * including that final write — throws.
+ *
+ * A `getDocFromServer` probe gates the whole thing: an offline write would be
+ * *buffered* by Firestore (not rejected) and commit later — stranding a dossier
+ * whose photos we already cleaned up. Reads don't buffer, and forcing the server
+ * (not the cache) makes this reject fast when the backend is unreachable, so we
+ * fail before uploading anything or queuing a write.
  */
 export async function submitB2bSubmission(
   values: B2bSubmissionForm,
@@ -40,7 +56,8 @@ export async function submitB2bSubmission(
   const ref = doc(dossiersRef);
 
   try {
-    const companySnap = await getDoc(companyDoc(companyId));
+    // Reachability gate — also the source of the company name (see the note above).
+    const companySnap = await getDocFromServer(companyDoc(companyId));
     const companyName = companySnap.data()?.name ?? "";
 
     await cleanUpOnFailure(async (track) => {
@@ -60,16 +77,24 @@ export async function submitB2bSubmission(
         urls.push(await uploadLocalFile(uri, path, mimeForExtension(ext)));
       }
 
-      await setDoc(ref, {
-        ...toDossierPayload(
-          values,
-          session,
-          { id: companyId, name: companyName },
-          { urls, thumbnailUrl },
-        ),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+      // Firestore buffers a write it can't reach the server with, so a plain
+      // `setDoc` would hang here forever (no throw → no cleanup, no alert).
+      // Fail fast; the compensating delete undoes the write if it commits later.
+      await writeWithTimeout(
+        () =>
+          setDoc(ref, {
+            ...toDossierPayload(
+              values,
+              session,
+              { id: companyId, name: companyName },
+              { urls, thumbnailUrl },
+            ),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          }),
+        () => void deleteDoc(ref).catch(() => {}),
+        WRITE_TIMEOUT_MS,
+      );
     }, removeStorageObject);
   } catch (error) {
     throw new Error(mapDataError((error as { code?: string }).code ?? ""));
