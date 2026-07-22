@@ -55,11 +55,16 @@ export default function DossierManagementForm({
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     mode: "onBlur",
-    defaultValues: {
+    // `values` (not `defaultValues`) so the form re-syncs when the live dossier
+    // changes under an open Gestion tab — `defaultValues` is read only once at
+    // mount. `keepDirtyValues` preserves any field the back-office has already
+    // started editing, so a background update never clobbers work in progress.
+    values: {
       region: regionLabelOf(initialRegion),
       status: statusLabelOf(initialStatus),
       price: initialPrice != null ? String(initialPrice) : "",
     },
+    resetOptions: { keepDirtyValues: true },
   });
 
   return (
