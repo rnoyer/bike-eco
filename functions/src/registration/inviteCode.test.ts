@@ -14,6 +14,8 @@ test("generateInviteCode maps the RNG deterministically", () => {
   // random() = 0 -> first symbol 'A'; a hair under 1 -> last symbol '9'.
   expect(generateInviteCode(() => 0)).toBe("AAAAAA");
   expect(generateInviteCode(() => 0.999999)).toBe("999999");
+  // random() can return exactly 1; the Math.min clamp must keep the index in range.
+  expect(generateInviteCode(() => 1)).toBe("999999");
 });
 
 test("normalizeInviteCode trims and uppercases", () => {
