@@ -28,6 +28,8 @@ All sections below are filtered by the "Région gérée" region filter set on th
 
 From top to Bottom :
 
+- Only if one or more company registration are pending : Clickable banner sticking on top, displaying '[X] nouveaux vendeurs à valider' when one or multiple companies registration are pending, where [X] is the number of pending registration. Tap on the banner redirect to page-list-companies
+
 - Section "Dossiers à traiter" props :
   - Title : "Dossiers à traiter"
   - List of cards "Dossier" with state "A traiter"
@@ -37,7 +39,7 @@ From top to Bottom :
   - List of cards "Dossier" with state "En cours"
   - Message if no entries : "Vous n'avez pas de dossier en cours pour le moment."
 - Section "Dossiers clos" props :
-  - Title : "Dossiers en cours"
+  - Title : "Dossiers clos"
   - List of cards "Dossier" with state "Cloturé"
   - Message if no entries : "Vous n'avez pas de dossier clos pour le moment."
 
