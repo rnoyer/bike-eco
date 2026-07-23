@@ -13,6 +13,7 @@ import {
 } from "@/features/b2b-registration/schema";
 import { B2B_COMPANY_REGISTRATION_STEPS } from "@/features/b2b-registration/steps";
 import { submitCompanyRegistration } from "@/features/b2b-registration/submit";
+import { GoogleAuthProvider } from "@/features/registration/googleAuth";
 import { callRegisterCompany } from "@/lib/data/registration";
 import { useStepForm } from "@/lib/forms/useStepForm";
 import { auth } from "../../../firebaseConfig";
@@ -21,6 +22,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
   const submitting = useRef(false);
+  const usedGoogle = useRef(false);
 
   const { form, step, isFirst, isLast, meta, next, prev } =
     useStepForm<B2bCompanyRegistrationForm>({
@@ -31,7 +33,7 @@ export default function RegisterScreen() {
         if (submitting.current) return;
         submitting.current = true;
         try {
-          if (auth.currentUser) {
+          if (usedGoogle.current) {
             // Google mode: already signed in during step 2 (AccountFields);
             // the callable sets claims + writes the company/user docs from
             // the existing Firebase Auth identity.
@@ -93,18 +95,20 @@ export default function RegisterScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <FormProvider {...form}>
-        <FormLayout
-          progress={meta.progress}
-          title={meta.title}
-          subtitle={meta.subtitle}
-          onPrev={handlePrev}
-          onNext={next}
-          nextLabel={isLast ? "S'inscrire" : "Suivant"}
-        >
-          {B2B_COMPANY_REGISTRATION_STEPS[step].render()}
-        </FormLayout>
-      </FormProvider>
+      <GoogleAuthProvider value={{ onGoogleProfile: () => { usedGoogle.current = true; } }}>
+        <FormProvider {...form}>
+          <FormLayout
+            progress={meta.progress}
+            title={meta.title}
+            subtitle={meta.subtitle}
+            onPrev={handlePrev}
+            onNext={next}
+            nextLabel={isLast ? "S'inscrire" : "Suivant"}
+          >
+            {B2B_COMPANY_REGISTRATION_STEPS[step].render()}
+          </FormLayout>
+        </FormProvider>
+      </GoogleAuthProvider>
     </>
   );
 }

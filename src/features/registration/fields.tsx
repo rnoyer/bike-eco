@@ -9,11 +9,13 @@ import { signInWithGoogle } from "@/lib/auth/googleSignIn";
 import { digitsOnly } from "@/lib/forms/transforms";
 import { tokens } from "@/theme/tokens";
 import type { B2bCompanyRegistrationForm } from "@/features/b2b-registration/schema";
+import { useGoogleAuthReporter } from "./googleAuth";
 
 /** Step "Votre compte": email + password + Google. `emailDisabled`
  *  prefills+locks the email for the invited-registration flow. */
 export function AccountFields({ emailDisabled = false }: { emailDisabled?: boolean }) {
   const form = useFormContext<B2bCompanyRegistrationForm>();
+  const { onGoogleProfile } = useGoogleAuthReporter();
 
   async function handleAuthPress(provider: "google" | "apple" | "facebook") {
     if (provider !== "google") return;
@@ -22,6 +24,7 @@ export function AccountFields({ emailDisabled = false }: { emailDisabled?: boole
       form.setValue("prenom", profile.prenom ?? "");
       form.setValue("nom", profile.nom ?? "");
       if (!emailDisabled) form.setValue("email", profile.email ?? "");
+      onGoogleProfile(profile);
     } catch (err) {
       Alert.alert(
         "Connexion Google",
