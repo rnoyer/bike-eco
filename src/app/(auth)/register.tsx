@@ -2,6 +2,7 @@ import { Stack, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { Alert } from "react-native";
 import { FormProvider } from "react-hook-form";
+import { signOut } from "firebase/auth";
 
 import FormConfirmation from "@/components/form/FormConfirmation";
 import FormLayout from "@/components/form/FormLayout";
@@ -13,7 +14,6 @@ import {
 import { B2B_COMPANY_REGISTRATION_STEPS } from "@/features/b2b-registration/steps";
 import { submitCompanyRegistration } from "@/features/b2b-registration/submit";
 import { callRegisterCompany } from "@/lib/data/registration";
-import { useSession } from "@/lib/data/useSession";
 import { useStepForm } from "@/lib/forms/useStepForm";
 import { auth } from "../../../firebaseConfig";
 
@@ -21,7 +21,6 @@ export default function RegisterScreen() {
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
   const submitting = useRef(false);
-  const { refreshSession } = useSession();
 
   const { form, step, isFirst, isLast, meta, next, prev } =
     useStepForm<B2bCompanyRegistrationForm>({
@@ -46,9 +45,9 @@ export default function RegisterScreen() {
               departement: values.departement,
               ville: values.ville,
             });
-            await refreshSession();
           } else {
-            // Password mode: creates the Auth user server-side, then signs in.
+            // Password mode: creates the Auth user server-side; the client
+            // stays signed out — the applicant is pending, not active.
             await submitCompanyRegistration(values);
           }
           setSubmitted(true);
@@ -63,7 +62,10 @@ export default function RegisterScreen() {
       },
     });
 
-  const goHome = () => router.replace("/");
+  const goHome = async () => {
+    if (auth.currentUser) await signOut(auth);
+    router.replace("/");
+  };
 
   function handlePrev() {
     if (isFirst) {

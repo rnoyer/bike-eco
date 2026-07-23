@@ -21,7 +21,7 @@ export function AccountFields({ emailDisabled = false }: { emailDisabled?: boole
       const profile = await signInWithGoogle();
       form.setValue("prenom", profile.prenom ?? "");
       form.setValue("nom", profile.nom ?? "");
-      form.setValue("email", profile.email ?? "");
+      if (!emailDisabled) form.setValue("email", profile.email ?? "");
     } catch (err) {
       Alert.alert(
         "Connexion Google",
