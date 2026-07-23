@@ -1,14 +1,35 @@
-import { Alert, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { Alert, StyleSheet, Text } from "react-native";
+import { useFormContext } from "react-hook-form";
 
 import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
+import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
 import { DEPARTMENTS } from "@/constants/departments";
+import { signInWithGoogle } from "@/lib/auth/googleSignIn";
 import { digitsOnly } from "@/lib/forms/transforms";
 import { tokens } from "@/theme/tokens";
+import type { B2bCompanyRegistrationForm } from "@/features/b2b-registration/schema";
 
-/** Step "Votre compte": email + password + Google (stubbed). `emailDisabled`
+/** Step "Votre compte": email + password + Google. `emailDisabled`
  *  prefills+locks the email for the invited-registration flow. */
 export function AccountFields({ emailDisabled = false }: { emailDisabled?: boolean }) {
+  const form = useFormContext<B2bCompanyRegistrationForm>();
+
+  async function handleAuthPress(provider: "google" | "apple" | "facebook") {
+    if (provider !== "google") return;
+    try {
+      const profile = await signInWithGoogle();
+      form.setValue("prenom", profile.prenom ?? "");
+      form.setValue("nom", profile.nom ?? "");
+      form.setValue("email", profile.email ?? "");
+    } catch (err) {
+      Alert.alert(
+        "Connexion Google",
+        err instanceof Error ? err.message : "Veuillez réessayer."
+      );
+    }
+  }
+
   return (
     <>
       <ControlledField
@@ -29,15 +50,7 @@ export function AccountFields({ emailDisabled = false }: { emailDisabled?: boole
         autoCapitalize="none"
         returnKeyType="done"
       />
-      <TouchableOpacity
-        style={styles.google}
-        activeOpacity={0.7}
-        onPress={() =>
-          Alert.alert("Google", "Authentification Google bientôt disponible.")
-        }
-      >
-        <Text style={styles.googleText}>Continuer avec Google</Text>
-      </TouchableOpacity>
+      <ThirdPartyAuthButtons onPress={handleAuthPress} />
       <Text style={styles.note}>* Champs obligatoires</Text>
     </>
   );
@@ -58,14 +71,5 @@ export function CoordonneesFields() {
 }
 
 const styles = StyleSheet.create({
-  google: {
-    height: tokens.button.height,
-    borderRadius: tokens.radius.md,
-    borderWidth: 1.5,
-    borderColor: tokens.colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  googleText: { fontSize: 16, fontWeight: "600", color: tokens.colors.primary },
   note: { fontSize: 12, color: tokens.colors.muted },
 });

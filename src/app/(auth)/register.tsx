@@ -12,12 +12,16 @@ import {
 } from "@/features/b2b-registration/schema";
 import { B2B_COMPANY_REGISTRATION_STEPS } from "@/features/b2b-registration/steps";
 import { submitCompanyRegistration } from "@/features/b2b-registration/submit";
+import { callRegisterCompany } from "@/lib/data/registration";
+import { useSession } from "@/lib/data/useSession";
 import { useStepForm } from "@/lib/forms/useStepForm";
+import { auth } from "../../../firebaseConfig";
 
 export default function RegisterScreen() {
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
   const submitting = useRef(false);
+  const { refreshSession } = useSession();
 
   const { form, step, isFirst, isLast, meta, next, prev } =
     useStepForm<B2bCompanyRegistrationForm>({
@@ -28,7 +32,25 @@ export default function RegisterScreen() {
         if (submitting.current) return;
         submitting.current = true;
         try {
-          await submitCompanyRegistration(values);
+          if (auth.currentUser) {
+            // Google mode: already signed in during step 2 (AccountFields);
+            // the callable sets claims + writes the company/user docs from
+            // the existing Firebase Auth identity.
+            await callRegisterCompany({
+              method: "google",
+              siret: values.siret,
+              companyName: values.companyName,
+              nom: values.nom,
+              prenom: values.prenom,
+              telephone: values.telephone,
+              departement: values.departement,
+              ville: values.ville,
+            });
+            await refreshSession();
+          } else {
+            // Password mode: creates the Auth user server-side, then signs in.
+            await submitCompanyRegistration(values);
+          }
           setSubmitted(true);
         } catch (err) {
           Alert.alert(
