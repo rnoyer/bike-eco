@@ -8,7 +8,7 @@ const tseslint = require("typescript-eslint");
  * tsconfig project; `tsc` already enforces types via `npm run build`.
  */
 module.exports = tseslint.config(
-  { ignores: ["lib/**", "generated/**", "node_modules/**", "eslint.config.js"] },
+  { ignores: ["lib/**", "generated/**", "node_modules/**", "eslint.config.js", "jest.config.js"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
