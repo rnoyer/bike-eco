@@ -96,3 +96,32 @@ test("acceptInvite (google) requires the Google email to match the invitation", 
   const d = fakeDeps({ findInvitationByHash: async () => inv });
   await expect(acceptInviteCore({ method: "google", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000", departement: "75 - Paris", ville: "Paris" }, "uid_g", "other@x.fr", d)).rejects.toMatchObject({ code: "permission-denied" });
 });
+
+test("acceptInvite (google) with a matching email skips createUser and creates an active user", async () => {
+  const inv = { id: "inv1", email: "New@x.fr", companyId: "comp_1", companyName: "G", tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000 };
+  // createUser throws so a regression that called it in google mode would fail here.
+  const d = fakeDeps({ findInvitationByHash: async () => inv, createUser: async () => { throw new Error("must not be called"); } });
+  await acceptInviteCore({ method: "google", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000", departement: "75 - Paris", ville: "Paris" }, "uid_g", "new@x.fr", d);
+  expect(d.calls.users["uid_g"]).toMatchObject({ role: "b2b", companyId: "comp_1", status: "active" });
+  expect(d.calls.claims).toEqual({ uid: "uid_g", claims: { role: "b2b", companyId: "comp_1", status: "active" } });
+  expect(d.calls.invitations["inv1"]).toBe("deleted");
+});
+
+test("google mode with no auth is rejected as unauthenticated (both flows)", async () => {
+  const { email: _email, password: _password, ...companyRest } = companyInput;
+  await expect(
+    registerCompanyCore({ ...companyRest, method: "google" }, null, null, fakeDeps()),
+  ).rejects.toMatchObject({ code: "unauthenticated" });
+
+  const inv = { id: "inv1", email: "n@x.fr", companyId: "comp_1", companyName: "G", tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000 };
+  await expect(
+    acceptInviteCore({ method: "google", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000", departement: "75 - Paris", ville: "Paris" }, null, null, fakeDeps({ findInvitationByHash: async () => inv })),
+  ).rejects.toMatchObject({ code: "unauthenticated" });
+});
+
+test("a duplicate SIRET is rejected BEFORE any user/company is created", async () => {
+  const d = fakeDeps({ companyExistsForSiret: async () => true, createUser: async () => { throw new Error("must not be called"); } });
+  await expect(registerCompanyCore(companyInput, null, null, d)).rejects.toMatchObject({ code: "already-exists" });
+  expect(d.calls.companies).toEqual({});
+  expect(d.calls.users).toEqual({});
+});
