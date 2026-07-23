@@ -23,3 +23,6 @@ mandatory : yes
 - Divider
 - Text : "Ou continuez avec"
 - Three Buttons for third party auth : Google, Apple, Facebook
+- Link : "Pas encore de compte ? Créer un compte" → form-b2b-company-registration
+- Link : "J'ai un code d'invitation" → écran de saisie du code d'invitation
+  (voir form-b2b-invited-registration)
