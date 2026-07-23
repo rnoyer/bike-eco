@@ -1,7 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 import { FormProvider } from "react-hook-form";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 import FormConfirmation from "@/components/form/FormConfirmation";
 import FormLayout from "@/components/form/FormLayout";
@@ -12,13 +13,28 @@ import {
 } from "@/features/b2b-invited-registration/schema";
 import { B2B_INVITED_REGISTRATION_STEPS } from "@/features/b2b-invited-registration/steps";
 import { submitInvitedRegistration } from "@/features/b2b-invited-registration/submit";
+import { GoogleAuthProvider } from "@/features/registration/googleAuth";
+import { callAcceptInvite } from "@/lib/data/registration";
+import { useSession } from "@/lib/data/useSession";
 import { useStepForm } from "@/lib/forms/useStepForm";
+import { auth } from "../../../firebaseConfig";
+
+type CompletedInvite = { method: "password" | "google"; email: string; password: string };
 
 export default function RegisterInvitedScreen() {
   const router = useRouter();
-  const { email } = useLocalSearchParams<{ email?: string }>();
+  const { email, code } = useLocalSearchParams<{ email?: string; code?: string }>();
   const [submitted, setSubmitted] = useState(false);
   const submitting = useRef(false);
+  const usedGoogle = useRef(false);
+  const completed = useRef<CompletedInvite | null>(null);
+  const { refreshSession } = useSession();
+
+  useEffect(() => {
+    // Someone landed here without going through /(auth)/invite-code first
+    // (e.g. a bare deep link): there's no code to accept the invite with.
+    if (!code) router.replace("/(auth)/invite-code");
+  }, [code, router]);
 
   const { form, step, isFirst, isLast, meta, next, prev } =
     useStepForm<B2bInvitedRegistrationForm>({
@@ -27,9 +43,35 @@ export default function RegisterInvitedScreen() {
       defaultValues: { ...B2B_INVITED_REGISTRATION_DEFAULTS, email: email ?? "" },
       onSubmit: async (values) => {
         if (submitting.current) return;
+        if (!code) {
+          Alert.alert(
+            "Code d'invitation manquant",
+            "Veuillez saisir à nouveau votre code d'invitation."
+          );
+          router.replace("/(auth)/invite-code");
+          return;
+        }
         submitting.current = true;
         try {
-          await submitInvitedRegistration(values);
+          if (usedGoogle.current) {
+            // Google mode: already signed in during step 1 (AccountFields); the
+            // callable validates the invite + sets claims from that identity.
+            await callAcceptInvite({
+              method: "google",
+              code,
+              nom: values.nom,
+              prenom: values.prenom,
+              telephone: values.telephone,
+              departement: values.departement,
+              ville: values.ville,
+            });
+            completed.current = { method: "google", email: values.email, password: values.password };
+          } else {
+            // Password mode: creates the ACTIVE Auth user server-side; the client
+            // stays signed out until "Aller à l'accueil" (below).
+            await submitInvitedRegistration({ ...values, code });
+            completed.current = { method: "password", email: values.email, password: values.password };
+          }
           setSubmitted(true);
         } catch (err) {
           Alert.alert(
@@ -42,7 +84,15 @@ export default function RegisterInvitedScreen() {
       },
     });
 
-  const goToDashboard = () => router.replace("/(b2b)/(tabs)/dashboard");
+  const goToDashboard = async () => {
+    const c = completed.current;
+    if (c?.method === "password") {
+      await signInWithEmailAndPassword(auth, c.email, c.password);
+    } else {
+      await refreshSession();
+    }
+    router.replace("/(b2b)/(tabs)/dashboard");
+  };
 
   function handlePrev() {
     if (isFirst) {
@@ -69,18 +119,20 @@ export default function RegisterInvitedScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <FormProvider {...form}>
-        <FormLayout
-          progress={meta.progress}
-          title={meta.title}
-          subtitle={meta.subtitle}
-          onPrev={handlePrev}
-          onNext={next}
-          nextLabel={isLast ? "S'inscrire" : "Suivant"}
-        >
-          {B2B_INVITED_REGISTRATION_STEPS[step].render()}
-        </FormLayout>
-      </FormProvider>
+      <GoogleAuthProvider value={{ onGoogleProfile: () => { usedGoogle.current = true; } }}>
+        <FormProvider {...form}>
+          <FormLayout
+            progress={meta.progress}
+            title={meta.title}
+            subtitle={meta.subtitle}
+            onPrev={handlePrev}
+            onNext={next}
+            nextLabel={isLast ? "S'inscrire" : "Suivant"}
+          >
+            {B2B_INVITED_REGISTRATION_STEPS[step].render()}
+          </FormLayout>
+        </FormProvider>
+      </GoogleAuthProvider>
     </>
   );
 }

@@ -1,15 +1,15 @@
+import { callAcceptInvite } from "@/lib/data/registration";
 import type { B2bInvitedRegistrationForm } from "./schema";
 
-/**
- * STUB (UI-only pass). Real implementation (later milestone): validate the
- * invitation token, create the Firebase Auth user, create the `users` doc with
- * the invited company's `companyId` and role set as server claims, and mark the
- * `invitations` doc accepted. For now we simulate latency so the funnel reaches
- * its confirmation screen.
- */
+/** Password-path invited registration: the Cloud Function validates the code and
+ *  creates the ACTIVE account. Sign-in is deferred to the confirmation's
+ *  "Aller à l'accueil" so the guard can't preempt the confirmation screen. */
 export async function submitInvitedRegistration(
-  values: B2bInvitedRegistrationForm
+  values: B2bInvitedRegistrationForm & { code: string },
 ): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 400));
-  if (__DEV__) console.log("[stub] submitInvitedRegistration", values);
+  await callAcceptInvite({
+    method: "password", code: values.code,
+    nom: values.nom, prenom: values.prenom, telephone: values.telephone,
+    departement: values.departement, ville: values.ville, password: values.password,
+  });
 }
