@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
+import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
 import { connectStorageEmulator, getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -21,6 +22,10 @@ export const storage = getStorage(app);
 // minutes, so an offline submit surfaces its error fast. This caps only the
 // retry window for a *failing* upload — a slow but succeeding one is unaffected.
 storage.maxUploadRetryTime = 20000;
+// No region: Task 4's callables are deployed region-less (default
+// us-central1), matching `sendB2cSubmission` — a mismatched region here would
+// call the wrong URL in production.
+export const functions = getFunctions(app);
 
 /** Dev opt-in: point every SDK at the local emulators. */
 export const USE_EMULATORS =
@@ -42,4 +47,5 @@ export function connectDataEmulators() {
   const host = emulatorHost();
   connectFirestoreEmulator(db, host, 8080);
   connectStorageEmulator(storage, host, 9199);
+  connectFunctionsEmulator(functions, host, 5001);
 }
