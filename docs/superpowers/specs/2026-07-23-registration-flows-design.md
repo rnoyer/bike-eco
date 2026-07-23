@@ -42,6 +42,7 @@ but **nothing creates users, sets claims, or issues invitations yet**. 4a builds
 | 5 | SIRET uniqueness | **Enforced** — `registerCompany` rejects a SIRET already used by a pending or active company. |
 | 6 | Company-reg emails | **Applicant only** ("demande reçue, en attente de validation"). **No team email** — the team is notified by the 4b dashboard banner. |
 | 7 | Google profile prefill | On Google auth, prefill the coordonnées step (prénom, nom, email) from the Google profile where the provider supplies it. Best-effort — the user completes the rest. |
+| 8 | Invitation lifecycle | **Deleted on acceptance or timeout** — never retained as accepted/expired. `acceptInvite` deletes the invitation on success; an expired one is deleted the moment `resolveInvite`/`acceptInvite` encounters it (lazy), and untouched expired ones are swept by a Firestore **TTL policy** on `expiresAt`. So a live invitation is only ever `pending`; the `accepted`/`expired` statuses become vestigial (trim the `INVITATION_STATUSES` enum to `["pending"]` during implementation). |
 
 ## Architecture
 
@@ -75,7 +76,8 @@ picks up the new claims and the guard routes correctly.
 3. **`resolveInvite`** — unauthenticated, **rate-limited**.
    - Input: `code`. Hashes it, looks up a `pending`, unexpired invitation.
    - Returns `{ email, companyName }` to prefill the disabled email field, or a French
-     "invalide ou expiré" error. Does **not** consume the invitation.
+     "invalide ou expiré" error. Does **not** consume a valid invitation, but **deletes** an
+     expired one it encounters.
 
 4. **`acceptInvite`** — unauthenticated (password) or authenticated (Google).
    - Input: `method`, `code`, profile (nom, prénom, téléphone, département, ville); `password`
@@ -84,8 +86,8 @@ picks up the new claims and the guard routes correctly.
      invitation.email, password })`. Google mode: uses `context.auth.uid` and **requires the
      signed-in Google email to equal `invitation.email`**.
    - Writes `users/{uid}` (role `b2b`, companyId `= invitation.companyId`, profile, status
-     **`active`**), sets claims `{ role: "b2b", companyId, status: "active" }`, and marks the
-     invitation `accepted` (one-time). Returns `{ ok: true }`.
+     **`active`**), sets claims `{ role: "b2b", companyId, status: "active" }`, and **deletes
+     the invitation** (one-time — a used code is never retained). Returns `{ ok: true }`.
 
 ### Invite-code brute-force mitigation
 
@@ -117,7 +119,9 @@ impractical. Codes are never logged; only the hash is stored.
 ### Data & rules
 
 - `invitations` stays **fully closed to clients** — all reads/writes go through the functions
-  (Admin SDK, which bypasses rules). Only `tokenHash` is stored, never the raw code.
+  (Admin SDK, which bypasses rules). Only `tokenHash` is stored, never the raw code. Documents
+  are deleted on acceptance/expiry (Decision 8); a Firestore **TTL policy** on
+  `invitations.expiresAt` sweeps untouched expired ones (configured once — see Owner setup).
 - `companies` **create is server-only** (clients never create a company directly; only
   `registerCompany` does, via Admin SDK). `role`/`companyId`/`status` remain non-client-writable
   (existing rules unchanged).
@@ -137,6 +141,9 @@ Reuse `functions/src/email.ts` (SMTP secrets, `DEV_EMAIL_OVERRIDE`, French copy)
 4. **Dev-client rebuild** so the Google native module links (`npx expo prebuild --clean` then
    `run:ios` / `run:android`).
 5. SMTP secrets already configured for the B2C email function are reused.
+6. Enable a Firestore **TTL policy** on the `invitations` collection's `expiresAt` field
+   (console or `gcloud firestore fields ttls update`) — the hygiene sweep for untouched
+   expired invitations.
 
 ## Testing
 
@@ -147,7 +154,7 @@ Reuse `functions/src/email.ts` (SMTP secrets, `DEV_EMAIL_OVERRIDE`, French copy)
   duplicate SIRET; `sendInvite` writes an invitation with a hashed, 1h-expiry code (active-b2b
   caller only); `resolveInvite` returns the email for a valid code and errors on
   invalid/expired; `acceptInvite` creates an **active** user, pins the company from the
-  invitation, marks it accepted, and rejects a reused/expired code.
+  invitation, deletes it, and rejects a reused (now-deleted) or expired code.
 - **Interactive walkthrough** (needs Google native config + a device) for the client paths:
   email/password + Google company registration → pending gate; invite → code email; typed code
   → invited registration → dashboard.
