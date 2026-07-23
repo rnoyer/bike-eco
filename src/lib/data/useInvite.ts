@@ -1,15 +1,8 @@
 import { useCallback } from "react";
+import { callSendInvite } from "./registration";
 
-/**
- * STUB — colleague invitations need a Cloud Function to create the Auth user and
- * set its claims, which is slice 4. Kept as a hook so the call site does not
- * change when it lands.
- */
+/** Invite a colleague by email: the function issues a one-time 1h code and emails it. */
 export function useInvite() {
-  const invite = useCallback(async (email: string) => {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    if (__DEV__) console.log("[stub] invite", { email });
-  }, []);
-
+  const invite = useCallback((email: string) => callSendInvite(email), []);
   return { invite };
 }
