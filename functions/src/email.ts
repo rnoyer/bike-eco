@@ -80,6 +80,17 @@ function smtpConfigured(): boolean {
   }
 }
 
+/** Reusable single-email sender for non-B2C flows (registration). Same transport + secrets. */
+export async function sendMail(opts: { to: string; subject: string; text: string }): Promise<void> {
+  const { transport } = getTransport();
+  await transport.sendMail({
+    from: fromAddress(),
+    to: DEV_EMAIL_OVERRIDE ? DEV_EMAIL : opts.to,
+    subject: opts.subject,
+    text: opts.text,
+  });
+}
+
 export interface Attachment {
   filename: string;
   content: Buffer;
