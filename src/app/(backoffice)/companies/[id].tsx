@@ -14,6 +14,7 @@ import AccountInfoList from "@/components/native/AccountInfoList";
 import CompanyInfoList from "@/components/native/CompanyInfoList";
 import Button from "@/components/ui/Button";
 import Section from "@/components/ui/Section";
+import SectionWrapper from "@/components/ui/SectionWrapper";
 import { callApproveCompany, callDeleteCompany } from "@/lib/data/registration";
 import { useCompany, useCompanyUsers } from "@/lib/data/useCompanies";
 import { tokens } from "@/theme/tokens";
@@ -75,61 +76,63 @@ export default function CompanyDetailScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      {isPending ? (
-        <Section title="Voulez-vous autoriser cette entreprise à vendre des véhicules">
-          <View style={styles.row}>
-            <Button
-              label="Autoriser"
-              onPress={() => run(() => callApproveCompany(id))}
-              style={styles.flex}
-              disabled={busy}
-            />
-            <Button
-              variant="outlined"
-              label="Décliner inscription"
-              onPress={onDecline}
-              style={styles.flex}
-              disabled={busy}
-            />
-          </View>
-        </Section>
-      ) : null}
-
-      <Section title="Information vendeur">
-        <CompanyInfoList company={company.data} />
-      </Section>
-
-      {owner ? (
-        <Section title="Information vendeur admin">
-          <AccountInfoList user={owner} />
-        </Section>
-      ) : null}
-
-      {!isPending ? (
-        <>
-          <Section
-            title="Autres utilisateurs de cette entreprise"
-            emptyMessage="Aucun autre utilisateur."
-          >
-            {otherUsers.map((u) => (
-              <Text
-                key={u.id}
-                style={styles.userLine}
-              >{`${u.prenom} ${u.nom} — ${u.email}`}</Text>
-            ))}
+    <ScrollView>
+      <SectionWrapper>
+        {isPending ? (
+          <Section title="Voulez-vous autoriser cette entreprise à vendre des véhicules">
+            <View style={styles.row}>
+              <Button
+                label="Autoriser"
+                onPress={() => run(() => callApproveCompany(id))}
+                style={styles.flex}
+                disabled={busy}
+              />
+              <Button
+                variant="outlined"
+                label="Décliner inscription"
+                onPress={onDecline}
+                style={styles.flex}
+                disabled={busy}
+              />
+            </View>
           </Section>
-          <Section title="Gérer cette entreprise">
-            <Button
-              variant="outlined"
-              label="Supprimer cette entreprise"
-              onPress={() => setConfirmDelete(true)}
-              style={styles.danger}
-              disabled={busy}
-            />
+        ) : null}
+
+        <Section title="Information vendeur">
+          <CompanyInfoList company={company.data} />
+        </Section>
+
+        {owner ? (
+          <Section title="Information vendeur admin">
+            <AccountInfoList user={owner} />
           </Section>
-        </>
-      ) : null}
+        ) : null}
+
+        {!isPending ? (
+          <>
+            <Section
+              title="Autres utilisateurs de cette entreprise"
+              emptyMessage="Aucun autre utilisateur."
+            >
+              {otherUsers.map((u) => (
+                <Text
+                  key={u.id}
+                  style={styles.userLine}
+                >{`${u.prenom} ${u.nom} — ${u.email}`}</Text>
+              ))}
+            </Section>
+            <Section title="Gérer cette entreprise">
+              <Button
+                variant="outlined"
+                label="Supprimer cette entreprise"
+                onPress={() => setConfirmDelete(true)}
+                style={styles.danger}
+                disabled={busy}
+              />
+            </Section>
+          </>
+        ) : null}
+      </SectionWrapper>
 
       <Modal
         visible={confirmDelete}
@@ -168,7 +171,6 @@ export default function CompanyDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: tokens.space.lg, gap: tokens.space.xl },
   center: {
     flex: 1,
     textAlignVertical: "center",

@@ -2,6 +2,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
 import DossierCard from "@/components/ui/DossierCard";
 import DossiersSection from "@/components/ui/DossiersSection";
 import PendingCompaniesBanner from "@/components/ui/PendingCompaniesBanner";
+import SectionWrapper from "@/components/ui/SectionWrapper";
 import type { WithId } from "@/lib/firestore/collections";
 import { useDossiers } from "@/lib/data/useDossiers";
 import { useRegionFilter } from "@/lib/data/useRegionFilter";
@@ -33,29 +34,31 @@ export default function DashboardScreen({ role, onOpenDossier, onSell, onOpenCom
       />
     );
     return (
-      <ScrollView contentContainerStyle={styles.content}>
-        {onOpenCompanies ? <PendingCompaniesBanner onPress={onOpenCompanies} /> : null}
-        <DossiersSection
-          title="Dossiers à traiter"
-          dossiers={aTraiter.data}
-          loading={aTraiter.loading}
-          emptyMessage="Vous n'avez pas de dossier à traiter pour le moment."
-          renderCard={card}
-        />
-        <DossiersSection
-          title="Dossiers en cours"
-          dossiers={enCours.data}
-          loading={enCours.loading}
-          emptyMessage="Vous n'avez pas de dossier en cours pour le moment."
-          renderCard={card}
-        />
-        <DossiersSection
-          title="Dossiers clos"
-          dossiers={closed.data}
-          loading={closed.loading}
-          emptyMessage="Vous n'avez pas de dossier clos pour le moment."
-          renderCard={card}
-        />
+      <ScrollView>
+        <SectionWrapper>
+          {onOpenCompanies ? <PendingCompaniesBanner onPress={onOpenCompanies} /> : null}
+          <DossiersSection
+            title="Dossiers à traiter"
+            dossiers={aTraiter.data}
+            loading={aTraiter.loading}
+            emptyMessage="Vous n'avez pas de dossier à traiter pour le moment."
+            renderCard={card}
+          />
+          <DossiersSection
+            title="Dossiers en cours"
+            dossiers={enCours.data}
+            loading={enCours.loading}
+            emptyMessage="Vous n'avez pas de dossier en cours pour le moment."
+            renderCard={card}
+          />
+          <DossiersSection
+            title="Dossiers clos"
+            dossiers={closed.data}
+            loading={closed.loading}
+            emptyMessage="Vous n'avez pas de dossier clos pour le moment."
+            renderCard={card}
+          />
+        </SectionWrapper>
       </ScrollView>
     );
   }
@@ -73,30 +76,31 @@ export default function DashboardScreen({ role, onOpenDossier, onSell, onOpenCom
     />
   );
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <TouchableOpacity style={styles.cta} activeOpacity={0.85} onPress={onSell}>
-        <Text style={styles.ctaText}>Vendre une moto</Text>
-      </TouchableOpacity>
-      <DossiersSection
-        title="Dossiers en cours"
-        dossiers={ongoing}
-        loading={aTraiter.loading || enCours.loading}
-        emptyMessage="Vous n'avez pas de dossier en cours pour le moment."
-        renderCard={card}
-      />
-      <DossiersSection
-        title="Dossiers clos"
-        dossiers={closed.data}
-        loading={closed.loading}
-        emptyMessage="Vous n'avez pas de dossier clos pour le moment."
-        renderCard={card}
-      />
+    <ScrollView>
+      <SectionWrapper>
+        <TouchableOpacity style={styles.cta} activeOpacity={0.85} onPress={onSell}>
+          <Text style={styles.ctaText}>Vendre une moto</Text>
+        </TouchableOpacity>
+        <DossiersSection
+          title="Dossiers en cours"
+          dossiers={ongoing}
+          loading={aTraiter.loading || enCours.loading}
+          emptyMessage="Vous n'avez pas de dossier en cours pour le moment."
+          renderCard={card}
+        />
+        <DossiersSection
+          title="Dossiers clos"
+          dossiers={closed.data}
+          loading={closed.loading}
+          emptyMessage="Vous n'avez pas de dossier clos pour le moment."
+          renderCard={card}
+        />
+      </SectionWrapper>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: tokens.space.lg, gap: tokens.space.xl },
   cta: {
     height: tokens.button.height,
     borderRadius: tokens.radius.md,
