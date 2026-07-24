@@ -51,6 +51,10 @@ export function useCompany(id: string) {
   } | null>(null);
 
   useEffect(() => {
+    // An empty id cannot form a valid doc path — Firestore throws. Don't
+    // subscribe; leave `resolved` unset so `data`/`loading` fall through to
+    // the not-found branch below instead of spinning forever.
+    if (!id) return;
     return onSnapshot(
       doc(companiesRef, id),
       (snap) => setResolved({ id, data: snap.exists() ? { ...snap.data(), id: snap.id } : null, error: null }),
@@ -58,8 +62,9 @@ export function useCompany(id: string) {
     );
   }, [id]);
 
-  const loading = resolved?.id !== id;
-  return { data: loading ? null : resolved!.data, loading, error: loading ? null : resolved!.error };
+  const noId = !id;
+  const loading = !noId && resolved?.id !== id;
+  return { data: loading || noId ? null : resolved!.data, loading, error: loading || noId ? null : resolved!.error };
 }
 
 /** All users of a company, live. */
@@ -71,6 +76,9 @@ export function useCompanyUsers(companyId: string) {
   } | null>(null);
 
   useEffect(() => {
+    // An empty companyId can't drive a legal `where` query — don't subscribe;
+    // leave `resolved` unset so the hook reports empty/not-loading below.
+    if (!companyId) return;
     return onSnapshot(
       query(usersRef, where("companyId", "==", companyId)),
       (snap) => setResolved({ companyId, data: snap.docs.map((d) => ({ ...d.data(), id: d.id })), error: null }),
@@ -78,6 +86,7 @@ export function useCompanyUsers(companyId: string) {
     );
   }, [companyId]);
 
-  const loading = resolved?.companyId !== companyId;
-  return { data: loading ? [] : resolved!.data, loading, error: loading ? null : resolved!.error };
+  const noCompanyId = !companyId;
+  const loading = !noCompanyId && resolved?.companyId !== companyId;
+  return { data: loading || noCompanyId ? [] : resolved!.data, loading, error: loading || noCompanyId ? null : resolved!.error };
 }
