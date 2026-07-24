@@ -1,9 +1,11 @@
 > **Live project note:** invitations are deleted (not marked `expired`) once
 > their `expiresAt` passes, via a Firestore **TTL policy** on
 > `invitations.expiresAt` — configure it once per environment:
+>
 > ```bash
 > gcloud firestore fields ttls update expiresAt --collection-group=invitations --enable-ttl --database=bike-eco-db
 > ```
+>
 > (Console equivalent: Firestore → the `bike-eco-db` database → TTL policies.)
 > The emulator does not enforce TTL, so this has no effect on local testing.
 
@@ -30,4 +32,27 @@ EXPO_PUBLIC_USE_EMULATORS=1 npx expo start
 
 ```
 
-claude --resume 91cc2bf2-13f0-49ed-9b05-f25f8bc49b79
+wipe the app's data via adb — that clears AsyncStorage, the Firebase Auth persisted session, and everything else in one shot:
+
+```bash
+adb shell pm clear com.bikeeco.app
+```
+
+com.bikeeco.app is your android.package. After this, the next launch has no persisted user, so onAuthStateChanged fires with user = null (the silent path) — a genuine first-launch state.
+
+A couple of practical notes:
+
+- pm clear force-stops the app, so relaunch it afterward (`npx expo start` → press a, or tap the icon). The dev client reconnects to Metro fine — pm clear only wipes data, not the installed binary.
+- Multiple emulators/devices connected? adb will complain it needs a target. List them and pick one:
+  `adb devices`
+  `adb -s emulator-5554 shell pm clear com.bikeeco.app`
+
+Alternatives
+
+- Just the auth session, keep other data: sign out from inside the app (useAuth().signOut()), or the settings screen's logout. This drops the Firebase session but leaves other AsyncStorage keys — good for testing "logged-out" without a full reset.
+- Truly pristine (fresh install semantics): uninstall and let run:android reinstall:
+  `adb uninstall com.bikeeco.app`
+  `npx expo run:android`
+- Use this if you also want to re-exercise first-run native permission prompts. It's heavier since it rebuilds/reinstalls.
+
+For iterating on the auth/registration walkthrough, adb shell pm clear com.bikeeco.app between runs is the fast loop.
