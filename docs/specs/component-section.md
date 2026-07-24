@@ -26,3 +26,8 @@ company list & detail, account, settings, dossier detail).
 own `dossiers`/`companies` + `renderCard` prop shape and pass `{items.map(renderCard)}` as
 children). The account, settings, dossier-detail, and back-office company-detail screens use
 `Section` directly for their titled blocks.
+
+## Layout
+
+Sections are spaced by the [`SectionWrapper`](component-section-wrapper.md) container, which
+owns the screen padding and the gap between sections and other top-level blocks.
