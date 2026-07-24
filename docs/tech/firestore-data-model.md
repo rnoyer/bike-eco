@@ -51,9 +51,16 @@ Dates are `timestamp`; numeric vehicle values (`prix`, `annee`, `kilometrage`,
 |-------|------|-------|
 | `siret` | string | 14 digits, immutable |
 | `name` | string | |
-| `status` | string | `pending` → `active` / `rejected` (manual validation by the team) |
+| `status` | string | `pending` → `active` (manual validation by the team; a declined applicant is hard-deleted, so there is no persisted `rejected`) |
+| `departement` | string | company location, e.g. `"33 - Gironde"` — captured at registration |
+| `ville` | string | company city |
+| `region` | string | `NORTH` \| `SOUTH`, derived from `departement` — drives back-office routing |
 | `createdBy` | uid | first registrant |
+| `createdByName` | string | denormalized `"prénom nom"` of the first registrant (company card subtitle) |
+| `validatedAt` | timestamp \| null | set when the team approves; `null` while pending |
 | `createdAt` | timestamp | immutable |
+
+**Location lives only on the company** — a `users` document has no `departement`/`ville`/`region`. A dossier's `region` is derived from its company's `departement`.
 
 ### `users/{uid}`
 
@@ -63,12 +70,12 @@ Contains PII → readable by the owner and the Bike-eco team only.
 |-------|------|-------|
 | `role` | string | `b2b` \| `backoffice` — mirror of the custom claim, server-set |
 | `companyId` | string \| null | b2b only |
-| `region` | string \| null | `NORTH` \| `SOUTH` (back-office routing) |
 | `nom`, `prenom` | string | |
 | `email`, `telephone` | string | PII |
-| `departement`, `ville` | string | |
 | `status` | string | `pending` until the company is validated → `active` |
 | `createdAt`, `updatedAt` | timestamp | |
+
+A user carries **no location** — `departement`/`ville`/`region` live on the company. The Auth custom claims are `role` / `companyId` / `status` only (no `region`); the back-office "Région gérée" is a local device preference, not a claim.
 
 ### `invitations/{invitationId}`
 
@@ -89,7 +96,7 @@ B2B only. Form sections are grouped into nested maps for readability.
 | field | type | notes |
 |-------|------|-------|
 | `status` | string | `a_traiter` \| `en_cours` \| `cloture` |
-| `region` | string | `NORTH` \| `SOUTH`, derived from the submitter's `departement` (reuses `isNord`/`isSud`) |
+| `region` | string | `NORTH` \| `SOUTH`, derived from the submitter's **company** `departement` (reuses `isNord`/`isSud`); reassignable by the back-office (page-dossier-management) |
 | `companyId` | string | owner company |
 | `submittedBy` | uid | |
 | `negotiatedPrice` | number \| null | back-office deal outcome (page-dossier-management) |
