@@ -8,12 +8,19 @@ interface Props {
   onInvite: () => void;
   onDelete: () => void;
   onSignOut: () => void;
+  onManageCompanies?: () => void;
 }
 
-export default function SettingsScreen({ role, onInvite, onDelete, onSignOut }: Props) {
+export default function SettingsScreen({ role, onInvite, onDelete, onSignOut, onManageCompanies }: Props) {
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <SettingsList role={role} onInvite={onInvite} onDelete={onDelete} onSignOut={onSignOut} />
+      <SettingsList
+        role={role}
+        onInvite={onInvite}
+        onDelete={onDelete}
+        onSignOut={onSignOut}
+        onManageCompanies={onManageCompanies}
+      />
     </ScrollView>
   );
 }

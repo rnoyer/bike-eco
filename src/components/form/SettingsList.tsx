@@ -18,15 +18,29 @@ interface Props {
   onInvite: () => void;
   onDelete: () => void;
   onSignOut: () => void;
+  onManageCompanies?: () => void;
 }
 
-export default function SettingsList({ role, onInvite, onDelete, onSignOut }: Props) {
+export default function SettingsList({
+  role,
+  onInvite,
+  onDelete,
+  onSignOut,
+  onManageCompanies,
+}: Props) {
   const { region, setRegion } = useRegionFilter();
   const currentLabel =
     REGION_OPTIONS.find((o) => o.value === fromRegion(region))?.label ?? null;
 
   return (
     <View style={styles.container}>
+      {role === "backoffice" ? (
+        <Button
+          variant="outlined"
+          label="Gérer les entreprises"
+          onPress={() => onManageCompanies?.()}
+        />
+      ) : null}
       {role === "backoffice" ? (
         <Dropdown
           label="Région gérée"

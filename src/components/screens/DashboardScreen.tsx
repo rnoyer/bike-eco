@@ -1,6 +1,7 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
 import DossierCard from "@/components/ui/DossierCard";
 import DossiersSection from "@/components/ui/DossiersSection";
+import PendingCompaniesBanner from "@/components/ui/PendingCompaniesBanner";
 import type { WithId } from "@/lib/firestore/collections";
 import { useDossiers } from "@/lib/data/useDossiers";
 import { useRegionFilter } from "@/lib/data/useRegionFilter";
@@ -11,9 +12,10 @@ interface Props {
   role: UserRole;
   onOpenDossier: (id: string) => void;
   onSell?: () => void;
+  onOpenCompanies?: () => void;
 }
 
-export default function DashboardScreen({ role, onOpenDossier, onSell }: Props) {
+export default function DashboardScreen({ role, onOpenDossier, onSell, onOpenCompanies }: Props) {
   const { region } = useRegionFilter();
   const filter = role === "backoffice" ? region : undefined;
   const aTraiter = useDossiers(["a_traiter"], filter);
@@ -32,6 +34,7 @@ export default function DashboardScreen({ role, onOpenDossier, onSell }: Props) 
     );
     return (
       <ScrollView contentContainerStyle={styles.content}>
+        {onOpenCompanies ? <PendingCompaniesBanner onPress={onOpenCompanies} /> : null}
         <DossiersSection
           title="Dossiers à traiter"
           dossiers={aTraiter.data}

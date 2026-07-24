@@ -24,7 +24,7 @@ From top to Bottom :
 
 ### Bike-eco Backoffice specificity
 
-All sections below are filtered by the "Région gérée" region filter set on the back-office settings page (default "Toute la France" = no filter). The filter value is persisted and restored on app restart. See `page-settings.md`.
+All sections below are filtered by the "Région gérée" region filter set on the back-office settings page (default "Toute la France" = no filter). The filter value is persisted and restored on app restart. See `page-settings.md`. The pending-registration banner count and the companies list (page-list-companies) are filtered the same way, by `company.region` — a value derived from the company's département at registration time, not user-editable afterward.
 
 From top to Bottom :
 

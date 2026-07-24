@@ -17,6 +17,8 @@ From top to bottom
 
 ### Bike-eco Backoffice
 
+- Button secondary : "Gérer les entreprises" (link to page-list-companies)
+
 label : "Région gérée"
 Placeholder : none
 default value : "Toute la France"
