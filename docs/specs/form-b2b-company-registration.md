@@ -62,6 +62,11 @@ slider : 75%
 title : "Vos coordonnées"
 subtitle : "Informations relative à votre compte utilisateur"
 
+Note : si l'utilisateur s'est authentifié via le bouton Google de l'étape 2,
+"Nom" et "Prénom" sont prérempli avec les valeurs du profil Google (l'email
+n'est pas concerné, ces champs n'apparaissent pas ici) ; les deux champs
+restent modifiables.
+
 ---
 
 label : "Nom\*"

@@ -237,6 +237,25 @@ test("backoffice messages on any dossier", async () => {
   );
 });
 
+// ── invitations & companies (server-only) ──────────────────────────────────
+
+test("clients cannot read or write invitations", async () => {
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertFails(getDoc(doc(db, "invitations/inv_1")));
+  await assertFails(setDoc(doc(db, "invitations/inv_2"), { email: "x@x.fr" }));
+});
+
+test("clients cannot create a company", async () => {
+  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  await assertFails(
+    setDoc(doc(db, "companies/comp_x"), {
+      siret: "12345678901234",
+      name: "X",
+      status: "pending",
+    }),
+  );
+});
+
 test("messages are immutable once sent", async () => {
   let id = "";
   await env.withSecurityRulesDisabled(async (ctx) => {

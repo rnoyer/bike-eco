@@ -25,7 +25,10 @@ export type CompanyStatus = (typeof COMPANY_STATUSES)[number];
 export const USER_STATUSES = ["pending", "active"] as const;
 export type UserStatus = (typeof USER_STATUSES)[number];
 
-export const INVITATION_STATUSES = ["pending", "accepted", "expired"] as const;
+// An invitation only ever exists in `pending` state: acceptance and expiry
+// both delete the document (see functions/src/registration) rather than
+// transitioning its status.
+export const INVITATION_STATUSES = ["pending"] as const;
 export type InvitationStatus = (typeof INVITATION_STATUSES)[number];
 
 /** `a_traiter` = new, `en_cours` = ongoing, `cloture` = closed. */

@@ -66,6 +66,12 @@ export default function SignInScreen() {
           >
             Pas encore de compte ? Créer un compte
           </Text>
+          <Text
+            style={styles.registerLink}
+            onPress={() => router.push("/(auth)/invite-code")}
+          >
+            J&apos;ai un code d&apos;invitation
+          </Text>
         </View>
       </ScrollView>
     </PhotoBackground>

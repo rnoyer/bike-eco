@@ -1,7 +1,8 @@
 import { Stack, useRouter } from "expo-router";
+import { signOut } from "firebase/auth";
 import { useRef, useState } from "react";
-import { Alert } from "react-native";
 import { FormProvider } from "react-hook-form";
+import { Alert } from "react-native";
 
 import FormConfirmation from "@/components/form/FormConfirmation";
 import FormLayout from "@/components/form/FormLayout";
@@ -12,12 +13,16 @@ import {
 } from "@/features/b2b-registration/schema";
 import { B2B_COMPANY_REGISTRATION_STEPS } from "@/features/b2b-registration/steps";
 import { submitCompanyRegistration } from "@/features/b2b-registration/submit";
+import { GoogleAuthProvider } from "@/features/registration/googleAuth";
+import { callRegisterCompany } from "@/lib/data/registration";
 import { useStepForm } from "@/lib/forms/useStepForm";
+import { auth } from "../../../firebaseConfig";
 
 export default function RegisterScreen() {
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
   const submitting = useRef(false);
+  const usedGoogle = useRef(false);
 
   const { form, step, isFirst, isLast, meta, next, prev } =
     useStepForm<B2bCompanyRegistrationForm>({
@@ -28,12 +33,30 @@ export default function RegisterScreen() {
         if (submitting.current) return;
         submitting.current = true;
         try {
-          await submitCompanyRegistration(values);
+          if (usedGoogle.current) {
+            // Google mode: already signed in during step 2 (AccountFields);
+            // the callable sets claims + writes the company/user docs from
+            // the existing Firebase Auth identity.
+            await callRegisterCompany({
+              method: "google",
+              siret: values.siret,
+              companyName: values.companyName,
+              nom: values.nom,
+              prenom: values.prenom,
+              telephone: values.telephone,
+              departement: values.departement,
+              ville: values.ville,
+            });
+          } else {
+            // Password mode: creates the Auth user server-side; the client
+            // stays signed out — the applicant is pending, not active.
+            await submitCompanyRegistration(values);
+          }
           setSubmitted(true);
         } catch (err) {
           Alert.alert(
             "Inscription impossible",
-            err instanceof Error ? err.message : "Veuillez réessayer."
+            err instanceof Error ? err.message : "Veuillez réessayer.",
           );
         } finally {
           submitting.current = false;
@@ -41,7 +64,10 @@ export default function RegisterScreen() {
       },
     });
 
-  const goHome = () => router.replace("/");
+  const goHome = async () => {
+    if (auth.currentUser) await signOut(auth);
+    router.replace("/");
+  };
 
   function handlePrev() {
     if (isFirst) {
@@ -69,18 +95,27 @@ export default function RegisterScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <FormProvider {...form}>
-        <FormLayout
-          progress={meta.progress}
-          title={meta.title}
-          subtitle={meta.subtitle}
-          onPrev={handlePrev}
-          onNext={next}
-          nextLabel={isLast ? "S'inscrire" : "Suivant"}
-        >
-          {B2B_COMPANY_REGISTRATION_STEPS[step].render()}
-        </FormLayout>
-      </FormProvider>
+      <GoogleAuthProvider
+        value={{
+          onGoogleProfile: async () => {
+            usedGoogle.current = true;
+            await next();
+          },
+        }}
+      >
+        <FormProvider {...form}>
+          <FormLayout
+            progress={meta.progress}
+            title={meta.title}
+            subtitle={meta.subtitle}
+            onPrev={handlePrev}
+            onNext={next}
+            nextLabel={isLast ? "S'inscrire" : "Suivant"}
+          >
+            {B2B_COMPANY_REGISTRATION_STEPS[step].render()}
+          </FormLayout>
+        </FormProvider>
+      </GoogleAuthProvider>
     </>
   );
 }

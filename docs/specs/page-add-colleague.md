@@ -18,7 +18,10 @@ From top top bottom
   - mandatory : yes
 - Button primary :
   - text : "Envoyer l'invitation"
-  - trigger send invitation
+  - trigger send invitation : génère un code à usage unique, valable 1 heure,
+    et l'envoie par email à l'adresse saisie (voir
+    form-b2b-invited-registration pour l'écran de saisie du code côté
+    invité).
   - link to page-confirmation
     - message : l'invitation à bien été envoyée.
     - Redirect to page-Dashboard

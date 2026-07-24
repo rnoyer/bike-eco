@@ -6,6 +6,8 @@ import * as logger from "firebase-functions/logger";
 import { B2C_EMAIL_SECRETS, sendB2cEmails, type Attachment } from "./email";
 import { b2cPayloadSchema } from "./payload";
 
+export { registerCompany, sendInvite, resolveInvite, acceptInvite } from "./registration";
+
 // Per-function caps still apply; this bounds the blast radius of autoscaling.
 setGlobalOptions({ maxInstances: 10 });
 

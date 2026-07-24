@@ -9,6 +9,23 @@ Layout vertical commun aux steps :
 
 ---
 
+Écran préalable (hors stepper) : "Code d'invitation"
+
+Accessible depuis page-login-signup via le lien "J'ai un code d'invitation".
+
+label : "Code d'invitation\*"
+placeholder : "Code à 6 caractères"
+default value : null
+type : Input text (6 caractères, en majuscules)
+mandatory : yes
+
+Le code est un code à usage unique valable 1 heure, envoyé par email lors de
+l'invitation (voir page-add-colleague). Une fois validé, l'email associé est
+transmis (avec le code) à l'étape 1 ci-dessous ; un accès direct sans code
+valide redirige vers cet écran.
+
+---
+
 Form : step 1
 slider : 33%
 title : "Votre compte"
@@ -39,6 +56,11 @@ Form : step 2
 slider : 66%
 title : "Vos coordonnées"
 subtitle : "Informations relative à votre compte utilisateur"
+
+Note : si l'utilisateur s'est authentifié via le bouton Google de l'étape 1,
+"Nom" et "Prénom" sont prérempli avec les valeurs du profil Google (l'email
+reste celui de l'invitation, non modifié par Google) ; les deux champs
+restent modifiables.
 
 ---
 

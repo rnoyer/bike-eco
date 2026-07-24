@@ -2,11 +2,12 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { tokens } from "@/theme/tokens";
 
 type Provider = "google" | "apple" | "facebook";
-const LABELS: Record<Provider, string> = {
-  google: "Google",
-  apple: "Apple",
-  facebook: "Facebook",
-};
+
+const PROVIDERS: { id: Provider; label: string; enabled: boolean }[] = [
+  { id: "google", label: "Google", enabled: true },
+  { id: "apple", label: "Apple — bientôt disponible", enabled: false },
+  { id: "facebook", label: "Facebook — bientôt disponible", enabled: false },
+];
 
 export default function ThirdPartyAuthButtons({
   onPress,
@@ -20,14 +21,15 @@ export default function ThirdPartyAuthButtons({
         <Text style={styles.or}>Ou continuez avec</Text>
         <View style={styles.line} />
       </View>
-      {(["google", "apple", "facebook"] as Provider[]).map((p) => (
+      {PROVIDERS.map((p) => (
         <TouchableOpacity
-          key={p}
-          style={styles.btn}
-          onPress={() => onPress(p)}
+          key={p.id}
+          style={[styles.btn, !p.enabled && styles.btnDisabled]}
+          disabled={!p.enabled}
+          onPress={() => p.enabled && onPress(p.id)}
           activeOpacity={0.7}
         >
-          <Text style={styles.btnText}>{LABELS[p]}</Text>
+          <Text style={styles.btnText}>{p.label}</Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -47,5 +49,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  btnDisabled: { opacity: 0.5 },
   btnText: { fontSize: 16, fontWeight: "600", color: tokens.colors.primary },
 });

@@ -2,6 +2,7 @@
   "compilerOptions": {
     "module": "NodeNext",
     "esModuleInterop": true,
+    "isolatedModules": true,
     "moduleResolution": "nodenext",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
@@ -9,7 +10,8 @@
     "rootDir": "src",
     "sourceMap": true,
     "strict": true,
-    "target": "es2017"
+    "target": "es2017",
+    "types": ["jest", "node"]
   },
   "compileOnSave": true,
   "include": [

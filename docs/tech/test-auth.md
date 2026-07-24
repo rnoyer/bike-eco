@@ -1,3 +1,12 @@
+> **Live project note:** invitations are deleted (not marked `expired`) once
+> their `expiresAt` passes, via a Firestore **TTL policy** on
+> `invitations.expiresAt` — configure it once per environment:
+> ```bash
+> gcloud firestore fields ttls update expiresAt --collection-group=invitations --enable-ttl --database=bike-eco-db
+> ```
+> (Console equivalent: Firestore → the `bike-eco-db` database → TTL policies.)
+> The emulator does not enforce TTL, so this has no effect on local testing.
+
 ```bash
 # Launch the Firebase emulators.
 # JAVA_HOME is required: the default `java` is 17, which firebase-tools@latest refuses.

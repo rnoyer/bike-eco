@@ -1,14 +1,46 @@
-import { Alert, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { useFormContext } from "react-hook-form";
+import { Alert, StyleSheet, Text } from "react-native";
 
 import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
+import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
 import { DEPARTMENTS } from "@/constants/departments";
+import type { B2bCompanyRegistrationForm } from "@/features/b2b-registration/schema";
+import { signInWithGoogle } from "@/lib/auth/googleSignIn";
 import { digitsOnly } from "@/lib/forms/transforms";
 import { tokens } from "@/theme/tokens";
+import { useGoogleAuthReporter } from "./googleAuth";
 
-/** Step "Votre compte": email + password + Google (stubbed). `emailDisabled`
+/** Step "Votre compte": email + password + Google. `emailDisabled`
  *  prefills+locks the email for the invited-registration flow. */
-export function AccountFields({ emailDisabled = false }: { emailDisabled?: boolean }) {
+export function AccountFields({
+  emailDisabled = false,
+}: {
+  emailDisabled?: boolean;
+}) {
+  const form = useFormContext<B2bCompanyRegistrationForm>();
+  const { onGoogleProfile } = useGoogleAuthReporter();
+
+  async function handleAuthPress(provider: "google" | "apple" | "facebook") {
+    if (provider !== "google") return;
+    try {
+      const profile = await signInWithGoogle();
+      form.setValue("prenom", profile.prenom ?? "");
+      form.setValue("nom", profile.nom ?? "");
+      if (!emailDisabled) form.setValue("email", profile.email ?? "");
+      // Google flow uses the authenticated identity from Auth, so the account
+      // step should not block on a manual password. Seed a non-empty placeholder
+      // value so the shared step-validator can advance to the coordinates step.
+      form.setValue("password", "google-auth-placeholder");
+      await onGoogleProfile(profile);
+    } catch (err) {
+      Alert.alert(
+        "Connexion Google",
+        err instanceof Error ? err.message : "Veuillez réessayer.",
+      );
+    }
+  }
+
   return (
     <>
       <ControlledField
@@ -29,15 +61,7 @@ export function AccountFields({ emailDisabled = false }: { emailDisabled?: boole
         autoCapitalize="none"
         returnKeyType="done"
       />
-      <TouchableOpacity
-        style={styles.google}
-        activeOpacity={0.7}
-        onPress={() =>
-          Alert.alert("Google", "Authentification Google bientôt disponible.")
-        }
-      >
-        <Text style={styles.googleText}>Continuer avec Google</Text>
-      </TouchableOpacity>
+      <ThirdPartyAuthButtons onPress={handleAuthPress} />
       <Text style={styles.note}>* Champs obligatoires</Text>
     </>
   );
@@ -47,25 +71,49 @@ export function AccountFields({ emailDisabled = false }: { emailDisabled?: boole
 export function CoordonneesFields() {
   return (
     <>
-      <ControlledField name="nom" label="Nom *" placeholder="Votre nom" autoCapitalize="words" autoComplete="family-name" returnKeyType="next" />
-      <ControlledField name="prenom" label="Prénom *" placeholder="Votre prénom" autoCapitalize="words" autoComplete="given-name" returnKeyType="next" />
-      <ControlledField name="telephone" label="Téléphone *" placeholder="Votre numéro de téléphone" keyboardType="phone-pad" autoComplete="tel" transform={digitsOnly(10)} />
-      <ControlledDropdown name="departement" label="Département *" placeholder="Département" options={DEPARTMENTS} searchable />
-      <ControlledField name="ville" label="Ville *" placeholder="Ville" autoCapitalize="words" returnKeyType="done" />
+      <ControlledField
+        name="nom"
+        label="Nom *"
+        placeholder="Votre nom"
+        autoCapitalize="words"
+        autoComplete="family-name"
+        returnKeyType="next"
+      />
+      <ControlledField
+        name="prenom"
+        label="Prénom *"
+        placeholder="Votre prénom"
+        autoCapitalize="words"
+        autoComplete="given-name"
+        returnKeyType="next"
+      />
+      <ControlledField
+        name="telephone"
+        label="Téléphone *"
+        placeholder="Votre numéro de téléphone"
+        keyboardType="phone-pad"
+        autoComplete="tel"
+        transform={digitsOnly(10)}
+      />
+      <ControlledDropdown
+        name="departement"
+        label="Département *"
+        placeholder="Département"
+        options={DEPARTMENTS}
+        searchable
+      />
+      <ControlledField
+        name="ville"
+        label="Ville *"
+        placeholder="Ville"
+        autoCapitalize="words"
+        returnKeyType="done"
+      />
       <Text style={styles.note}>* Champs obligatoires</Text>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  google: {
-    height: tokens.button.height,
-    borderRadius: tokens.radius.md,
-    borderWidth: 1.5,
-    borderColor: tokens.colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  googleText: { fontSize: 16, fontWeight: "600", color: tokens.colors.primary },
   note: { fontSize: 12, color: tokens.colors.muted },
 });
