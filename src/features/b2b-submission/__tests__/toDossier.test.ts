@@ -20,7 +20,11 @@ const session: SessionUser = {
   updatedAt: Timestamp.now(),
 };
 
-const company = { id: "comp_nord", name: "Garage du Nord" };
+const company = {
+  id: "comp_nord",
+  name: "Garage du Nord",
+  departement: "75 - Paris",
+};
 const photos = { urls: ["https://x/0.jpg"], thumbnailUrl: "https://x/t.jpg" };
 
 test("région follows the submitter's département", () => {
@@ -32,12 +36,7 @@ test("région follows the submitter's département", () => {
 });
 
 test("a new dossier is unstarted, unpriced, and owned by the submitter", () => {
-  const d = toDossierPayload(
-    B2B_SUBMISSION_DEFAULTS,
-    session,
-    company,
-    photos,
-  );
+  const d = toDossierPayload(B2B_SUBMISSION_DEFAULTS, session, company, photos);
   expect(d.status).toBe("a_traiter");
   expect(d.negotiatedPrice).toBeNull();
   expect(d.companyId).toBe("comp_nord");
@@ -50,6 +49,37 @@ test("a new dossier is unstarted, unpriced, and owned by the submitter", () => {
   });
   expect(d.photos).toEqual(["https://x/0.jpg"]);
   expect(d.thumbnailUrl).toBe("https://x/t.jpg");
+});
+
+test("region follows the company's département, not the submitter's", () => {
+  // The session stays a NORTH département ("75 - Paris"); if region were still
+  // read from the session this would still resolve to NORTH.
+  const southCompany = {
+    id: "comp_sud",
+    name: "Garage du Sud",
+    departement: "13 - Bouches-du-Rhône",
+  };
+  const south = toDossierPayload(
+    B2B_SUBMISSION_DEFAULTS,
+    session,
+    southCompany,
+    photos,
+  );
+  expect(south.region).toBe("SOUTH");
+
+  // Unknown département falls back to NORTH, matching functions/src/regions.ts.
+  const unknownCompany = {
+    id: "comp_unknown",
+    name: "Garage Inconnu",
+    departement: "99 - Inconnu",
+  };
+  const unknown = toDossierPayload(
+    B2B_SUBMISSION_DEFAULTS,
+    session,
+    unknownCompany,
+    photos,
+  );
+  expect(unknown.region).toBe("NORTH");
 });
 
 test("numeric strings are coerced and blanks become null", () => {
