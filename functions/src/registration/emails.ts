@@ -21,3 +21,14 @@ export async function sendInviteEmail(to: string, code: string): Promise<void> {
       `    ${code}\n\nCe code est valable 1 heure.\n\nL'équipe Bike-eco`,
   });
 }
+
+export async function sendApprovalEmail(to: string, companyName: string): Promise<void> {
+  await sendMail({
+    to,
+    subject: "Bike-eco — Votre compte est validé",
+    text:
+      `Bonjour,\n\nBonne nouvelle : le compte de ${companyName} a été validé par notre équipe. ` +
+      `Vous pouvez dès à présent vous connecter à l'application pour vendre vos véhicules.\n\n` +
+      `L'équipe Bike-eco`,
+  });
+}
