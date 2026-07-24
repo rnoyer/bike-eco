@@ -23,13 +23,25 @@ export interface SendMessageDeps {
   createMessage(dossierId: string, messageId: string, data: NewMessage): Promise<void>;
 }
 
+// Hosts that can serve a legitimate attachment download URL: the production
+// Firebase Storage host, plus loopback for the local Storage emulator (dev).
+// An arbitrary external host is rejected, so a message cannot carry a link to
+// content outside our own Storage.
+const STORAGE_HOSTS = new Set([
+  "firebasestorage.googleapis.com",
+  "localhost",
+  "127.0.0.1",
+  "10.0.2.2",
+]);
+
 /**
  * True when a Firebase Storage *download URL* points into this dossier's own
- * message folder. Attachment urls come from `getDownloadURL`, which percent-
- * encodes the object path into the `/o/` segment; companyId/dossierId/messageId
- * are alphanumeric Firestore auto-ids, so only the `/` separators are encoded
- * (as `%2F`). Matching the encoded prefix blocks a crafted url that references
- * another company's, dossier's, or message's Storage object.
+ * message folder. Download URLs have the shape
+ * `https://<host>/v0/b/<bucket>/o/<percent-encoded-path>?alt=media&token=...`.
+ * We parse the URL, require a known Storage host, and match the encoded object
+ * path taken from `URL.pathname` — which excludes the query string, so a prefix
+ * smuggled into `?...` cannot match. companyId/dossierId/messageId are
+ * alphanumeric Firestore auto-ids, so only the `/` separators are encoded (`%2F`).
  */
 export function isAttachmentUnderMessagePrefix(
   url: string,
@@ -37,8 +49,19 @@ export function isAttachmentUnderMessagePrefix(
   dossierId: string,
   messageId: string,
 ): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (!STORAGE_HOSTS.has(parsed.hostname)) return false;
+  const marker = "/o/";
+  const at = parsed.pathname.indexOf(marker);
+  if (at === -1) return false;
+  const objectPath = parsed.pathname.slice(at + marker.length);
   const prefix = `dossiers%2F${companyId}%2F${dossierId}%2Fmessages%2F${messageId}%2F`;
-  return url.includes(prefix);
+  return objectPath.startsWith(prefix);
 }
 
 export async function sendMessageCore(

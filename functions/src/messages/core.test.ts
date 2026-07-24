@@ -99,6 +99,28 @@ describe("isAttachmentUnderMessagePrefix", () => {
     const u = url("dossiers%2Fcomp_1%2Fdos_1%2Fphotos%2F0.jpg");
     expect(isAttachmentUnderMessagePrefix(u, "comp_1", "dos_1", "msg_1")).toBe(false);
   });
+
+  test("rejects query-string smuggling of the prefix on an external host", () => {
+    const u =
+      "https://evil.example/payload.pdf?y=dossiers%2Fcomp_1%2Fdos_1%2Fmessages%2Fmsg_1%2F";
+    expect(isAttachmentUnderMessagePrefix(u, "comp_1", "dos_1", "msg_1")).toBe(false);
+  });
+
+  test("rejects an arbitrary external host mimicking the storage path", () => {
+    const u =
+      "https://evil.com/v0/b/bkt/o/dossiers%2Fcomp_1%2Fdos_1%2Fmessages%2Fmsg_1%2Ffile.pdf";
+    expect(isAttachmentUnderMessagePrefix(u, "comp_1", "dos_1", "msg_1")).toBe(false);
+  });
+
+  test("accepts the storage emulator (loopback) host", () => {
+    const u =
+      "http://127.0.0.1:9199/v0/b/bkt/o/dossiers%2Fcomp_1%2Fdos_1%2Fmessages%2Fmsg_1%2Ffile.pdf";
+    expect(isAttachmentUnderMessagePrefix(u, "comp_1", "dos_1", "msg_1")).toBe(true);
+  });
+
+  test("rejects an unparseable url", () => {
+    expect(isAttachmentUnderMessagePrefix("not a url", "comp_1", "dos_1", "msg_1")).toBe(false);
+  });
 });
 
 describe("sendMessageCore attachment-prefix enforcement", () => {
@@ -109,7 +131,7 @@ describe("sendMessageCore attachment-prefix enforcement", () => {
     attachments: [
       {
         type: "pdf",
-        url: `https://x/o/${path}?alt=media`,
+        url: `https://firebasestorage.googleapis.com/v0/b/bkt/o/${path}?alt=media`,
         name: "offre.pdf",
         size: 1024,
       },
