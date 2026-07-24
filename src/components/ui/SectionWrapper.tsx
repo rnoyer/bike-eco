@@ -1,6 +1,6 @@
+import { tokens } from "@/theme/tokens";
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import { tokens } from "@/theme/tokens";
 
 export default function SectionWrapper({ children }: { children: ReactNode }) {
   return <View style={styles.wrapper}>{children}</View>;
