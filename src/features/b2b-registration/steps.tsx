@@ -45,7 +45,7 @@ export const B2B_COMPANY_REGISTRATION_STEPS: CompanyStep[] = [
     title: "Vos coordonnées",
     subtitle: "Informations relative à votre compte utilisateur",
     fields: ["nom", "prenom", "telephone", "departement", "ville"],
-    render: () => <CoordonneesFields />,
+    render: () => <CoordonneesFields departementDisabled />,
   },
 ];
 
