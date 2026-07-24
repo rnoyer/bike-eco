@@ -171,7 +171,7 @@ export interface MessageAttachment {
 
 export interface Message {
   senderId: string; // uid
-  senderName: string; // "[name] - [company]" or "[name] - Bike-eco"
+  senderName: string; // server-derived "[name] - [company]" / "[name] - Bike-eco" (stamped by the sendMessage callable)
   senderRole: UserRole;
   text: string;
   attachments: MessageAttachment[];
