@@ -71,13 +71,10 @@ export interface Company {
 export interface AppUser {
   role: UserRole;
   companyId: string | null; // b2b only
-  region: Region | null; // backoffice routing
   nom: string;
   prenom: string;
   email: string; // PII — owner + team read only
   telephone: string; // PII
-  departement: string;
-  ville: string;
   status: UserStatus; // pending until the company is validated
   createdAt: Timestamp;
   updatedAt: Timestamp;

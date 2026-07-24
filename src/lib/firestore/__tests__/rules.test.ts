@@ -19,7 +19,7 @@ import { resolve } from "path";
 let env: RulesTestEnvironment;
 
 const b2bClaims = { role: "b2b", companyId: "comp_1", status: "active" };
-const boClaims = { role: "backoffice", region: "NORTH", status: "active" };
+const boClaims = { role: "backoffice", status: "active" };
 const pendingClaims = { role: "b2b", companyId: "comp_1", status: "pending" };
 
 /** Minimal dossier the create rule accepts; override to probe each clause. */
@@ -94,7 +94,7 @@ test("backoffice reads any dossier", async () => {
 
 test("owner cannot escalate their own claims fields", async () => {
   const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
-  await assertSucceeds(updateDoc(doc(db, "users/user_b2b_nord"), { ville: "Lyon" }));
+  await assertSucceeds(updateDoc(doc(db, "users/user_b2b_nord"), { telephone: "0699999999" }));
   await assertFails(updateDoc(doc(db, "users/user_b2b_nord"), { role: "backoffice" }));
 });
 

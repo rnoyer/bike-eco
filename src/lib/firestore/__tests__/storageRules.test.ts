@@ -12,7 +12,7 @@ import { resolve } from "path";
 let env: RulesTestEnvironment;
 
 const b2bClaims = { role: "b2b", companyId: "comp_1", status: "active" };
-const boClaims = { role: "backoffice", region: "NORTH", status: "active" };
+const boClaims = { role: "backoffice", status: "active" };
 const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
 
 beforeAll(async () => {

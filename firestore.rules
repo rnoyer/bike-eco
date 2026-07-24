@@ -17,11 +17,11 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if isSignedIn() && (request.auth.uid == uid || isBackoffice());
-      // Owner edits profile fields only; role/companyId/region/status/createdAt
+      // Owner edits profile fields only; role/companyId/status/createdAt
       // are server-set claims and must never be client-writable.
       allow update: if request.auth.uid == uid
         && !request.resource.data.diff(resource.data).affectedKeys()
-             .hasAny(['role', 'companyId', 'region', 'status', 'createdAt']);
+             .hasAny(['role', 'companyId', 'status', 'createdAt']);
       allow create, delete: if false;
     }
 
