@@ -32,12 +32,11 @@ export interface RegisterCompanyPayload {
   method: "password" | "google";
   siret: string;
   companyName: string;
-  companyDepartement?: string;
+  companyDepartement: string;
+  companyVille: string;
   nom: string;
   prenom: string;
   telephone: string;
-  departement: string;
-  ville: string;
   email?: string;
   password?: string;
 }
@@ -47,8 +46,6 @@ export interface AcceptInvitePayload {
   nom: string;
   prenom: string;
   telephone: string;
-  departement: string;
-  ville: string;
   password?: string;
 }
 

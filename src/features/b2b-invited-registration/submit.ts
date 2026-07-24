@@ -10,6 +10,6 @@ export async function submitInvitedRegistration(
   await callAcceptInvite({
     method: "password", code: values.code,
     nom: values.nom, prenom: values.prenom, telephone: values.telephone,
-    departement: values.departement, ville: values.ville, password: values.password,
+    password: values.password,
   });
 }

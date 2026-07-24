@@ -20,11 +20,10 @@ export async function submitCompanyRegistration(
     siret: values.siret,
     companyName: values.companyName,
     companyDepartement: values.companyDepartement,
+    companyVille: values.companyVille,
     nom: values.nom,
     prenom: values.prenom,
     telephone: values.telephone,
-    departement: values.departement,
-    ville: values.ville,
     email: values.email,
     password: values.password,
   });

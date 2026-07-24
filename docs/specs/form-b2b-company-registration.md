@@ -35,6 +35,12 @@ type : dropdown
 values : listes des departements de France métropolitaine (ex: "33 - Gironde", "13 - Bouches du Rhone")
 mandatory : yes
 
+label : "Ville\*"
+placeholder : "Ville de l'entreprise"
+default value : null
+type : Input text
+mandatory : yes
+
 Texte d'information : "\* Champs obligatoires"
 
 ---
@@ -93,19 +99,6 @@ placeholder : "Votre numéro de téléphone"
 default value : null
 type : Input phone number
 validation : 10 digits
-mandatory : yes
-
-label : "Département\*"
-placeholder : "Département"
-default value : préempli avec le département renseigné à l'étape 1 (reste modifiable)
-type : dropdown
-values : listes des departements de France métropolitaine (ex: "33 - Gironde", "13 - Bouches du Rhone")
-mandatory : yes
-
-label : "Ville\*"
-placeholder : "Ville"
-default value : null
-type : Input text
 mandatory : yes
 
 Texte d'information : "\* Champs obligatoires"

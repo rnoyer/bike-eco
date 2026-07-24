@@ -1,6 +1,6 @@
 import { Stack, useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
 import { Alert } from "react-native";
 
@@ -42,11 +42,10 @@ export default function RegisterScreen() {
               siret: values.siret,
               companyName: values.companyName,
               companyDepartement: values.companyDepartement,
+              companyVille: values.companyVille,
               nom: values.nom,
               prenom: values.prenom,
               telephone: values.telephone,
-              departement: values.departement,
-              ville: values.ville,
             });
           } else {
             // Password mode: creates the Auth user server-side; the client
@@ -64,13 +63,6 @@ export default function RegisterScreen() {
         }
       },
     });
-
-  const companyDept = form.watch("companyDepartement");
-  useEffect(() => {
-    if (companyDept && !form.getValues("departement")) {
-      form.setValue("departement", companyDept);
-    }
-  }, [companyDept, form]);
 
   const goHome = async () => {
     if (auth.currentUser) await signOut(auth);

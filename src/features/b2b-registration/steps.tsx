@@ -20,6 +20,7 @@ function EntrepriseFields() {
       <ControlledField name="siret" label="Numéro SIRET *" placeholder="14 chiffres" keyboardType="numeric" maxLength={14} transform={digitsOnly(14)} returnKeyType="next" />
       <ControlledField name="companyName" label="Nom de votre entreprise *" placeholder="Nom de votre entreprise" autoCapitalize="words" returnKeyType="next" />
       <ControlledDropdown name="companyDepartement" label="Département *" placeholder="Département" options={DEPARTMENTS} searchable />
+      <ControlledField name="companyVille" label="Ville *" placeholder="Ville de l'entreprise" autoCapitalize="words" returnKeyType="done" />
       <Text style={styles.note}>* Champs obligatoires</Text>
     </>
   );
@@ -30,7 +31,7 @@ export const B2B_COMPANY_REGISTRATION_STEPS: CompanyStep[] = [
     progress: 25,
     title: "Coordonnées Entreprise",
     subtitle: "Indiquez le numéro SIRET de votre entreprise",
-    fields: ["siret", "companyName", "companyDepartement"],
+    fields: ["siret", "companyName", "companyDepartement", "companyVille"],
     render: () => <EntrepriseFields />,
   },
   {
@@ -44,7 +45,7 @@ export const B2B_COMPANY_REGISTRATION_STEPS: CompanyStep[] = [
     progress: 75,
     title: "Vos coordonnées",
     subtitle: "Informations relative à votre compte utilisateur",
-    fields: ["nom", "prenom", "telephone", "departement", "ville"],
+    fields: ["nom", "prenom", "telephone"],
     render: () => <CoordonneesFields />,
   },
 ];
