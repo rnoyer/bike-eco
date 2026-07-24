@@ -1,6 +1,6 @@
 import { Stack, useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
 import { Alert } from "react-native";
 
@@ -13,6 +13,7 @@ import {
 } from "@/features/b2b-registration/schema";
 import { B2B_COMPANY_REGISTRATION_STEPS } from "@/features/b2b-registration/steps";
 import { submitCompanyRegistration } from "@/features/b2b-registration/submit";
+import { useDepartementPrefill } from "@/features/b2b-registration/useDepartementPrefill";
 import { GoogleAuthProvider } from "@/features/registration/googleAuth";
 import { callRegisterCompany } from "@/lib/data/registration";
 import { useStepForm } from "@/lib/forms/useStepForm";
@@ -65,12 +66,7 @@ export default function RegisterScreen() {
       },
     });
 
-  const companyDept = form.watch("companyDepartement");
-  useEffect(() => {
-    if (companyDept && !form.getValues("departement")) {
-      form.setValue("departement", companyDept);
-    }
-  }, [companyDept, form]);
+  useDepartementPrefill(form);
 
   const goHome = async () => {
     if (auth.currentUser) await signOut(auth);
