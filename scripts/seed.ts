@@ -39,6 +39,7 @@ async function main() {
     status: "active",
     departement: "75 - Paris",
     region: "NORTH",
+    ville: "Paris",
     createdBy: "user_b2b_nord",
     createdByName: "Camille Durand",
     validatedAt: now,
@@ -51,22 +52,21 @@ async function main() {
     status: "active",
   });
   await db.doc(`users/user_b2b_nord`).set({
-    role: "b2b", companyId: "comp_nord", region: null,
+    role: "b2b", companyId: "comp_nord",
     nom: "Durand", prenom: "Camille", email: "b2b@garage-nord.fr",
-    telephone: "0601020304", departement: "75 - Paris", ville: "Paris",
+    telephone: "0601020304",
     status: "active", createdAt: now, updatedAt: now,
   });
 
   await upsertUser("user_bo", "bo@bike-eco.fr", "password123", {
     role: "backoffice",
     companyId: null,
-    region: "NORTH",
     status: "active",
   });
   await db.doc(`users/user_bo`).set({
-    role: "backoffice", companyId: null, region: "NORTH",
+    role: "backoffice", companyId: null,
     nom: "Martin", prenom: "Alex", email: "bo@bike-eco.fr",
-    telephone: "0605060708", departement: "45 - Loiret", ville: "Montargis",
+    telephone: "0605060708",
     status: "active", createdAt: now, updatedAt: now,
   });
 
@@ -76,9 +76,9 @@ async function main() {
     status: "pending",
   });
   await db.doc(`users/user_pending`).set({
-    role: "b2b", companyId: "comp_nord", region: null,
+    role: "b2b", companyId: "comp_nord",
     nom: "Petit", prenom: "Sam", email: "pending@garage-nord.fr",
-    telephone: "0611121314", departement: "75 - Paris", ville: "Paris",
+    telephone: "0611121314",
     status: "pending", createdAt: now, updatedAt: now,
   });
 
@@ -114,6 +114,7 @@ async function main() {
     status: "active",
     departement: "13 - Bouches-du-Rhône",
     region: "SOUTH",
+    ville: "Marseille",
     createdBy: "user_b2b_sud",
     createdByName: "Dominique Blanc",
     validatedAt: now,
@@ -125,10 +126,10 @@ async function main() {
     status: "active",
   });
   await db.doc(`users/user_b2b_sud`).set({
-    role: "b2b", companyId: "comp_sud", region: null,
+    role: "b2b", companyId: "comp_sud",
     nom: "Blanc", prenom: "Dominique", email: "b2b@garage-sud.fr",
-    telephone: "0621222324", departement: "13 - Bouches-du-Rhône",
-    ville: "Marseille", status: "active", createdAt: now, updatedAt: now,
+    telephone: "0621222324",
+    status: "active", createdAt: now, updatedAt: now,
   });
   await db.doc(`dossiers/dos_sud`).set({
     status: "a_traiter", region: "SOUTH", companyId: "comp_sud",
@@ -166,6 +167,7 @@ async function main() {
     status: "pending",
     departement: "33 - Gironde",
     region: "SOUTH",
+    ville: "Bordeaux",
     createdBy: "user_pending_owner",
     createdByName: "Alex Martin",
     validatedAt: null,
@@ -177,9 +179,9 @@ async function main() {
     status: "pending",
   });
   await db.doc(`users/user_pending_owner`).set({
-    role: "b2b", companyId: "comp_pending", region: null,
+    role: "b2b", companyId: "comp_pending",
     nom: "Martin", prenom: "Alex", email: "alex@nouveau.fr",
-    telephone: "0655667788", departement: "33 - Gironde", ville: "Bordeaux",
+    telephone: "0655667788",
     status: "pending", createdAt: now, updatedAt: now,
   });
 
