@@ -57,6 +57,7 @@ export interface Company {
   name: string;
   status: CompanyStatus; // manual validation by the Bike-eco team
   departement: string; // "33 - Gironde" — captured at registration
+  ville: string; // company city
   region: Region; // derived from departement; drives back-office routing
   createdBy: string; // uid of the first registrant
   createdByName: string; // denormalized "prénom nom" for the company card subtitle
