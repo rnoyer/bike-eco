@@ -37,7 +37,11 @@ async function main() {
     siret: "12345678900011",
     name: "Garage du Nord",
     status: "active",
+    departement: "75 - Paris",
+    region: "NORTH",
     createdBy: "user_b2b",
+    createdByName: "Camille Durand",
+    validatedAt: now,
     createdAt: now,
   });
 
@@ -108,7 +112,11 @@ async function main() {
     siret: "98765432100022",
     name: "Garage du Sud",
     status: "active",
+    departement: "13 - Bouches-du-Rhône",
+    region: "SOUTH",
     createdBy: "user_b2b_sud",
+    createdByName: "Dominique Blanc",
+    validatedAt: now,
     createdAt: now,
   });
   await upsertUser("user_b2b_sud", "b2b@garage-sud.fr", "password123", {
@@ -151,8 +159,32 @@ async function main() {
     createdAt: now,
   });
 
+  // A pending company for exercising the 4b validation loop.
+  await db.doc(`companies/comp_pending`).set({
+    siret: "22222222222222",
+    name: "Garage Nouveau",
+    status: "pending",
+    departement: "33 - Gironde",
+    region: "SOUTH",
+    createdBy: "user_pending_owner",
+    createdByName: "Alex Martin",
+    validatedAt: null,
+    createdAt: now,
+  });
+  await upsertUser("user_pending_owner", "alex@nouveau.fr", "password123", {
+    role: "b2b",
+    companyId: "comp_pending",
+    status: "pending",
+  });
+  await db.doc(`users/user_pending_owner`).set({
+    role: "b2b", companyId: "comp_pending", region: null,
+    nom: "Martin", prenom: "Alex", email: "alex@nouveau.fr",
+    telephone: "0655667788", departement: "33 - Gironde", ville: "Bordeaux",
+    status: "pending", createdAt: now, updatedAt: now,
+  });
+
   console.log(
-    "Seed complete: user_b2b / user_b2b_sud / user_bo / user_pending (password123).",
+    "Seed complete: user_b2b / user_b2b_sud / user_bo / user_pending / user_pending_owner (password123).",
   );
   // The Emulator UI opens on `(default)`, which this project never writes to.
   console.log(`Data is in "${DB_ID}": http://localhost:4000/firestore/${DB_ID}/data`);
