@@ -1,19 +1,23 @@
-import { Alert, StyleSheet, Text } from "react-native";
 import { useFormContext } from "react-hook-form";
+import { Alert, StyleSheet, Text } from "react-native";
 
 import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
 import { DEPARTMENTS } from "@/constants/departments";
+import type { B2bCompanyRegistrationForm } from "@/features/b2b-registration/schema";
 import { signInWithGoogle } from "@/lib/auth/googleSignIn";
 import { digitsOnly } from "@/lib/forms/transforms";
 import { tokens } from "@/theme/tokens";
-import type { B2bCompanyRegistrationForm } from "@/features/b2b-registration/schema";
 import { useGoogleAuthReporter } from "./googleAuth";
 
 /** Step "Votre compte": email + password + Google. `emailDisabled`
  *  prefills+locks the email for the invited-registration flow. */
-export function AccountFields({ emailDisabled = false }: { emailDisabled?: boolean }) {
+export function AccountFields({
+  emailDisabled = false,
+}: {
+  emailDisabled?: boolean;
+}) {
   const form = useFormContext<B2bCompanyRegistrationForm>();
   const { onGoogleProfile } = useGoogleAuthReporter();
 
@@ -24,11 +28,15 @@ export function AccountFields({ emailDisabled = false }: { emailDisabled?: boole
       form.setValue("prenom", profile.prenom ?? "");
       form.setValue("nom", profile.nom ?? "");
       if (!emailDisabled) form.setValue("email", profile.email ?? "");
-      onGoogleProfile(profile);
+      // Google flow uses the authenticated identity from Auth, so the account
+      // step should not block on a manual password. Seed a non-empty placeholder
+      // value so the shared step-validator can advance to the coordinates step.
+      form.setValue("password", "google-auth-placeholder");
+      await onGoogleProfile(profile);
     } catch (err) {
       Alert.alert(
         "Connexion Google",
-        err instanceof Error ? err.message : "Veuillez réessayer."
+        err instanceof Error ? err.message : "Veuillez réessayer.",
       );
     }
   }
@@ -63,11 +71,44 @@ export function AccountFields({ emailDisabled = false }: { emailDisabled?: boole
 export function CoordonneesFields() {
   return (
     <>
-      <ControlledField name="nom" label="Nom *" placeholder="Votre nom" autoCapitalize="words" autoComplete="family-name" returnKeyType="next" />
-      <ControlledField name="prenom" label="Prénom *" placeholder="Votre prénom" autoCapitalize="words" autoComplete="given-name" returnKeyType="next" />
-      <ControlledField name="telephone" label="Téléphone *" placeholder="Votre numéro de téléphone" keyboardType="phone-pad" autoComplete="tel" transform={digitsOnly(10)} />
-      <ControlledDropdown name="departement" label="Département *" placeholder="Département" options={DEPARTMENTS} searchable />
-      <ControlledField name="ville" label="Ville *" placeholder="Ville" autoCapitalize="words" returnKeyType="done" />
+      <ControlledField
+        name="nom"
+        label="Nom *"
+        placeholder="Votre nom"
+        autoCapitalize="words"
+        autoComplete="family-name"
+        returnKeyType="next"
+      />
+      <ControlledField
+        name="prenom"
+        label="Prénom *"
+        placeholder="Votre prénom"
+        autoCapitalize="words"
+        autoComplete="given-name"
+        returnKeyType="next"
+      />
+      <ControlledField
+        name="telephone"
+        label="Téléphone *"
+        placeholder="Votre numéro de téléphone"
+        keyboardType="phone-pad"
+        autoComplete="tel"
+        transform={digitsOnly(10)}
+      />
+      <ControlledDropdown
+        name="departement"
+        label="Département *"
+        placeholder="Département"
+        options={DEPARTMENTS}
+        searchable
+      />
+      <ControlledField
+        name="ville"
+        label="Ville *"
+        placeholder="Ville"
+        autoCapitalize="words"
+        returnKeyType="done"
+      />
       <Text style={styles.note}>* Champs obligatoires</Text>
     </>
   );

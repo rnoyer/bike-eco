@@ -9,7 +9,9 @@ export interface GoogleProfile {
 /** Lets the shared AccountFields report a successful Google sign-in to the
  *  enclosing registration screen, so the screen (not ambient auth state) decides
  *  whether the submission is Google-mode. Default is a no-op. */
-const GoogleAuthContext = createContext<{ onGoogleProfile: (p: GoogleProfile) => void }>({
+const GoogleAuthContext = createContext<{
+  onGoogleProfile: (p: GoogleProfile) => Promise<void> | void;
+}>({
   onGoogleProfile: () => {},
 });
 

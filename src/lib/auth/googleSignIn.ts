@@ -18,6 +18,10 @@ export async function signInWithGoogle(): Promise<{
   email: string | null;
 }> {
   await GoogleSignin.hasPlayServices();
+  // On Android the native module can silently reuse the last selected Google
+  // account. Explicitly sign out of the Google SDK first so the user gets the
+  // account chooser each time instead of the cached account.
+  await GoogleSignin.signOut();
   const response = await GoogleSignin.signIn();
   if (!isSuccessResponse(response)) throw new Error("Connexion Google annulée.");
   const { idToken, user } = response.data;

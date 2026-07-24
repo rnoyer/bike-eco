@@ -10,6 +10,8 @@ function frenchError(error: unknown): Error {
     "functions/not-found": "Code d'invitation invalide ou expiré.",
     "functions/unauthenticated": "Connexion requise.",
     "functions/unavailable": "Connexion impossible. Vérifiez votre réseau.",
+    "functions/invalid-argument": "Données du formulaire invalides.",
+    "functions/internal": "Une erreur est survenue. Veuillez réessayer.",
   };
   // A thrown HttpsError message is server-authored French; prefer it when present.
   const serverMsg = (error as { message?: string })?.message;

@@ -1,18 +1,28 @@
-import { getApp } from "firebase-admin/app";
+import { getApp, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/https";
+import * as logger from "firebase-functions/logger";
 import { ZodError } from "zod";
 
+if (process.env.NODE_ENV !== "production") {
+  process.env.FIREBASE_AUTH_EMULATOR_HOST ??= "127.0.0.1:9099";
+  process.env.FIRESTORE_EMULATOR_HOST ??= "127.0.0.1:8080";
+}
+
 import { B2C_EMAIL_SECRETS } from "../email";
-import { sendApplicantEmail, sendInviteEmail } from "./emails";
 import {
-  acceptInviteCore, registerCompanyCore, resolveInviteCore, sendInviteCore,
-  RegError, type Deps, type StoredInvitation,
+  acceptInviteCore,
+  RegError,
+  registerCompanyCore, resolveInviteCore, sendInviteCore,
+  type Deps, type StoredInvitation,
 } from "./core";
+import { sendApplicantEmail, sendInviteEmail } from "./emails";
 import {
   acceptInviteSchema, registerCompanySchema, resolveInviteSchema, sendInviteSchema,
 } from "./schemas";
+
+initializeApp();
 
 const db = () => getFirestore(getApp(), "bike-eco-db");
 
@@ -51,10 +61,36 @@ function realDeps(): Deps {
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 function toHttps(err: unknown): never {
   if (err instanceof RegError) throw new HttpsError(err.code, err.message);
   if (err instanceof ZodError) throw new HttpsError("invalid-argument", "Données du formulaire invalides.");
-  throw new HttpsError("internal", "Une erreur est survenue. Veuillez réessayer.");
+
+  if (isRecord(err) && typeof err.code === "string") {
+    const code = err.code as string;
+    if (code.startsWith("auth/")) {
+      const message = typeof err.message === "string" && err.message.trim() ? err.message : "Une erreur est survenue. Veuillez réessayer.";
+      if (code === "auth/email-already-exists") {
+        throw new HttpsError("already-exists", "Cette adresse email est déjà utilisée.");
+      }
+      if (code === "auth/weak-password") {
+        throw new HttpsError("invalid-argument", "Le mot de passe doit contenir au moins 8 caractères.");
+      }
+      if (code === "auth/invalid-password") {
+        throw new HttpsError("invalid-argument", "Le mot de passe est invalide.");
+      }
+      throw new HttpsError("internal", message);
+    }
+  }
+
+  const message = err instanceof Error ? err.message : String(err);
+  logger.error("Registration callable failed", {
+    error: message,
+  });
+  throw new HttpsError("internal", message || "Une erreur est survenue. Veuillez réessayer.");
 }
 
 export const registerCompany = onCall({ secrets: B2C_EMAIL_SECRETS }, async (req) => {

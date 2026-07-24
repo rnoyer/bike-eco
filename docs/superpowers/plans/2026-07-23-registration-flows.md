@@ -28,10 +28,12 @@
 ## Task 1: Functions — jest setup + invite-code helpers (pure, TDD)
 
 **Files:**
+
 - Create: `functions/jest.config.js`, `functions/src/registration/inviteCode.ts`, `functions/src/registration/inviteCode.test.ts`
 - Modify: `functions/package.json` (devDeps + `test` script)
 
 **Interfaces:**
+
 - Produces:
   - `generateInviteCode(random?: () => number): string` — 6 chars from `A–Z0–9`.
   - `hashInviteCode(code: string): string` — sha256 hex of the uppercased code.
@@ -41,14 +43,17 @@
 - [ ] **Step 1: Add jest + ts-jest to functions**
 
 Run:
+
 ```sh
 cd functions && npm install -D jest@^29 ts-jest@^29 @types/jest@^29 && cd ..
 ```
+
 Then in `functions/package.json`, add to `scripts`: `"test": "jest"`.
 
 - [ ] **Step 2: jest config**
 
 Create `functions/jest.config.js`:
+
 ```js
 /** @type {import('jest').Config} */
 module.exports = {
@@ -61,6 +66,7 @@ module.exports = {
 - [ ] **Step 3: Write the failing test**
 
 Create `functions/src/registration/inviteCode.test.ts`:
+
 ```ts
 import {
   generateInviteCode,
@@ -99,6 +105,7 @@ Expected: FAIL — cannot find `./inviteCode`.
 - [ ] **Step 5: Implement `inviteCode.ts`**
 
 Create `functions/src/registration/inviteCode.ts`:
+
 ```ts
 import { createHash } from "crypto";
 
@@ -112,7 +119,10 @@ export const INVITE_TTL_MS = 3_600_000;
 export function generateInviteCode(random: () => number = Math.random): string {
   let code = "";
   for (let i = 0; i < CODE_LENGTH; i++) {
-    const idx = Math.min(ALPHABET.length - 1, Math.floor(random() * ALPHABET.length));
+    const idx = Math.min(
+      ALPHABET.length - 1,
+      Math.floor(random() * ALPHABET.length),
+    );
     code += ALPHABET[idx];
   }
   return code;
@@ -146,9 +156,11 @@ git commit -m "feat(functions): invite-code helpers + jest setup"
 ## Task 2: Functions — zod payload schemas (pure, TDD)
 
 **Files:**
+
 - Create: `functions/src/registration/schemas.ts`, `functions/src/registration/schemas.test.ts`
 
 **Interfaces:**
+
 - Produces (zod schemas + inferred types):
   - `registerCompanySchema` → `{ method: "password" | "google", siret, companyName, nom, prenom, telephone, departement, ville, email?, password? }`
   - `acceptInviteSchema` → `{ method: "password" | "google", code, nom, prenom, telephone, departement, ville, password? }`
@@ -159,6 +171,7 @@ git commit -m "feat(functions): invite-code helpers + jest setup"
 - [ ] **Step 1: Write the failing test**
 
 Create `functions/src/registration/schemas.test.ts`:
+
 ```ts
 import { registerCompanySchema, sendInviteSchema } from "./schemas";
 
@@ -188,7 +201,9 @@ test("google company registration does not require email/password", () => {
 });
 
 test("siret must be exactly 14 digits", () => {
-  expect(registerCompanySchema.safeParse({ ...base, siret: "123" }).success).toBe(false);
+  expect(
+    registerCompanySchema.safeParse({ ...base, siret: "123" }).success,
+  ).toBe(false);
 });
 
 test("sendInvite needs a valid email", () => {
@@ -205,6 +220,7 @@ Expected: FAIL — cannot find `./schemas`.
 - [ ] **Step 3: Implement `schemas.ts`**
 
 Create `functions/src/registration/schemas.ts`:
+
 ```ts
 import { z } from "zod";
 
@@ -218,7 +234,11 @@ const profile = {
 
 // Password mode carries the credentials; Google mode takes identity from auth.
 const credential = z.discriminatedUnion("method", [
-  z.object({ method: z.literal("password"), email: z.email(), password: z.string().min(8) }),
+  z.object({
+    method: z.literal("password"),
+    email: z.email(),
+    password: z.string().min(8),
+  }),
   z.object({ method: z.literal("google") }),
 ]);
 
@@ -263,9 +283,11 @@ The heart of the four flows, written against small injected interfaces so it is
 unit-tested with fakes (no Admin SDK, no emulator).
 
 **Files:**
+
 - Create: `functions/src/registration/core.ts`, `functions/src/registration/core.test.ts`
 
 **Interfaces:**
+
 - Consumes: `inviteCode.ts`, `schemas.ts` (Task 1–2).
 - Produces (all take a `Deps` object as the last arg):
   - `interface Deps` — `createUser(email,password) => Promise<string>` (uid); `setClaims(uid, claims) => Promise<void>`; `companyExistsForSiret(siret) => Promise<boolean>`; `writeCompany(id, data)`, `writeUser(uid, data)`; `newCompanyId() => string`; `findInvitationByHash(hash) => Promise<StoredInvitation | null>`; `deleteInvitation(id)`; `writeInvitation(id, data)`; `now() => number`; `sendApplicantEmail(to, companyName)`, `sendInviteEmail(to, code)`.
@@ -278,6 +300,7 @@ unit-tested with fakes (no Admin SDK, no emulator).
 - [ ] **Step 1: Write the failing test**
 
 Create `functions/src/registration/core.test.ts`:
+
 ```ts
 import {
   acceptInviteCore,
@@ -294,87 +317,209 @@ function fakeDeps(over: Partial<Deps> = {}): Deps & { calls: any } {
   return {
     calls,
     createUser: async () => "uid_new",
-    setClaims: async (uid, claims) => { calls.claims = { uid, claims }; },
+    setClaims: async (uid, claims) => {
+      calls.claims = { uid, claims };
+    },
     companyExistsForSiret: async () => false,
-    writeCompany: async (id, data) => { calls.companies[id] = data; },
-    writeUser: async (uid, data) => { calls.users[uid] = data; },
+    writeCompany: async (id, data) => {
+      calls.companies[id] = data;
+    },
+    writeUser: async (uid, data) => {
+      calls.users[uid] = data;
+    },
     newCompanyId: () => "comp_new",
     findInvitationByHash: async () => null,
-    deleteInvitation: async (id) => { calls.invitations[id] = "deleted"; },
-    writeInvitation: async (id, data) => { calls.invitations[id] = data; },
+    deleteInvitation: async (id) => {
+      calls.invitations[id] = "deleted";
+    },
+    writeInvitation: async (id, data) => {
+      calls.invitations[id] = data;
+    },
     now: () => 1_000_000,
-    sendApplicantEmail: async (to, name) => { calls.emails.push({ kind: "applicant", to, name }); },
-    sendInviteEmail: async (to, code) => { calls.emails.push({ kind: "invite", to, code }); },
+    sendApplicantEmail: async (to, name) => {
+      calls.emails.push({ kind: "applicant", to, name });
+    },
+    sendInviteEmail: async (to, code) => {
+      calls.emails.push({ kind: "invite", to, code });
+    },
     ...over,
   };
 }
 
 const companyInput = {
-  method: "password" as const, siret: "12345678901234", companyName: "Garage X",
-  nom: "Durand", prenom: "Camille", telephone: "0600000000",
-  departement: "75 - Paris", ville: "Paris", email: "c@x.fr", password: "password123",
+  method: "password" as const,
+  siret: "12345678901234",
+  companyName: "Garage X",
+  nom: "Durand",
+  prenom: "Camille",
+  telephone: "0600000000",
+  departement: "75 - Paris",
+  ville: "Paris",
+  email: "c@x.fr",
+  password: "password123",
 };
 
 test("registerCompany (password) creates pending company+user, pins claims, emails applicant", async () => {
   const d = fakeDeps();
   await registerCompanyCore(companyInput, null, null, d);
-  expect(d.calls.companies["comp_new"]).toMatchObject({ siret: "12345678901234", status: "pending", createdBy: "uid_new" });
-  expect(d.calls.users["uid_new"]).toMatchObject({ role: "b2b", companyId: "comp_new", status: "pending" });
-  expect(d.calls.claims).toEqual({ uid: "uid_new", claims: { role: "b2b", companyId: "comp_new", status: "pending" } });
-  expect(d.calls.emails).toEqual([{ kind: "applicant", to: "c@x.fr", name: "Garage X" }]);
+  expect(d.calls.companies["comp_new"]).toMatchObject({
+    siret: "12345678901234",
+    status: "pending",
+    createdBy: "uid_new",
+  });
+  expect(d.calls.users["uid_new"]).toMatchObject({
+    role: "b2b",
+    companyId: "comp_new",
+    status: "pending",
+  });
+  expect(d.calls.claims).toEqual({
+    uid: "uid_new",
+    claims: { role: "b2b", companyId: "comp_new", status: "pending" },
+  });
+  expect(d.calls.emails).toEqual([
+    { kind: "applicant", to: "c@x.fr", name: "Garage X" },
+  ]);
 });
 
 test("registerCompany rejects a duplicate SIRET", async () => {
   const d = fakeDeps({ companyExistsForSiret: async () => true });
-  await expect(registerCompanyCore(companyInput, null, null, d)).rejects.toMatchObject({ code: "already-exists" });
+  await expect(
+    registerCompanyCore(companyInput, null, null, d),
+  ).rejects.toMatchObject({ code: "already-exists" });
 });
 
 test("registerCompany (google) uses the authed uid + email, no createUser", async () => {
   const { email, password, ...rest } = companyInput;
-  const d = fakeDeps({ createUser: async () => { throw new Error("must not be called"); } });
-  await registerCompanyCore({ ...rest, method: "google" }, "uid_g", "g@x.fr", d);
+  const d = fakeDeps({
+    createUser: async () => {
+      throw new Error("must not be called");
+    },
+  });
+  await registerCompanyCore(
+    { ...rest, method: "google" },
+    "uid_g",
+    "g@x.fr",
+    d,
+  );
   expect(d.calls.users["uid_g"]).toBeDefined();
   expect(d.calls.claims.uid).toBe("uid_g");
 });
 
 test("sendInvite writes a hashed, 1h invitation for an active b2b caller", async () => {
   const d = fakeDeps();
-  await sendInviteCore({ email: "new@x.fr" }, { role: "b2b", status: "active", companyId: "comp_1", uid: "u1" }, d);
+  await sendInviteCore(
+    { email: "new@x.fr" },
+    { role: "b2b", status: "active", companyId: "comp_1", uid: "u1" },
+    d,
+  );
   const [id] = Object.keys(d.calls.invitations);
-  expect(d.calls.invitations[id]).toMatchObject({ email: "new@x.fr", companyId: "comp_1", invitedBy: "u1", status: "pending", expiresAt: 1_000_000 + 3_600_000 });
+  expect(d.calls.invitations[id]).toMatchObject({
+    email: "new@x.fr",
+    companyId: "comp_1",
+    invitedBy: "u1",
+    status: "pending",
+    expiresAt: 1_000_000 + 3_600_000,
+  });
   expect(d.calls.invitations[id].tokenHash).toMatch(/^[0-9a-f]{64}$/);
   expect(d.calls.emails[0]).toMatchObject({ kind: "invite", to: "new@x.fr" });
 });
 
 test("sendInvite refuses a non-active or non-b2b caller", async () => {
   const d = fakeDeps();
-  await expect(sendInviteCore({ email: "x@x.fr" }, { role: "b2b", status: "pending", companyId: "c", uid: "u" }, d)).rejects.toMatchObject({ code: "permission-denied" });
+  await expect(
+    sendInviteCore(
+      { email: "x@x.fr" },
+      { role: "b2b", status: "pending", companyId: "c", uid: "u" },
+      d,
+    ),
+  ).rejects.toMatchObject({ code: "permission-denied" });
 });
 
 test("resolveInvite returns the email for a valid code and deletes an expired one", async () => {
-  const good = { id: "inv1", email: "new@x.fr", companyId: "comp_1", companyName: "Garage X", tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000 };
-  const d = fakeDeps({ findInvitationByHash: async (h) => (h === good.tokenHash ? good : null) });
-  await expect(resolveInviteCore({ code: "a1b2c3" }, d)).resolves.toEqual({ email: "new@x.fr", companyName: "Garage X" });
+  const good = {
+    id: "inv1",
+    email: "new@x.fr",
+    companyId: "comp_1",
+    companyName: "Garage X",
+    tokenHash: hashInviteCode("A1B2C3"),
+    expiresAt: 2_000_000,
+  };
+  const d = fakeDeps({
+    findInvitationByHash: async (h) => (h === good.tokenHash ? good : null),
+  });
+  await expect(resolveInviteCore({ code: "a1b2c3" }, d)).resolves.toEqual({
+    email: "new@x.fr",
+    companyName: "Garage X",
+  });
 
   const expired = { ...good, expiresAt: 500_000 };
   const d2 = fakeDeps({ findInvitationByHash: async () => expired });
-  await expect(resolveInviteCore({ code: "A1B2C3" }, d2)).rejects.toMatchObject({ code: "not-found" });
+  await expect(resolveInviteCore({ code: "A1B2C3" }, d2)).rejects.toMatchObject(
+    { code: "not-found" },
+  );
   expect(d2.calls.invitations["inv1"]).toBe("deleted");
 });
 
 test("acceptInvite creates an ACTIVE user in the invitation's company and deletes the invite", async () => {
-  const inv = { id: "inv1", email: "new@x.fr", companyId: "comp_1", companyName: "G", tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000 };
+  const inv = {
+    id: "inv1",
+    email: "new@x.fr",
+    companyId: "comp_1",
+    companyName: "G",
+    tokenHash: hashInviteCode("A1B2C3"),
+    expiresAt: 2_000_000,
+  };
   const d = fakeDeps({ findInvitationByHash: async () => inv });
-  await acceptInviteCore({ method: "password", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000", departement: "75 - Paris", ville: "Paris", password: "password123" }, null, null, d);
-  expect(d.calls.users["uid_new"]).toMatchObject({ role: "b2b", companyId: "comp_1", status: "active" });
+  await acceptInviteCore(
+    {
+      method: "password",
+      code: "A1B2C3",
+      nom: "N",
+      prenom: "P",
+      telephone: "0600000000",
+      departement: "75 - Paris",
+      ville: "Paris",
+      password: "password123",
+    },
+    null,
+    null,
+    d,
+  );
+  expect(d.calls.users["uid_new"]).toMatchObject({
+    role: "b2b",
+    companyId: "comp_1",
+    status: "active",
+  });
   expect(d.calls.claims.claims.status).toBe("active");
   expect(d.calls.invitations["inv1"]).toBe("deleted");
 });
 
 test("acceptInvite (google) requires the Google email to match the invitation", async () => {
-  const inv = { id: "inv1", email: "new@x.fr", companyId: "comp_1", companyName: "G", tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000 };
+  const inv = {
+    id: "inv1",
+    email: "new@x.fr",
+    companyId: "comp_1",
+    companyName: "G",
+    tokenHash: hashInviteCode("A1B2C3"),
+    expiresAt: 2_000_000,
+  };
   const d = fakeDeps({ findInvitationByHash: async () => inv });
-  await expect(acceptInviteCore({ method: "google", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000", departement: "75 - Paris", ville: "Paris" }, "uid_g", "other@x.fr", d)).rejects.toMatchObject({ code: "permission-denied" });
+  await expect(
+    acceptInviteCore(
+      {
+        method: "google",
+        code: "A1B2C3",
+        nom: "N",
+        prenom: "P",
+        telephone: "0600000000",
+        departement: "75 - Paris",
+        ville: "Paris",
+      },
+      "uid_g",
+      "other@x.fr",
+      d,
+    ),
+  ).rejects.toMatchObject({ code: "permission-denied" });
 });
 ```
 
@@ -386,8 +531,13 @@ Expected: FAIL — cannot find `./core`.
 - [ ] **Step 3: Implement `core.ts`**
 
 Create `functions/src/registration/core.ts`:
+
 ```ts
-import { generateInviteCode, hashInviteCode, INVITE_TTL_MS } from "./inviteCode";
+import {
+  generateInviteCode,
+  hashInviteCode,
+  INVITE_TTL_MS,
+} from "./inviteCode";
 import type {
   AcceptInviteInput,
   RegisterCompanyInput,
@@ -396,11 +546,17 @@ import type {
 } from "./schemas";
 
 export type RegErrorCode =
-  | "unauthenticated" | "permission-denied" | "already-exists"
-  | "invalid-argument" | "not-found";
+  | "unauthenticated"
+  | "permission-denied"
+  | "already-exists"
+  | "invalid-argument"
+  | "not-found";
 
 export class RegError extends Error {
-  constructor(public code: RegErrorCode, message: string) {
+  constructor(
+    public code: RegErrorCode,
+    message: string,
+  ) {
     super(message);
   }
 }
@@ -436,11 +592,28 @@ export interface Deps {
   sendInviteEmail(to: string, code: string): Promise<void>;
 }
 
-function profileDoc(input: { nom: string; prenom: string; telephone: string; departement: string; ville: string }, email: string, companyId: string, status: "pending" | "active") {
+function profileDoc(
+  input: {
+    nom: string;
+    prenom: string;
+    telephone: string;
+    departement: string;
+    ville: string;
+  },
+  email: string,
+  companyId: string,
+  status: "pending" | "active",
+) {
   return {
-    role: "b2b", companyId, region: null,
-    nom: input.nom, prenom: input.prenom, email,
-    telephone: input.telephone, departement: input.departement, ville: input.ville,
+    role: "b2b",
+    companyId,
+    region: null,
+    nom: input.nom,
+    prenom: input.prenom,
+    email,
+    telephone: input.telephone,
+    departement: input.departement,
+    ville: input.ville,
     status,
   };
 }
@@ -452,7 +625,10 @@ export async function registerCompanyCore(
   deps: Deps,
 ): Promise<void> {
   if (await deps.companyExistsForSiret(input.siret)) {
-    throw new RegError("already-exists", "Une entreprise avec ce SIRET est déjà enregistrée.");
+    throw new RegError(
+      "already-exists",
+      "Une entreprise avec ce SIRET est déjà enregistrée.",
+    );
   }
   let uid: string;
   let email: string;
@@ -460,13 +636,17 @@ export async function registerCompanyCore(
     uid = await deps.createUser(input.email, input.password);
     email = input.email;
   } else {
-    if (!authUid || !authEmail) throw new RegError("unauthenticated", "Connexion Google requise.");
+    if (!authUid || !authEmail)
+      throw new RegError("unauthenticated", "Connexion Google requise.");
     uid = authUid;
     email = authEmail;
   }
   const companyId = deps.newCompanyId();
   await deps.writeCompany(companyId, {
-    siret: input.siret, name: input.companyName, status: "pending", createdBy: uid,
+    siret: input.siret,
+    name: input.companyName,
+    status: "pending",
+    createdBy: uid,
   });
   await deps.writeUser(uid, profileDoc(input, email, companyId, "pending"));
   await deps.setClaims(uid, { role: "b2b", companyId, status: "pending" });
@@ -478,14 +658,25 @@ export async function sendInviteCore(
   caller: CallerClaims,
   deps: Deps,
 ): Promise<void> {
-  if (caller.role !== "b2b" || caller.status !== "active" || !caller.companyId) {
-    throw new RegError("permission-denied", "Seul un compte vendeur actif peut inviter.");
+  if (
+    caller.role !== "b2b" ||
+    caller.status !== "active" ||
+    !caller.companyId
+  ) {
+    throw new RegError(
+      "permission-denied",
+      "Seul un compte vendeur actif peut inviter.",
+    );
   }
   const code = generateInviteCode();
   const id = deps.newCompanyId(); // reuse the id generator for a random doc id
   await deps.writeInvitation(id, {
-    email: input.email, companyId: caller.companyId, invitedBy: caller.uid,
-    tokenHash: hashInviteCode(code), status: "pending", expiresAt: deps.now() + INVITE_TTL_MS,
+    email: input.email,
+    companyId: caller.companyId,
+    invitedBy: caller.uid,
+    tokenHash: hashInviteCode(code),
+    status: "pending",
+    expiresAt: deps.now() + INVITE_TTL_MS,
   });
   await deps.sendInviteEmail(input.email, code);
 }
@@ -495,7 +686,8 @@ export async function resolveInviteCore(
   deps: Deps,
 ): Promise<{ email: string; companyName: string }> {
   const inv = await deps.findInvitationByHash(hashInviteCode(input.code));
-  if (!inv) throw new RegError("not-found", "Code d'invitation invalide ou expiré.");
+  if (!inv)
+    throw new RegError("not-found", "Code d'invitation invalide ou expiré.");
   if (inv.expiresAt <= deps.now()) {
     await deps.deleteInvitation(inv.id);
     throw new RegError("not-found", "Code d'invitation invalide ou expiré.");
@@ -518,14 +710,25 @@ export async function acceptInviteCore(
   if (input.method === "password") {
     uid = await deps.createUser(inv.email, input.password!);
   } else {
-    if (!authUid || !authEmail) throw new RegError("unauthenticated", "Connexion Google requise.");
+    if (!authUid || !authEmail)
+      throw new RegError("unauthenticated", "Connexion Google requise.");
     if (authEmail.toLowerCase() !== inv.email.toLowerCase()) {
-      throw new RegError("permission-denied", "Ce compte Google ne correspond pas à l'invitation.");
+      throw new RegError(
+        "permission-denied",
+        "Ce compte Google ne correspond pas à l'invitation.",
+      );
     }
     uid = authUid;
   }
-  await deps.writeUser(uid, profileDoc(input, inv.email, inv.companyId, "active"));
-  await deps.setClaims(uid, { role: "b2b", companyId: inv.companyId, status: "active" });
+  await deps.writeUser(
+    uid,
+    profileDoc(input, inv.email, inv.companyId, "active"),
+  );
+  await deps.setClaims(uid, {
+    role: "b2b",
+    companyId: inv.companyId,
+    status: "active",
+  });
   await deps.deleteInvitation(inv.id);
 }
 ```
@@ -549,32 +752,49 @@ git commit -m "feat(functions): pure registration core logic with injected deps"
 ## Task 4: Functions — email templates + wrappers wiring the Admin SDK
 
 **Files:**
+
 - Create: `functions/src/registration/emails.ts`, `functions/src/registration/index.ts`
 - Modify: `functions/src/email.ts` (export a reusable `sendMail` + secrets), `functions/src/index.ts` (export the callables)
 
 **Interfaces:**
+
 - Consumes: `core.ts`, `schemas.ts`, `email.ts`.
 - Produces (deployed callables): `registerCompany`, `sendInvite`, `resolveInvite`, `acceptInvite`.
 
 - [ ] **Step 1: Export a reusable mail sender from `email.ts`**
 
 `functions/src/email.ts` already builds a nodemailer transport for the B2C emails. Add a small exported helper so registration reuses the same transport + secrets. Append:
+
 ```ts
 /** Reusable single-email sender for non-B2C flows (registration). Same transport + secrets. */
-export async function sendMail(opts: { to: string; subject: string; text: string }): Promise<void> {
+export async function sendMail(opts: {
+  to: string;
+  subject: string;
+  text: string;
+}): Promise<void> {
   const transport = buildTransport(); // the existing internal transport builder
-  await transport.sendMail({ from: fromAddress(), to: DEV_EMAIL_OVERRIDE ? DEV_EMAIL : opts.to, subject: opts.subject, text: opts.text });
+  await transport.sendMail({
+    from: fromAddress(),
+    to: DEV_EMAIL_OVERRIDE ? DEV_EMAIL : opts.to,
+    subject: opts.subject,
+    text: opts.text,
+  });
 }
 ```
+
 If `buildTransport` is not already a named function in `email.ts`, extract the transport-creation code the B2C path uses into `function buildTransport() { … }` and call it from both. Keep `B2C_EMAIL_SECRETS` (the registration callables reuse the same secret list).
 
 - [ ] **Step 2: Registration email copy**
 
 Create `functions/src/registration/emails.ts`:
+
 ```ts
 import { sendMail } from "../email";
 
-export async function sendApplicantEmail(to: string, companyName: string): Promise<void> {
+export async function sendApplicantEmail(
+  to: string,
+  companyName: string,
+): Promise<void> {
   await sendMail({
     to,
     subject: "Bike-eco — Demande d'inscription reçue",
@@ -600,6 +820,7 @@ export async function sendInviteEmail(to: string, code: string): Promise<void> {
 - [ ] **Step 3: The callable wrappers**
 
 Create `functions/src/registration/index.ts`:
+
 ```ts
 import { getApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
@@ -609,40 +830,78 @@ import { HttpsError, onCall } from "firebase-functions/https";
 import { B2C_EMAIL_SECRETS } from "../email";
 import { sendApplicantEmail, sendInviteEmail } from "./emails";
 import {
-  acceptInviteCore, registerCompanyCore, resolveInviteCore, sendInviteCore,
-  RegError, type Deps, type StoredInvitation,
+  acceptInviteCore,
+  registerCompanyCore,
+  resolveInviteCore,
+  sendInviteCore,
+  RegError,
+  type Deps,
+  type StoredInvitation,
 } from "./core";
 import {
-  acceptInviteSchema, registerCompanySchema, resolveInviteSchema, sendInviteSchema,
+  acceptInviteSchema,
+  registerCompanySchema,
+  resolveInviteSchema,
+  sendInviteSchema,
 } from "./schemas";
 
 const db = () => getFirestore(getApp(), "bike-eco-db");
 
 function realDeps(): Deps {
   return {
-    createUser: async (email, password) => (await getAuth().createUser({ email, password })).uid,
+    createUser: async (email, password) =>
+      (await getAuth().createUser({ email, password })).uid,
     setClaims: (uid, claims) => getAuth().setCustomUserClaims(uid, claims),
     companyExistsForSiret: async (siret) =>
-      !(await db().collection("companies").where("siret", "==", siret).limit(1).get()).empty,
+      !(
+        await db()
+          .collection("companies")
+          .where("siret", "==", siret)
+          .limit(1)
+          .get()
+      ).empty,
     writeCompany: async (id, data) =>
-      void (await db().collection("companies").doc(id).set({ ...data, createdAt: FieldValue.serverTimestamp() })),
+      void (await db()
+        .collection("companies")
+        .doc(id)
+        .set({ ...data, createdAt: FieldValue.serverTimestamp() })),
     writeUser: async (uid, data) =>
-      void (await db().collection("users").doc(uid).set({ ...data, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() })),
+      void (await db()
+        .collection("users")
+        .doc(uid)
+        .set({
+          ...data,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        })),
     newCompanyId: () => db().collection("companies").doc().id,
     findInvitationByHash: async (hash) => {
-      const snap = await db().collection("invitations").where("tokenHash", "==", hash).limit(1).get();
+      const snap = await db()
+        .collection("invitations")
+        .where("tokenHash", "==", hash)
+        .limit(1)
+        .get();
       if (snap.empty) return null;
       const doc = snap.docs[0];
       const d = doc.data();
       return {
-        id: doc.id, email: d.email, companyId: d.companyId, tokenHash: d.tokenHash,
-        companyName: (await db().collection("companies").doc(d.companyId).get()).data()?.name ?? "",
+        id: doc.id,
+        email: d.email,
+        companyId: d.companyId,
+        tokenHash: d.tokenHash,
+        companyName:
+          (await db().collection("companies").doc(d.companyId).get()).data()
+            ?.name ?? "",
         expiresAt: d.expiresAt.toMillis(),
       } satisfies StoredInvitation;
     },
     writeInvitation: async (id, data) =>
-      void (await db().collection("invitations").doc(id).set({ ...data, createdAt: FieldValue.serverTimestamp() })),
-    deleteInvitation: async (id) => void (await db().collection("invitations").doc(id).delete()),
+      void (await db()
+        .collection("invitations")
+        .doc(id)
+        .set({ ...data, createdAt: FieldValue.serverTimestamp() })),
+    deleteInvitation: async (id) =>
+      void (await db().collection("invitations").doc(id).delete()),
     now: () => Date.now(),
     sendApplicantEmail,
     sendInviteEmail,
@@ -651,49 +910,93 @@ function realDeps(): Deps {
 
 function toHttps(err: unknown): never {
   if (err instanceof RegError) throw new HttpsError(err.code, err.message);
-  throw new HttpsError("internal", "Une erreur est survenue. Veuillez réessayer.");
+  throw new HttpsError(
+    "internal",
+    "Une erreur est survenue. Veuillez réessayer.",
+  );
 }
 
-export const registerCompany = onCall({ secrets: B2C_EMAIL_SECRETS }, async (req) => {
-  const input = registerCompanySchema.parse(req.data);
-  try {
-    await registerCompanyCore(input, req.auth?.uid ?? null, req.auth?.token.email ?? null, realDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+export const registerCompany = onCall(
+  { secrets: B2C_EMAIL_SECRETS },
+  async (req) => {
+    const input = registerCompanySchema.parse(req.data);
+    try {
+      await registerCompanyCore(
+        input,
+        req.auth?.uid ?? null,
+        req.auth?.token.email ?? null,
+        realDeps(),
+      );
+      return { ok: true };
+    } catch (e) {
+      toHttps(e);
+    }
+  },
+);
 
-export const sendInvite = onCall({ secrets: B2C_EMAIL_SECRETS }, async (req) => {
-  if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
-  const input = sendInviteSchema.parse(req.data);
-  try {
-    await sendInviteCore(input, {
-      uid: req.auth.uid, role: req.auth.token.role as string,
-      status: req.auth.token.status as string, companyId: req.auth.token.companyId as string,
-    }, realDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+export const sendInvite = onCall(
+  { secrets: B2C_EMAIL_SECRETS },
+  async (req) => {
+    if (!req.auth)
+      throw new HttpsError("unauthenticated", "Connexion requise.");
+    const input = sendInviteSchema.parse(req.data);
+    try {
+      await sendInviteCore(
+        input,
+        {
+          uid: req.auth.uid,
+          role: req.auth.token.role as string,
+          status: req.auth.token.status as string,
+          companyId: req.auth.token.companyId as string,
+        },
+        realDeps(),
+      );
+      return { ok: true };
+    } catch (e) {
+      toHttps(e);
+    }
+  },
+);
 
 export const resolveInvite = onCall(async (req) => {
   const input = resolveInviteSchema.parse(req.data);
-  try { return await resolveInviteCore(input, realDeps()); }
-  catch (e) { toHttps(e); }
+  try {
+    return await resolveInviteCore(input, realDeps());
+  } catch (e) {
+    toHttps(e);
+  }
 });
 
-export const acceptInvite = onCall({ secrets: B2C_EMAIL_SECRETS }, async (req) => {
-  const input = acceptInviteSchema.parse(req.data);
-  try {
-    await acceptInviteCore(input, req.auth?.uid ?? null, req.auth?.token.email ?? null, realDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+export const acceptInvite = onCall(
+  { secrets: B2C_EMAIL_SECRETS },
+  async (req) => {
+    const input = acceptInviteSchema.parse(req.data);
+    try {
+      await acceptInviteCore(
+        input,
+        req.auth?.uid ?? null,
+        req.auth?.token.email ?? null,
+        realDeps(),
+      );
+      return { ok: true };
+    } catch (e) {
+      toHttps(e);
+    }
+  },
+);
 ```
 
 - [ ] **Step 4: Export the callables**
 
 In `functions/src/index.ts`, add near the other exports:
+
 ```ts
-export { registerCompany, sendInvite, resolveInvite, acceptInvite } from "./registration";
+export {
+  registerCompany,
+  sendInvite,
+  resolveInvite,
+  acceptInvite,
+} from "./registration";
 ```
 
 - [ ] **Step 5: Build + lint**
@@ -713,10 +1016,12 @@ git commit -m "feat(functions): registration callables + emails wiring the Admin
 ## Task 5: App — callable client + French error mapping
 
 **Files:**
+
 - Modify: `firebase.core.ts` (add `functions` + emulator wiring)
 - Create: `src/lib/data/registration.ts`
 
 **Interfaces:**
+
 - Produces:
   - `functions` export (client `Functions` instance, emulator-wired in dev).
   - `callRegisterCompany(payload) => Promise<void>`, `callSendInvite(email) => Promise<void>`, `callResolveInvite(code) => Promise<{ email; companyName }>`, `callAcceptInvite(payload) => Promise<void>` — each throws an `Error` with French `message` on failure.
@@ -724,23 +1029,29 @@ git commit -m "feat(functions): registration callables + emails wiring the Admin
 - [ ] **Step 1: Add the functions client + emulator wiring**
 
 In `firebase.core.ts`, add the import and export:
+
 ```ts
 import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
 ```
+
 After `export const storage = getStorage(app);` add:
+
 ```ts
 export const functions = getFunctions(app, "europe-west9");
 ```
+
 > `europe-west9` matches the Firestore location; 2nd-gen functions default to `us-central1` unless deployed elsewhere — set the functions' region to `europe-west9` in Task 4's `onCall` options if you want them co-located, OR use the default region here. Use whichever region the functions are actually deployed to; for the emulator the region is ignored.
 
 In `connectDataEmulators()`, after the storage line add:
+
 ```ts
-  connectFunctionsEmulator(functions, host, 5001);
+connectFunctionsEmulator(functions, host, 5001);
 ```
 
 - [ ] **Step 2: Client callable wrappers**
 
 Create `src/lib/data/registration.ts`:
+
 ```ts
 import { httpsCallable, type HttpsError } from "firebase/functions";
 import { functions } from "../../../firebase.core";
@@ -749,7 +1060,8 @@ import { functions } from "../../../firebase.core";
 function frenchError(error: unknown): Error {
   const code = (error as HttpsError)?.code ?? "";
   const messages: Record<string, string> = {
-    "functions/already-exists": "Une entreprise avec ce SIRET est déjà enregistrée.",
+    "functions/already-exists":
+      "Une entreprise avec ce SIRET est déjà enregistrée.",
     "functions/permission-denied": "Action non autorisée.",
     "functions/not-found": "Code d'invitation invalide ou expiré.",
     "functions/unauthenticated": "Connexion requise.",
@@ -757,7 +1069,11 @@ function frenchError(error: unknown): Error {
   };
   // A thrown HttpsError message is server-authored French; prefer it when present.
   const serverMsg = (error as { message?: string })?.message;
-  return new Error(messages[code] ?? serverMsg ?? "Une erreur est survenue. Veuillez réessayer.");
+  return new Error(
+    messages[code] ??
+      serverMsg ??
+      "Une erreur est survenue. Veuillez réessayer.",
+  );
 }
 
 async function call<T, R>(name: string, data: T): Promise<R> {
@@ -771,24 +1087,44 @@ async function call<T, R>(name: string, data: T): Promise<R> {
 
 export interface RegisterCompanyPayload {
   method: "password" | "google";
-  siret: string; companyName: string; nom: string; prenom: string;
-  telephone: string; departement: string; ville: string;
-  email?: string; password?: string;
+  siret: string;
+  companyName: string;
+  nom: string;
+  prenom: string;
+  telephone: string;
+  departement: string;
+  ville: string;
+  email?: string;
+  password?: string;
 }
 export interface AcceptInvitePayload {
   method: "password" | "google";
-  code: string; nom: string; prenom: string; telephone: string;
-  departement: string; ville: string; password?: string;
+  code: string;
+  nom: string;
+  prenom: string;
+  telephone: string;
+  departement: string;
+  ville: string;
+  password?: string;
 }
 
 export const callRegisterCompany = (p: RegisterCompanyPayload) =>
-  call<RegisterCompanyPayload, { ok: true }>("registerCompany", p).then(() => undefined);
+  call<RegisterCompanyPayload, { ok: true }>("registerCompany", p).then(
+    () => undefined,
+  );
 export const callSendInvite = (email: string) =>
-  call<{ email: string }, { ok: true }>("sendInvite", { email }).then(() => undefined);
+  call<{ email: string }, { ok: true }>("sendInvite", { email }).then(
+    () => undefined,
+  );
 export const callResolveInvite = (code: string) =>
-  call<{ code: string }, { email: string; companyName: string }>("resolveInvite", { code });
+  call<{ code: string }, { email: string; companyName: string }>(
+    "resolveInvite",
+    { code },
+  );
 export const callAcceptInvite = (p: AcceptInvitePayload) =>
-  call<AcceptInvitePayload, { ok: true }>("acceptInvite", p).then(() => undefined);
+  call<AcceptInvitePayload, { ok: true }>("acceptInvite", p).then(
+    () => undefined,
+  );
 ```
 
 - [ ] **Step 3: Typecheck + lint**
@@ -808,16 +1144,19 @@ git commit -m "feat(data): client callables for registration + French error mapp
 ## Task 6: App — Google sign-in wiring (platform split)
 
 **Files:**
+
 - Create: `src/lib/auth/googleSignIn.ts` (native), `src/lib/auth/googleSignIn.web.ts` (web)
 - Modify: `src/components/ui/ThirdPartyAuthButtons.tsx`
 
 **Interfaces:**
+
 - Produces:
   - `signInWithGoogle(): Promise<{ prenom: string | null; nom: string | null; email: string | null }>` — signs the user into Firebase Auth via Google and returns profile fields for prefill.
 
 - [ ] **Step 1: Native Google sign-in**
 
 Create `src/lib/auth/googleSignIn.ts`:
+
 ```ts
 import {
   GoogleSignin,
@@ -834,26 +1173,36 @@ GoogleSignin.configure({
 });
 
 export async function signInWithGoogle(): Promise<{
-  prenom: string | null; nom: string | null; email: string | null;
+  prenom: string | null;
+  nom: string | null;
+  email: string | null;
 }> {
   await GoogleSignin.hasPlayServices();
   const response = await GoogleSignin.signIn();
-  if (!isSuccessResponse(response)) throw new Error("Connexion Google annulée.");
+  if (!isSuccessResponse(response))
+    throw new Error("Connexion Google annulée.");
   const { idToken, user } = response.data;
   await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
-  return { prenom: user.givenName ?? null, nom: user.familyName ?? null, email: user.email ?? null };
+  return {
+    prenom: user.givenName ?? null,
+    nom: user.familyName ?? null,
+    email: user.email ?? null,
+  };
 }
 ```
 
 - [ ] **Step 2: Web Google sign-in**
 
 Create `src/lib/auth/googleSignIn.web.ts`:
+
 ```ts
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../../../firebaseConfig";
 
 export async function signInWithGoogle(): Promise<{
-  prenom: string | null; nom: string | null; email: string | null;
+  prenom: string | null;
+  nom: string | null;
+  email: string | null;
 }> {
   const result = await signInWithPopup(auth, new GoogleAuthProvider());
   // Web only gives a single displayName; split best-effort into prénom / nom.
@@ -869,13 +1218,19 @@ export async function signInWithGoogle(): Promise<{
 - [ ] **Step 3: Enable Google, disable Apple/Facebook in the buttons**
 
 Replace the provider map + button rendering in `src/components/ui/ThirdPartyAuthButtons.tsx` so only Google is active; Apple/Facebook render disabled with "bientôt disponible":
+
 ```tsx
-const PROVIDERS: { id: "google" | "apple" | "facebook"; label: string; enabled: boolean }[] = [
+const PROVIDERS: {
+  id: "google" | "apple" | "facebook";
+  label: string;
+  enabled: boolean;
+}[] = [
   { id: "google", label: "Google", enabled: true },
   { id: "apple", label: "Apple — bientôt disponible", enabled: false },
   { id: "facebook", label: "Facebook — bientôt disponible", enabled: false },
 ];
 ```
+
 And in the render, map `PROVIDERS`, passing `disabled={!p.enabled}` to the `TouchableOpacity`, `onPress={() => p.enabled && onPress(p.id)}`, and a muted style when disabled (`opacity: 0.5`). Keep the prop type `onPress: (provider: "google" | "apple" | "facebook") => void`.
 
 - [ ] **Step 4: Typecheck + lint**
@@ -894,31 +1249,43 @@ git commit -m "feat(auth): Google sign-in wiring (native + web); disable Apple/F
 
 ## Task 7: App — `AuthProvider.refreshSession()`
 
-The Google registration path sets claims *after* sign-in, and `onAuthStateChanged`
+The Google registration path sets claims _after_ sign-in, and `onAuthStateChanged`
 does not re-fire on claim changes. Expose a manual re-read.
 
 **Files:**
+
 - Modify: `src/lib/auth/AuthProvider.tsx`, `src/lib/data/useSession.ts`
 
 **Interfaces:**
+
 - Produces: `refreshSession(): Promise<void>` on the auth context + `useSession()` return.
 
 - [ ] **Step 1: Extract the load + expose refresh**
 
 In `AuthProvider.tsx`, the `onAuthStateChanged` callback already: force-refreshes the token (`getIdTokenResult(true)`), parses claims, loads the profile, and calls `setSession(...)`. Extract that body into a `loadSession(user)` function reachable outside the listener, and expose:
+
 ```ts
-  const refreshSession = useCallback(async () => {
-    if (auth.currentUser) await loadSession(auth.currentUser);
-  }, []);
+const refreshSession = useCallback(async () => {
+  if (auth.currentUser) await loadSession(auth.currentUser);
+}, []);
 ```
+
 Add `refreshSession` to the context value and its type (`refreshSession: () => Promise<void>`). `loadSession` must call `user.getIdToken(true)` (force refresh) before `getIdTokenResult()` so freshly-set claims are pulled.
 
 - [ ] **Step 2: Surface it on `useSession`**
 
 In `src/lib/data/useSession.ts`, add `refreshSession` to the returned object:
+
 ```ts
-  const { session, status, loading, signOut, refreshSession } = useAuth();
-  return { user: session, role: session?.role ?? null, status, loading, signOut, refreshSession };
+const { session, status, loading, signOut, refreshSession } = useAuth();
+return {
+  user: session,
+  role: session?.role ?? null,
+  status,
+  loading,
+  signOut,
+  refreshSession,
+};
 ```
 
 - [ ] **Step 3: Typecheck + lint**
@@ -938,14 +1305,17 @@ git commit -m "feat(auth): expose refreshSession for the post-registration claim
 ## Task 8: App — company registration wiring
 
 **Files:**
+
 - Modify: `src/features/b2b-registration/submit.ts`, `src/app/(auth)/register.tsx`
 
 **Interfaces:**
+
 - Consumes: `callRegisterCompany` (Task 5), `signInWithGoogle` (Task 6), `refreshSession`/`useSession` (Task 7), `signInWithEmailAndPassword`.
 
 - [ ] **Step 1: Real `submitCompanyRegistration`**
 
 Replace `src/features/b2b-registration/submit.ts`:
+
 ```ts
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../../firebaseConfig";
@@ -959,7 +1329,9 @@ import type { B2bCompanyRegistrationForm } from "./schema";
  * signed in, so it calls `callRegisterCompany({method:"google", …})` then
  * `refreshSession()`.)
  */
-export async function submitCompanyRegistration(values: B2bCompanyRegistrationForm): Promise<void> {
+export async function submitCompanyRegistration(
+  values: B2bCompanyRegistrationForm,
+): Promise<void> {
   await callRegisterCompany({ method: "password", ...values });
   await signInWithEmailAndPassword(auth, values.email, values.password);
 }
@@ -968,6 +1340,7 @@ export async function submitCompanyRegistration(values: B2bCompanyRegistrationFo
 - [ ] **Step 2: Wire Google on the register screen**
 
 In `src/app/(auth)/register.tsx`: import `useSession`, `signInWithGoogle`, `callRegisterCompany`. Add `const { refreshSession } = useSession();`. Render `ThirdPartyAuthButtons` on the account step (per the spec) with an `onPress` that, for `"google"`:
+
 1. `const profile = await signInWithGoogle();`
 2. prefill the coordonnées step fields from `profile` (set the form's `prenom`/`nom` values via the step-form's setter; email is the Google email),
 3. on final submit call `callRegisterCompany({ method: "google", ...values })` then `await refreshSession()`.
@@ -993,14 +1366,17 @@ git commit -m "feat(auth): real company registration (email/password + Google)"
 ## Task 9: App — invite a colleague
 
 **Files:**
+
 - Modify: `src/lib/data/useInvite.ts`
 
 **Interfaces:**
+
 - Consumes: `callSendInvite` (Task 5).
 
 - [ ] **Step 1: Real `useInvite`**
 
 Replace `src/lib/data/useInvite.ts`:
+
 ```ts
 import { useCallback } from "react";
 import { callSendInvite } from "./registration";
@@ -1029,15 +1405,18 @@ git commit -m "feat(b2b): real colleague invite via sendInvite callable"
 ## Task 10: App — invited registration + invite-code entry
 
 **Files:**
+
 - Create: `src/app/(auth)/invite-code.tsx` (the typed-code entry screen)
 - Modify: `src/features/b2b-invited-registration/submit.ts`, `src/app/(auth)/register-invited.tsx`
 
 **Interfaces:**
+
 - Consumes: `callResolveInvite`, `callAcceptInvite` (Task 5), `signInWithGoogle` (Task 6), `refreshSession` (Task 7).
 
 - [ ] **Step 1: Real `submitInvitedRegistration`**
 
 Replace `src/features/b2b-invited-registration/submit.ts`:
+
 ```ts
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../../firebaseConfig";
@@ -1053,7 +1432,16 @@ import type { B2bInvitedRegistrationForm } from "./schema";
 export async function submitInvitedRegistration(
   values: B2bInvitedRegistrationForm & { code: string },
 ): Promise<void> {
-  await callAcceptInvite({ method: "password", code: values.code, nom: values.nom, prenom: values.prenom, telephone: values.telephone, departement: values.departement, ville: values.ville, password: values.password });
+  await callAcceptInvite({
+    method: "password",
+    code: values.code,
+    nom: values.nom,
+    prenom: values.prenom,
+    telephone: values.telephone,
+    departement: values.departement,
+    ville: values.ville,
+    password: values.password,
+  });
   await signInWithEmailAndPassword(auth, values.email, values.password);
 }
 ```
@@ -1083,12 +1471,14 @@ git commit -m "feat(auth): invited registration with typed invite-code entry (em
 ## Task 11: Rules + schema trim + TTL doc + spec sync
 
 **Files:**
+
 - Modify: `firestore.rules`, `src/lib/firestore/schema.ts`, `docs/specs/form-b2b-invited-registration.md`, `docs/specs/form-b2b-company-registration.md`, `docs/tech/test-auth.md`
 - Test: `src/lib/firestore/__tests__/rules.test.ts`
 
 - [ ] **Step 1: Failing rules tests — invitations closed, companies server-only**
 
 Add to `src/lib/firestore/__tests__/rules.test.ts` (reuse the file's existing `db`/context helpers and `assertFails`):
+
 ```ts
 test("clients cannot read or write invitations", async () => {
   const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
@@ -1098,7 +1488,13 @@ test("clients cannot read or write invitations", async () => {
 
 test("clients cannot create a company", async () => {
   const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
-  await assertFails(setDoc(doc(db, "companies/comp_x"), { siret: "12345678901234", name: "X", status: "pending" }));
+  await assertFails(
+    setDoc(doc(db, "companies/comp_x"), {
+      siret: "12345678901234",
+      name: "X",
+      status: "pending",
+    }),
+  );
 });
 ```
 
@@ -1119,9 +1515,11 @@ Expected: PASS; and the full suite still green.
 - [ ] **Step 5: Trim the invitation status enum**
 
 In `src/lib/firestore/schema.ts` change:
+
 ```ts
 export const INVITATION_STATUSES = ["pending"] as const;
 ```
+
 (An invitation is only ever `pending` while it exists — acceptance/expiry delete it.) Fix any resulting type usages.
 
 - [ ] **Step 6: Document the TTL policy + spec sync**
@@ -1146,6 +1544,7 @@ git commit -m "feat(security): lock invitations + company creation server-side; 
 ## Task 12: Seed — active company for invite testing
 
 **Files:**
+
 - Modify: `scripts/seed.ts`
 
 The invite flow needs an active b2b user to send from — `user_b2b` (comp_nord)
@@ -1193,6 +1592,7 @@ EXPO_PUBLIC_USE_EMULATORS=1 npx expo start
 npx tsc --noEmit && npm run lint && npx jest
 cd functions && npm run build && npm run lint && npm test && cd ..
 ```
+
 Expected: all clean.
 
 ---

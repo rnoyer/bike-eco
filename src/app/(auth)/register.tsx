@@ -1,8 +1,8 @@
 import { Stack, useRouter } from "expo-router";
-import { useRef, useState } from "react";
-import { Alert } from "react-native";
-import { FormProvider } from "react-hook-form";
 import { signOut } from "firebase/auth";
+import { useRef, useState } from "react";
+import { FormProvider } from "react-hook-form";
+import { Alert } from "react-native";
 
 import FormConfirmation from "@/components/form/FormConfirmation";
 import FormLayout from "@/components/form/FormLayout";
@@ -56,7 +56,7 @@ export default function RegisterScreen() {
         } catch (err) {
           Alert.alert(
             "Inscription impossible",
-            err instanceof Error ? err.message : "Veuillez réessayer."
+            err instanceof Error ? err.message : "Veuillez réessayer.",
           );
         } finally {
           submitting.current = false;
@@ -95,7 +95,14 @@ export default function RegisterScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <GoogleAuthProvider value={{ onGoogleProfile: () => { usedGoogle.current = true; } }}>
+      <GoogleAuthProvider
+        value={{
+          onGoogleProfile: async () => {
+            usedGoogle.current = true;
+            await next();
+          },
+        }}
+      >
         <FormProvider {...form}>
           <FormLayout
             progress={meta.progress}
