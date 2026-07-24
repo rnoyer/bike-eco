@@ -7,6 +7,8 @@ export default function BackofficeLayout() {
     <Stack screenOptions={{ headerShown: true }}>
       <Stack.Screen name="(tabs)" options={tabs} />
       <Stack.Screen name="dossier/[id]" options={dossier} />
+      <Stack.Screen name="companies/index" options={{ title: "Vendeurs enregistrées" }} />
+      <Stack.Screen name="companies/[id]" options={{ title: "Vendeur" }} />
     </Stack>
   );
 }
