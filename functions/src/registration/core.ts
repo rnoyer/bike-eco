@@ -9,7 +9,7 @@ import type {
 
 export type RegErrorCode =
   | "unauthenticated" | "permission-denied" | "already-exists"
-  | "invalid-argument" | "not-found";
+  | "invalid-argument" | "not-found" | "failed-precondition";
 
 export class RegError extends Error {
   constructor(public code: RegErrorCode, message: string) {
