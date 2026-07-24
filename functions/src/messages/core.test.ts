@@ -1,4 +1,9 @@
-import { sendMessageCore, type SendMessageDeps, type NewMessage } from "./core";
+import {
+  sendMessageCore,
+  isAttachmentUnderMessagePrefix,
+  type SendMessageDeps,
+  type NewMessage,
+} from "./core";
 import type { CallerClaims } from "../registration/core";
 import type { SendMessageInput } from "./schemas";
 
@@ -64,4 +69,73 @@ test("a missing dossier is not-found", async () => {
 test("a duplicate messageId (createMessage rejects) propagates", async () => {
   const d = fakeDeps({ createMessage: async () => { throw new Error("ALREADY_EXISTS"); } });
   await expect(sendMessageCore(input, dealer, d)).rejects.toThrow("ALREADY_EXISTS");
+});
+
+describe("isAttachmentUnderMessagePrefix", () => {
+  const url = (path: string) =>
+    `https://firebasestorage.googleapis.com/v0/b/bkt/o/${path}?alt=media&token=abc`;
+
+  test("accepts a url under the exact company/dossier/message prefix", () => {
+    const u = url("dossiers%2Fcomp_1%2Fdos_1%2Fmessages%2Fmsg_1%2Foffre.pdf");
+    expect(isAttachmentUnderMessagePrefix(u, "comp_1", "dos_1", "msg_1")).toBe(true);
+  });
+
+  test("rejects a url under another company's prefix", () => {
+    const u = url("dossiers%2Fcomp_2%2Fdos_1%2Fmessages%2Fmsg_1%2Foffre.pdf");
+    expect(isAttachmentUnderMessagePrefix(u, "comp_1", "dos_1", "msg_1")).toBe(false);
+  });
+
+  test("rejects a url under another dossier's prefix", () => {
+    const u = url("dossiers%2Fcomp_1%2Fdos_2%2Fmessages%2Fmsg_1%2Foffre.pdf");
+    expect(isAttachmentUnderMessagePrefix(u, "comp_1", "dos_1", "msg_1")).toBe(false);
+  });
+
+  test("rejects a url under another message's prefix", () => {
+    const u = url("dossiers%2Fcomp_1%2Fdos_1%2Fmessages%2Fmsg_2%2Foffre.pdf");
+    expect(isAttachmentUnderMessagePrefix(u, "comp_1", "dos_1", "msg_1")).toBe(false);
+  });
+
+  test("rejects a photos-folder url (right dossier, wrong subtree)", () => {
+    const u = url("dossiers%2Fcomp_1%2Fdos_1%2Fphotos%2F0.jpg");
+    expect(isAttachmentUnderMessagePrefix(u, "comp_1", "dos_1", "msg_1")).toBe(false);
+  });
+});
+
+describe("sendMessageCore attachment-prefix enforcement", () => {
+  const withAttachment = (path: string): SendMessageInput => ({
+    dossierId: "dos_1",
+    messageId: "msg_1",
+    text: "",
+    attachments: [
+      {
+        type: "pdf",
+        url: `https://x/o/${path}?alt=media`,
+        name: "offre.pdf",
+        size: 1024,
+      },
+    ],
+  });
+
+  test("an attachment under the correct prefix is written", async () => {
+    const d = fakeDeps();
+    await sendMessageCore(
+      withAttachment("dossiers%2Fcomp_1%2Fdos_1%2Fmessages%2Fmsg_1%2Foffre.pdf"),
+      dealer,
+      d,
+    );
+    expect(d.written).toHaveLength(1);
+    expect(d.written[0].attachments).toHaveLength(1);
+  });
+
+  test("an attachment pointing at another company is rejected, nothing written", async () => {
+    const d = fakeDeps();
+    await expect(
+      sendMessageCore(
+        withAttachment("dossiers%2Fcomp_2%2Fdos_1%2Fmessages%2Fmsg_1%2Foffre.pdf"),
+        dealer,
+        d,
+      ),
+    ).rejects.toMatchObject({ code: "invalid-argument" });
+    expect(d.written).toHaveLength(0);
+  });
 });
