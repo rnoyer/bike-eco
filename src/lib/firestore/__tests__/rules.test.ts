@@ -197,44 +197,35 @@ test("a dealer cannot update their own dossier", async () => {
 
 // ── messages ───────────────────────────────────────────────────────────────
 
-test("a dealer messages on their own dossier", async () => {
-  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
-  await assertSucceeds(
-    addDoc(collection(db, "dossiers/dos_1/messages"), newMessage()),
-  );
-});
-
-test("a dealer cannot message on another company's dossier", async () => {
-  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+test("no client can create a message directly (server-only via sendMessage)", async () => {
+  const dealer = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
-    addDoc(collection(db, "dossiers/dos_2/messages"), newMessage()),
+    addDoc(collection(dealer, "dossiers/dos_1/messages"), newMessage()),
   );
-});
-
-test("a sender cannot impersonate someone else", async () => {
-  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  const bo = env.authenticatedContext("bo_1", boClaims).firestore();
   await assertFails(
     addDoc(
-      collection(db, "dossiers/dos_1/messages"),
-      newMessage({ senderId: "user_bo" }),
-    ),
-  );
-  await assertFails(
-    addDoc(
-      collection(db, "dossiers/dos_1/messages"),
-      newMessage({ senderRole: "backoffice" }),
-    ),
-  );
-});
-
-test("backoffice messages on any dossier", async () => {
-  const db = env.authenticatedContext("bo_1", boClaims).firestore();
-  await assertSucceeds(
-    addDoc(
-      collection(db, "dossiers/dos_2/messages"),
+      collection(bo, "dossiers/dos_1/messages"),
       newMessage({ senderId: "bo_1", senderRole: "backoffice" }),
     ),
   );
+});
+
+test("a dossier participant can still read messages", async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(
+      doc(ctx.firestore(), "dossiers/dos_1/messages/seed_msg"),
+      newMessage(),
+    );
+  });
+  const dealer = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertSucceeds(getDoc(doc(dealer, "dossiers/dos_1/messages/seed_msg")));
+  const bo = env.authenticatedContext("bo_1", boClaims).firestore();
+  await assertSucceeds(getDoc(doc(bo, "dossiers/dos_1/messages/seed_msg")));
+  const outsider = env
+    .authenticatedContext("user_b2b_sud", { role: "b2b", companyId: "comp_2", status: "active" })
+    .firestore();
+  await assertFails(getDoc(doc(outsider, "dossiers/dos_1/messages/seed_msg")));
 });
 
 // ── invitations & companies (server-only) ──────────────────────────────────
