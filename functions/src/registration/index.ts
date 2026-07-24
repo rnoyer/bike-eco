@@ -1,10 +1,15 @@
-import { getApp, initializeApp } from "firebase-admin/app";
+import { getApp, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
 import { HttpsError, onCall } from "firebase-functions/https";
 import * as logger from "firebase-functions/logger";
 import { ZodError } from "zod";
 
+// Point the admin SDK at the local emulators in dev. Deployed Gen2 functions
+// always run with NODE_ENV="production", so this block is skipped in prod — do
+// NOT weaken that guard, or a deploy would target 127.0.0.1 and fail every
+// registration. The `??=` also respects the hosts the emulator injects itself,
+// so these hardcoded fallbacks only matter when nothing else set them.
 if (process.env.NODE_ENV !== "production") {
   process.env.FIREBASE_AUTH_EMULATOR_HOST ??= "127.0.0.1:9099";
   process.env.FIRESTORE_EMULATOR_HOST ??= "127.0.0.1:8080";
@@ -22,7 +27,10 @@ import {
   acceptInviteSchema, registerCompanySchema, resolveInviteSchema, sendInviteSchema,
 } from "./schemas";
 
-initializeApp();
+// Guard against a double-init: an unguarded initializeApp() throws
+// "app already exists" at cold start, which would take down every function in
+// this module (including sendB2cSubmission), not just registration.
+if (!getApps().length) initializeApp();
 
 const db = () => getFirestore(getApp(), "bike-eco-db");
 
@@ -71,26 +79,24 @@ function toHttps(err: unknown): never {
 
   if (isRecord(err) && typeof err.code === "string") {
     const code = err.code as string;
-    if (code.startsWith("auth/")) {
-      const message = typeof err.message === "string" && err.message.trim() ? err.message : "Une erreur est survenue. Veuillez réessayer.";
-      if (code === "auth/email-already-exists") {
-        throw new HttpsError("already-exists", "Cette adresse email est déjà utilisée.");
-      }
-      if (code === "auth/weak-password") {
-        throw new HttpsError("invalid-argument", "Le mot de passe doit contenir au moins 8 caractères.");
-      }
-      if (code === "auth/invalid-password") {
-        throw new HttpsError("invalid-argument", "Le mot de passe est invalide.");
-      }
-      throw new HttpsError("internal", message);
+    if (code === "auth/email-already-exists") {
+      throw new HttpsError("already-exists", "Cette adresse email est déjà utilisée.");
+    }
+    if (code === "auth/weak-password") {
+      throw new HttpsError("invalid-argument", "Le mot de passe doit contenir au moins 8 caractères.");
+    }
+    if (code === "auth/invalid-password") {
+      throw new HttpsError("invalid-argument", "Le mot de passe est invalide.");
     }
   }
 
+  // Unexpected error: log the real cause server-side for debugging, but return a
+  // generic French message. An HttpsError's message is propagated to the client
+  // for every code (including "internal"), so throwing the raw string here would
+  // leak internal detail AND defeat the client's `functions/internal` mapping.
   const message = err instanceof Error ? err.message : String(err);
-  logger.error("Registration callable failed", {
-    error: message,
-  });
-  throw new HttpsError("internal", message || "Une erreur est survenue. Veuillez réessayer.");
+  logger.error("Registration callable failed", { error: message });
+  throw new HttpsError("internal", "Une erreur est survenue. Veuillez réessayer.");
 }
 
 export const registerCompany = onCall({ secrets: B2C_EMAIL_SECRETS }, async (req) => {
