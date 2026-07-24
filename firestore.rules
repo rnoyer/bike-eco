@@ -36,8 +36,8 @@ service cloud.firestore {
         || (isActive() && resource.data.companyId == myCompany());
 
       // A dealer may only file a dossier for their own company, as themselves,
-      // as new work. `region` is client-derived from the submitter's département
-      // and is reassignable by the back-office (page-dossier-management), so only
+      // as new work. `region` is client-derived from the submitter's company
+      // département and is reassignable by the back-office (page-dossier-management), so only
       // its domain is enforced here — a wrong value is a correctable routing
       // nuisance, not an access boundary.
       allow create: if isActive() && claims().role == 'b2b'

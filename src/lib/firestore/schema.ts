@@ -144,7 +144,7 @@ export interface DossierPricing {
 
 export interface Dossier {
   status: DossierStatus;
-  region: Region; // initially derived from the submitter's departement; reassignable by the back-office (page-dossier-management)
+  region: Region; // initially derived from the submitter's company departement; reassignable by the back-office (page-dossier-management)
   companyId: string;
   submittedBy: string; // uid
   negotiatedPrice: number | null; // back-office deal outcome (page-dossier-management)
