@@ -1,6 +1,6 @@
+import { tokens } from "@/theme/tokens";
 import { Children, type ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { tokens } from "@/theme/tokens";
 
 interface Props {
   title: string;
@@ -20,7 +20,10 @@ export default function Section({
     <View style={styles.section}>
       <Text style={styles.title}>{title}</Text>
       {loading ? (
-        <ActivityIndicator style={styles.spinner} color={tokens.colors.primary} />
+        <ActivityIndicator
+          style={styles.spinner}
+          color={tokens.colors.primary}
+        />
       ) : isEmpty && emptyMessage ? (
         <Text style={styles.empty}>{emptyMessage}</Text>
       ) : (
@@ -35,5 +38,5 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: "700", color: tokens.colors.primary },
   spinner: { paddingVertical: tokens.space.lg },
   empty: { fontSize: 14, color: tokens.colors.muted },
-  list: { gap: tokens.space.md },
+  list: { gap: tokens.space.xl },
 });

@@ -27,8 +27,9 @@ EXPO_PUBLIC_USE_EMULATORS=1 npx expo start
 
 # Check:
 # b2b@garage-nord.fr / password123 → B2B dashboard;
-# pending@garage-nord.fr → pending gate → Se déconnecter returns to sign-in;
+# b2b@garage-sud.fr / password123 → B2B dashboard;
 # bo@bike-eco.fr → back-office; wrong password → French error.
+# pending@garage-nord.fr → pending gate → Se déconnecter returns to sign-in;
 
 ```
 
