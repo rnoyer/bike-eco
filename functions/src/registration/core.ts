@@ -48,11 +48,11 @@ export interface Deps {
   sendInviteEmail(to: string, code: string): Promise<void>;
 }
 
-function profileDoc(input: { nom: string; prenom: string; telephone: string; departement: string; ville: string }, email: string, companyId: string, status: "pending" | "active") {
+function profileDoc(input: { nom: string; prenom: string; telephone: string }, email: string, companyId: string, status: "pending" | "active") {
   return {
-    role: "b2b", companyId, region: null,
+    role: "b2b", companyId,
     nom: input.nom, prenom: input.prenom, email,
-    telephone: input.telephone, departement: input.departement, ville: input.ville,
+    telephone: input.telephone,
     status,
   };
 }
@@ -77,13 +77,13 @@ export async function registerCompanyCore(
     email = authEmail;
   }
   const companyId = deps.newCompanyId();
-  const companyDepartement = input.companyDepartement ?? input.departement;
   await deps.writeCompany(companyId, {
     siret: input.siret,
     name: input.companyName,
     status: "pending",
-    departement: companyDepartement,
-    region: resolveRegion(companyDepartement),
+    departement: input.companyDepartement,
+    ville: input.companyVille,
+    region: resolveRegion(input.companyDepartement),
     createdBy: uid,
     createdByName: `${input.prenom} ${input.nom}`,
     validatedAt: null,

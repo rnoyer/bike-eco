@@ -4,11 +4,11 @@ const base = {
   method: "password" as const,
   siret: "12345678901234",
   companyName: "Garage X",
+  companyDepartement: "75 - Paris",
+  companyVille: "Paris",
   nom: "Durand",
   prenom: "Camille",
   telephone: "0600000000",
-  departement: "75 - Paris",
-  ville: "Paris",
   email: "c@x.fr",
   password: "password123",
 };
@@ -40,8 +40,6 @@ const acceptBase = {
   nom: "Durand",
   prenom: "Camille",
   telephone: "0600000000",
-  departement: "75 - Paris",
-  ville: "Paris",
   password: "password123",
 };
 

@@ -31,8 +31,9 @@ function fakeDeps(over: Partial<Deps> = {}): Deps & { calls: any } {
 
 const companyInput = {
   method: "password" as const, siret: "12345678901234", companyName: "Garage X",
+  companyDepartement: "75 - Paris", companyVille: "Paris",
   nom: "Durand", prenom: "Camille", telephone: "0600000000",
-  departement: "75 - Paris", ville: "Paris", email: "c@x.fr", password: "password123",
+  email: "c@x.fr", password: "password123",
 };
 
 test("registerCompany (password) creates pending company+user, pins claims, emails applicant", async () => {
@@ -43,6 +44,7 @@ test("registerCompany (password) creates pending company+user, pins claims, emai
     status: "pending",
     createdBy: "uid_new",
     departement: "75 - Paris",
+    ville: "Paris",
     region: "NORTH",
     createdByName: "Camille Durand",
     validatedAt: null,
@@ -93,7 +95,7 @@ test("resolveInvite returns the email for a valid code and deletes an expired on
 test("acceptInvite creates an ACTIVE user in the invitation's company and deletes the invite", async () => {
   const inv = { id: "inv1", email: "new@x.fr", companyId: "comp_1", companyName: "G", tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000 };
   const d = fakeDeps({ findInvitationByHash: async () => inv });
-  await acceptInviteCore({ method: "password", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000", departement: "75 - Paris", ville: "Paris", password: "password123" }, null, null, d);
+  await acceptInviteCore({ method: "password", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000", password: "password123" }, null, null, d);
   expect(d.calls.users["uid_new"]).toMatchObject({ role: "b2b", companyId: "comp_1", status: "active" });
   expect(d.calls.claims.claims.status).toBe("active");
   expect(d.calls.invitations["inv1"]).toBe("deleted");
@@ -102,14 +104,14 @@ test("acceptInvite creates an ACTIVE user in the invitation's company and delete
 test("acceptInvite (google) requires the Google email to match the invitation", async () => {
   const inv = { id: "inv1", email: "new@x.fr", companyId: "comp_1", companyName: "G", tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000 };
   const d = fakeDeps({ findInvitationByHash: async () => inv });
-  await expect(acceptInviteCore({ method: "google", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000", departement: "75 - Paris", ville: "Paris" }, "uid_g", "other@x.fr", d)).rejects.toMatchObject({ code: "permission-denied" });
+  await expect(acceptInviteCore({ method: "google", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000" }, "uid_g", "other@x.fr", d)).rejects.toMatchObject({ code: "permission-denied" });
 });
 
 test("acceptInvite (google) with a matching email skips createUser and creates an active user", async () => {
   const inv = { id: "inv1", email: "New@x.fr", companyId: "comp_1", companyName: "G", tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000 };
   // createUser throws so a regression that called it in google mode would fail here.
   const d = fakeDeps({ findInvitationByHash: async () => inv, createUser: async () => { throw new Error("must not be called"); } });
-  await acceptInviteCore({ method: "google", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000", departement: "75 - Paris", ville: "Paris" }, "uid_g", "new@x.fr", d);
+  await acceptInviteCore({ method: "google", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000" }, "uid_g", "new@x.fr", d);
   expect(d.calls.users["uid_g"]).toMatchObject({ role: "b2b", companyId: "comp_1", status: "active" });
   expect(d.calls.claims).toEqual({ uid: "uid_g", claims: { role: "b2b", companyId: "comp_1", status: "active" } });
   expect(d.calls.invitations["inv1"]).toBe("deleted");
@@ -123,7 +125,7 @@ test("google mode with no auth is rejected as unauthenticated (both flows)", asy
 
   const inv = { id: "inv1", email: "n@x.fr", companyId: "comp_1", companyName: "G", tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000 };
   await expect(
-    acceptInviteCore({ method: "google", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000", departement: "75 - Paris", ville: "Paris" }, null, null, fakeDeps({ findInvitationByHash: async () => inv })),
+    acceptInviteCore({ method: "google", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000" }, null, null, fakeDeps({ findInvitationByHash: async () => inv })),
   ).rejects.toMatchObject({ code: "unauthenticated" });
 });
 

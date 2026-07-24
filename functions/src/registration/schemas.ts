@@ -4,8 +4,6 @@ const profile = {
   nom: z.string().trim().min(1),
   prenom: z.string().trim().min(1),
   telephone: z.string().regex(/^\d{10}$/),
-  departement: z.string().trim().min(1),
-  ville: z.string().trim().min(1),
 };
 
 // Company signup: password mode carries the new account's email + password.
@@ -24,9 +22,8 @@ export const registerCompanySchema = z
   .object({
     siret: z.string().regex(/^\d{14}$/),
     companyName: z.string().trim().min(1),
-    // The company's own département (registration step 1). Optional so older
-    // clients still register — core falls back to the user's `departement`.
-    companyDepartement: z.string().trim().min(1).optional(),
+    companyDepartement: z.string().trim().min(1), // company location (step 1)
+    companyVille: z.string().trim().min(1),
     ...profile,
   })
   .and(registerCredential);
