@@ -17,6 +17,7 @@ function fakeDeps(over: Partial<BackofficeDeps> = {}): BackofficeDeps & { calls:
     deleteStorage: async () => { throw new Error("must not be called"); },
     deleteDossiers: async () => { throw new Error("must not be called"); },
     deleteUsers: async () => { throw new Error("must not be called"); },
+    deleteInvitations: async () => { throw new Error("must not be called"); },
     deleteCompany: async () => { throw new Error("must not be called"); },
     ...over,
   };
@@ -58,16 +59,17 @@ function cascadeDeps(over: Partial<BackofficeDeps> = {}) {
     deleteStorage: async () => { order.push("storage"); },
     deleteDossiers: async () => { order.push("dossiers"); },
     deleteUsers: async () => { order.push("users"); },
+    deleteInvitations: async () => { order.push("invitations"); },
     deleteCompany: async () => { order.push("company"); },
     ...over,
   };
   return { deps, order };
 }
 
-test("deleteCompany cascades storage → dossiers → users → company", async () => {
+test("deleteCompany cascades storage → dossiers → users → invitations → company", async () => {
   const { deps, order } = cascadeDeps();
   await deleteCompanyCore("comp_1", boCaller, deps);
-  expect(order).toEqual(["storage", "dossiers", "users", "company"]);
+  expect(order).toEqual(["storage", "dossiers", "users", "invitations", "company"]);
 });
 
 test("deleteCompany rejects a non-backoffice caller", async () => {

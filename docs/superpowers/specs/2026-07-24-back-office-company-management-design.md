@@ -181,7 +181,12 @@ sends nothing (Decision 3).
 
 1. Deploy the two callables + the new approval email (`firebase deploy --only functions`).
 2. Deploy the two composite indexes (`firebase deploy --only firestore:indexes`).
-3. Re-run the updated seed script so existing test companies carry the new fields.
+3. Re-run the updated seed script so existing test companies carry the new fields. Any
+   pre-existing **live** active companies predate `region`/`departement`/`validatedAt`/
+   `createdByName` and need a one-off Admin-SDK backfill of those fields (mirror the
+   seed's field set) before any back-office user opens the list — an active company
+   missing `validatedAt` silently drops out of the `orderBy(validatedAt)` query, and
+   missing `region` is filtered out when a region is selected.
 4. **Launch hardening:** add App Check enforcement to `approveCompany` / `deleteCompany`
    alongside the 4a callables — see `launch-hardening-todo`.
 

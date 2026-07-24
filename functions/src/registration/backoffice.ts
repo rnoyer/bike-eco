@@ -9,6 +9,7 @@ export interface BackofficeDeps {
   deleteStorage(companyId: string): Promise<void>;
   deleteDossiers(companyId: string): Promise<void>;
   deleteUsers(companyId: string): Promise<void>;
+  deleteInvitations(companyId: string): Promise<void>;
   deleteCompany(id: string): Promise<void>;
 }
 
@@ -44,9 +45,13 @@ export async function deleteCompanyCore(
   // Storage first: even if a later step fails, we never leave orphaned files
   // that no Firestore doc points at. Storage is company-prefixed
   // (`dossiers/{companyId}/...`), so one prefixed delete covers every photo,
-  // thumbnail, and message attachment.
+  // thumbnail, and message attachment. Invitations are removed before the
+  // company doc so an outstanding invite can never outlive the company it
+  // points at (which would let acceptInvite create a user against a ghost
+  // company).
   await deps.deleteStorage(companyId);
   await deps.deleteDossiers(companyId);
   await deps.deleteUsers(companyId);
+  await deps.deleteInvitations(companyId);
   await deps.deleteCompany(companyId);
 }

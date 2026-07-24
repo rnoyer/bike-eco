@@ -118,9 +118,16 @@ function backofficeDeps(): BackofficeDeps {
     deleteUsers: async (companyId) => {
       const snap = await db().collection("users").where("companyId", "==", companyId).get();
       await Promise.all(snap.docs.map(async (doc) => {
-        await getAuth().deleteUser(doc.id).catch(() => undefined); // Auth user may already be gone
+        await getAuth().deleteUser(doc.id).catch((err: unknown) => {
+          // The Auth user may already be gone; anything else is a real failure.
+          if ((err as { code?: string })?.code !== "auth/user-not-found") throw err;
+        });
         await doc.ref.delete();
       }));
+    },
+    deleteInvitations: async (companyId) => {
+      const snap = await db().collection("invitations").where("companyId", "==", companyId).get();
+      await Promise.all(snap.docs.map((doc) => doc.ref.delete()));
     },
     deleteCompany: async (id) => { await db().collection("companies").doc(id).delete(); },
   };
