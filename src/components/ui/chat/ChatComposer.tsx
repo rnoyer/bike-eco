@@ -35,6 +35,10 @@ export default function ChatComposer({
 
   async function pickPhoto() {
     setSheetOpen(false);
+    if (files.length >= 5) {
+      Alert.alert("Limite atteinte", "5 pièces jointes maximum par message.");
+      return;
+    }
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert("Permission refusée", "L'accès à la galerie est nécessaire.");
@@ -60,6 +64,10 @@ export default function ChatComposer({
 
   async function pickPdf() {
     setSheetOpen(false);
+    if (files.length >= 5) {
+      Alert.alert("Limite atteinte", "5 pièces jointes maximum par message.");
+      return;
+    }
     // `copyToCacheDirectory` so the file is readable straight away.
     const result = await DocumentPicker.getDocumentAsync({
       type: "application/pdf",
@@ -118,6 +126,7 @@ export default function ChatComposer({
           onChangeText={setText}
           placeholder="Votre message"
           placeholderTextColor={tokens.colors.muted}
+          maxLength={4096}
           multiline
         />
         <TouchableOpacity style={styles.send} onPress={send}>
