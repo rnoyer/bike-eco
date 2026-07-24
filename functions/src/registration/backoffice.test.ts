@@ -1,4 +1,4 @@
-import { approveCompanyCore, type BackofficeDeps } from "./backoffice";
+import { approveCompanyCore, deleteCompanyCore, type BackofficeDeps } from "./backoffice";
 import type { CallerClaims } from "./core";
 
 const boCaller: CallerClaims = { uid: "bo1", role: "backoffice", status: "active", companyId: null };
@@ -45,4 +45,34 @@ test("approveCompany rejects a company that is not pending", async () => {
 test("approveCompany rejects an unknown company", async () => {
   const d = fakeDeps({ getCompany: async () => null });
   await expect(approveCompanyCore("nope", boCaller, d)).rejects.toMatchObject({ code: "not-found" });
+});
+
+function cascadeDeps(over: Partial<BackofficeDeps> = {}) {
+  const order: string[] = [];
+  const deps: BackofficeDeps = {
+    getCompany: async () => ({ name: "Garage X", status: "active" }),
+    getPendingCompanyUsers: async () => [],
+    activateUser: async () => {},
+    setCompanyActive: async () => {},
+    sendApprovalEmail: async () => {},
+    deleteStorage: async () => { order.push("storage"); },
+    deleteDossiers: async () => { order.push("dossiers"); },
+    deleteUsers: async () => { order.push("users"); },
+    deleteCompany: async () => { order.push("company"); },
+    ...over,
+  };
+  return { deps, order };
+}
+
+test("deleteCompany cascades storage → dossiers → users → company", async () => {
+  const { deps, order } = cascadeDeps();
+  await deleteCompanyCore("comp_1", boCaller, deps);
+  expect(order).toEqual(["storage", "dossiers", "users", "company"]);
+});
+
+test("deleteCompany rejects a non-backoffice caller", async () => {
+  const { deps } = cascadeDeps();
+  await expect(
+    deleteCompanyCore("comp_1", { uid: "u", role: "b2b", status: "active", companyId: "c" }, deps),
+  ).rejects.toMatchObject({ code: "permission-denied" });
 });

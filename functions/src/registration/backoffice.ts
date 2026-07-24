@@ -34,3 +34,19 @@ export async function approveCompanyCore(
   await deps.setCompanyActive(companyId);
   if (users.length > 0) await deps.sendApprovalEmail(users[0].email, company.name);
 }
+
+export async function deleteCompanyCore(
+  companyId: string,
+  caller: CallerClaims,
+  deps: BackofficeDeps,
+): Promise<void> {
+  assertBackoffice(caller);
+  // Storage first: even if a later step fails, we never leave orphaned files
+  // that no Firestore doc points at. Storage is company-prefixed
+  // (`dossiers/{companyId}/...`), so one prefixed delete covers every photo,
+  // thumbnail, and message attachment.
+  await deps.deleteStorage(companyId);
+  await deps.deleteDossiers(companyId);
+  await deps.deleteUsers(companyId);
+  await deps.deleteCompany(companyId);
+}
