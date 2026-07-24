@@ -1,6 +1,7 @@
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import DossierInfoList from "@/components/native/DossierInfoList";
 import PhotoCarousel from "@/components/ui/PhotoCarousel";
+import Section from "@/components/ui/Section";
 import { useDossier } from "@/lib/data/useDossier";
 import { tokens } from "@/theme/tokens";
 
@@ -17,7 +18,9 @@ export default function DossierDetailScreen({ id }: { id: string }) {
             <Text style={styles.heading}>
               {data.vehicle.marque} {data.vehicle.modele}
             </Text>
-            <DossierInfoList dossier={data} />
+            <Section title="Informations">
+              <DossierInfoList dossier={data} />
+            </Section>
           </View>
         </>
       )}

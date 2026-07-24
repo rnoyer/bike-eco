@@ -9,3 +9,4 @@ Dossier's section holds a title and a list of returned Dossiers.
 - There are one fetch for each section
 - There is a loading state for each section (spinning loader under the section title, centered and neat)
 - Entries are ordered by submission date
+- Implemented as a thin wrapper over the generic [`Section`](component-section.md) component (shared title / loading / empty look).

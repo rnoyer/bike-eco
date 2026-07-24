@@ -1,5 +1,6 @@
 import Dropdown from "@/components/form/Dropdown";
 import Button from "@/components/ui/Button";
+import Section from "@/components/ui/Section";
 import { useRegionFilter } from "@/lib/data/useRegionFilter";
 import type { UserRole } from "@/lib/firestore/schema";
 import {
@@ -8,7 +9,7 @@ import {
   toRegion,
 } from "@/lib/navigation/regionOptions";
 import { tokens } from "@/theme/tokens";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 const REGION_LABELS = REGION_OPTIONS.map((o) => o.label);
 
@@ -43,30 +44,25 @@ export default function SettingsList({
         </>
       ) : null}
       {role === "backoffice" ? (
-        <>
-          <Text style={styles.sectionTitle}>Gestion des entreprises</Text>
+        <Section title="Gestion des entreprises">
           <Button
             variant="outlined"
             label="Ajouter/Supprimer une entreprises"
             onPress={() => onManageCompanies?.()}
           />
-        </>
+        </Section>
       ) : null}
-      <Text style={styles.sectionTitle}>Gestion des membres</Text>
-      <Button
-        variant="outlined"
-        label="Inviter un collègue"
-        onPress={onInvite}
-      />
+      <Section title="Gestion des membres">
+        <Button
+          variant="outlined"
+          label="Inviter un collègue"
+          onPress={onInvite}
+        />
+      </Section>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { gap: tokens.space.md },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: tokens.colors.primary,
-  },
 });
