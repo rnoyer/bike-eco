@@ -1,6 +1,6 @@
 import { Stack, useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
 import { Alert } from "react-native";
 
@@ -41,6 +41,7 @@ export default function RegisterScreen() {
               method: "google",
               siret: values.siret,
               companyName: values.companyName,
+              companyDepartement: values.companyDepartement,
               nom: values.nom,
               prenom: values.prenom,
               telephone: values.telephone,
@@ -63,6 +64,13 @@ export default function RegisterScreen() {
         }
       },
     });
+
+  const companyDept = form.watch("companyDepartement");
+  useEffect(() => {
+    if (companyDept && !form.getValues("departement")) {
+      form.setValue("departement", companyDept);
+    }
+  }, [companyDept, form]);
 
   const goHome = async () => {
     if (auth.currentUser) await signOut(auth);

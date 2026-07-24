@@ -28,6 +28,13 @@ default value : null
 type : Input text
 mandatory : yes
 
+label : "Département\*"
+placeholder : "Département"
+default value : null
+type : dropdown
+values : listes des departements de France métropolitaine (ex: "33 - Gironde", "13 - Bouches du Rhone")
+mandatory : yes
+
 Texte d'information : "\* Champs obligatoires"
 
 ---
@@ -90,7 +97,7 @@ mandatory : yes
 
 label : "Département\*"
 placeholder : "Département"
-default value : null
+default value : préempli avec le département renseigné à l'étape 1 (reste modifiable)
 type : dropdown
 values : listes des departements de France métropolitaine (ex: "33 - Gironde", "13 - Bouches du Rhone")
 mandatory : yes

@@ -19,6 +19,7 @@ export async function submitCompanyRegistration(
     method: "password",
     siret: values.siret,
     companyName: values.companyName,
+    companyDepartement: values.companyDepartement,
     nom: values.nom,
     prenom: values.prenom,
     telephone: values.telephone,

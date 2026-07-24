@@ -6,6 +6,7 @@ const requiredText = (message: string) => z.string().trim().min(1, message);
 export const b2bCompanyRegistrationSchema = z.object({
   siret: z.string().regex(/^\d{14}$/, "Saisissez un numéro SIRET à 14 chiffres"),
   companyName: requiredText("Indiquez le nom de votre entreprise"),
+  companyDepartement: requiredText("Sélectionnez le département de l'entreprise"),
   email: z.email("Saisissez un email valide"),
   password: z.string().min(8, "8 caractères minimum"),
   nom: requiredText("Indiquez votre nom"),
@@ -20,6 +21,7 @@ export type B2bCompanyRegistrationForm = z.infer<typeof b2bCompanyRegistrationSc
 export const B2B_COMPANY_REGISTRATION_DEFAULTS: B2bCompanyRegistrationForm = {
   siret: "",
   companyName: "",
+  companyDepartement: "",
   email: "",
   password: "",
   nom: "",

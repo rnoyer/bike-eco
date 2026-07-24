@@ -32,6 +32,7 @@ export interface RegisterCompanyPayload {
   method: "password" | "google";
   siret: string;
   companyName: string;
+  companyDepartement?: string;
   nom: string;
   prenom: string;
   telephone: string;

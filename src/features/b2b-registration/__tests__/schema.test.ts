@@ -7,6 +7,7 @@ import {
 const valid = {
   siret: "12345678901234",
   companyName: "Garage Test",
+  companyDepartement: "33 - Gironde",
   email: "pro@garage.fr",
   password: "secret12",
   nom: "Doe",
@@ -39,5 +40,19 @@ describe("b2bCompanyRegistrationSchema", () => {
 
   test("defaults are all empty strings", () => {
     expect(B2B_COMPANY_REGISTRATION_DEFAULTS.siret).toBe("");
+  });
+
+  test("companyDepartement is required", () => {
+    const result = b2bCompanyRegistrationSchema.safeParse({
+      ...B2B_COMPANY_REGISTRATION_DEFAULTS,
+      siret: "12345678901234",
+      companyName: "Garage X",
+      companyDepartement: "",
+      email: "a@b.fr",
+      password: "password123",
+      nom: "N", prenom: "P", telephone: "0600000000",
+      departement: "75 - Paris", ville: "Paris",
+    });
+    expect(result.success).toBe(false);
   });
 });
