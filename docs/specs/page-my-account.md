@@ -10,7 +10,9 @@
 
 From top to bottom
 
-- List of user account infos
+- Section "Mon compte" : compact list of the user's personal info — Nom / Prénom / Email / Téléphone.
+- Section "Informations [nom entreprise]" (B2B only, i.e. the user has a `companyId`; hidden for back-office
+  users) : compact list of the user's company info — SIRET / Département / Ville.
 
 ## Tab bar props
 

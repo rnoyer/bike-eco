@@ -20,7 +20,9 @@ Only If registration is pending :
   - All forms information related to the company : A compact list of title>field label and value>field value
 
 - Section "Information vendeur admin" props :
-  - All forms information related to the registering user : A compact list of title>field label and value>field value
+  - The registering user's personal info only (Nom / Prénom / Email / Téléphone) : A compact list of
+    title>field label and value>field value. The company's location (Département / Ville) lives in
+    "Information vendeur" above, not here.
 
 - Only If registration is approved :
   - Section "Autres utilisateurs de cette entreprise" props :

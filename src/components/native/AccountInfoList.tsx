@@ -10,15 +10,7 @@ export default function AccountInfoList({ user }: { user: AppUser }) {
     ["Prénom", user.prenom],
     ["Email", user.email],
     ["Téléphone", user.telephone],
-    ["Département", user.departement],
-    ["Ville", user.ville],
   ];
-  if (user.role === "backoffice" && user.region) {
-    rows.push(["Région", user.region === "NORTH" ? "Nord" : "Sud"]);
-  }
-  // A non-scrolling Column (not List) so the Host can size to its content
-  // inside the screen's RN ScrollView — a native scroller here would be
-  // measured with infinite height and crash on Android.
   return (
     <Host matchContents>
       <Column spacing={12}>
