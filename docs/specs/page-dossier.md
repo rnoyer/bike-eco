@@ -8,8 +8,9 @@
 
 ## Main section
 
-Scrollable view with all forms information related to the vehicule only:
-A compact list of :
+Scrollable view with all forms information related to the vehicule only. Below the
+vehicle-name heading, the data sits under an "Informations" section title (the shared
+`Section` component); the body is a compact list of :
 
 - title : field label
 - value : field value
