@@ -12,7 +12,7 @@
 ```bash
 # Launch the Firebase emulators.
 # JAVA_HOME is required: the default `java` is 17, which firebase-tools@latest refuses.
-JAVA_HOME=/usr/local/jdk-26.0.1 PATH=/usr/local/jdk-26.0.1/bin:$PATH npx -y firebase-tools@latest emulators:start --only auth,firestore,storage --project bike-eco-43a84
+JAVA_HOME=/usr/local/jdk-26.0.1 PATH=/usr/local/jdk-26.0.1/bin:$PATH npx -y firebase-tools@latest emulators:start --only auth,firestore,storage,functions --project bike-eco-43a84
 
 # Populate with test users
 npm run seed

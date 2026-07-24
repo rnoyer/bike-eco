@@ -32,6 +32,7 @@
 ## File map
 
 **Create:**
+
 - `src/lib/data/dataErrors.ts` + `.test.ts` — `mapDataError`; pure.
 - `src/lib/storage/paths.ts` + `.test.ts` — Storage path layout; pure.
 - `src/lib/storage/cleanup.ts` + `.test.ts` — `cleanUpOnFailure`; pure.
@@ -42,6 +43,7 @@
 - `src/lib/firestore/__tests__/storageRules.test.ts`.
 
 **Modify:**
+
 - `src/lib/firestore/schema.ts` — drop `lastMessageAt`, `assignedTo`.
 - `src/lib/data/useDossiers.ts`, `useDossier.ts`, `useMessages.ts` — live listeners.
 - `src/features/b2b-submission/submit.ts` — real submission.
@@ -53,6 +55,7 @@
 - `src/lib/firestore/__tests__/rules.test.ts`, `jest.rules.config.js`, `package.json`, `scripts/seed.ts`.
 
 **Delete:**
+
 - `src/lib/data/fixtures.ts`, `src/lib/data/filter.ts`, `src/lib/data/__tests__/filter.test.ts`, `src/lib/data/__tests__/useDossiers.test.ts`, `src/lib/data/useDossierMutations.ts`.
 
 ---
@@ -62,14 +65,17 @@
 ## Task 1: `mapDataError` — French data-error copy (TDD)
 
 **Files:**
+
 - Create: `src/lib/data/dataErrors.ts`, `src/lib/data/dataErrors.test.ts`
 
 **Interfaces:**
+
 - Produces: `mapDataError(code: string): string`. Consumed by every hook and write in this plan.
 
 - [ ] **Step 1: Write the failing test**
 
 Create `src/lib/data/dataErrors.test.ts`:
+
 ```ts
 import { expect, test } from "@jest/globals";
 import { mapDataError } from "./dataErrors";
@@ -112,6 +118,7 @@ Expected: FAIL — `Cannot find module './dataErrors'`.
 - [ ] **Step 3: Implement `dataErrors.ts`**
 
 Create `src/lib/data/dataErrors.ts`:
+
 ```ts
 /**
  * Firestore/Storage error codes → specific, actionable French copy.
@@ -127,7 +134,8 @@ const MESSAGES: Record<string, string> = {
   unavailable: "Connexion impossible. Vérifiez votre réseau.",
   // Storage
   "storage/unauthorized": "Vous n'avez pas accès à ce fichier.",
-  "storage/retry-limit-exceeded": "Connexion impossible. Vérifiez votre réseau.",
+  "storage/retry-limit-exceeded":
+    "Connexion impossible. Vérifiez votre réseau.",
 };
 
 /** Map a Firestore/Storage error code to French user copy. */
@@ -155,14 +163,17 @@ git commit -m "feat(data): mapDataError French error copy"
 Neither field is read or written anywhere — they exist only in fixtures and the seed. `component-dossiers-section.md` orders by submission date (`createdAt`), so the one plausible consumer of `lastMessageAt` is spec'd against it. See the spec's "On Decision 5".
 
 **Files:**
+
 - Modify: `src/lib/firestore/schema.ts`, `src/lib/data/fixtures.ts`, `scripts/seed.ts`
 
 **Interfaces:**
+
 - Produces: a `Dossier` type without `lastMessageAt` / `assignedTo`. Every later task's payloads omit them.
 
 - [ ] **Step 1: Drop both fields from the `Dossier` interface**
 
 In `src/lib/firestore/schema.ts`, the `Dossier` interface currently reads:
+
 ```ts
 export interface Dossier {
   status: DossierStatus;
@@ -172,7 +183,9 @@ export interface Dossier {
   assignedTo: string | null; // team member handling it
   negotiatedPrice: number | null; // back-office deal outcome (page-dossier-management)
 ```
+
 Delete the `assignedTo` line so it becomes:
+
 ```ts
 export interface Dossier {
   status: DossierStatus;
@@ -181,14 +194,18 @@ export interface Dossier {
   submittedBy: string; // uid
   negotiatedPrice: number | null; // back-office deal outcome (page-dossier-management)
 ```
+
 Then delete the `lastMessageAt` line from the end of the same interface:
+
 ```ts
   createdAt: Timestamp;
   updatedAt: Timestamp;
   lastMessageAt: Timestamp | null;
 }
 ```
+
 becomes:
+
 ```ts
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -202,20 +219,27 @@ In `src/lib/data/fixtures.ts`, inside `makeDossier`, delete the `assignedTo: nul
 - [ ] **Step 3: Drop them from the seed**
 
 In `scripts/seed.ts`, the dossier loop currently contains:
+
 ```ts
-      status, region, companyId: "comp_nord", submittedBy: "user_b2b",
+      status, region, companyId: "comp_nord", submittedBy: "user_b2b_nord",
       assignedTo: null, negotiatedPrice: null,
 ```
+
 Change to:
+
 ```ts
-      status, region, companyId: "comp_nord", submittedBy: "user_b2b",
+      status, region, companyId: "comp_nord", submittedBy: "user_b2b_nord",
       negotiatedPrice: null,
 ```
+
 And:
+
 ```ts
       createdAt: now, updatedAt: now, lastMessageAt: null,
 ```
+
 Change to:
+
 ```ts
       createdAt: now, updatedAt: now,
 ```
@@ -237,10 +261,12 @@ git commit -m "refactor(schema): drop unused lastMessageAt and assignedTo from D
 ## Task 3: `useDossiers` → live listener + composite indexes
 
 **Files:**
+
 - Modify: `src/lib/data/useDossiers.ts`, `firestore.indexes.json`
 - Delete: `src/lib/data/__tests__/useDossiers.test.ts`
 
 **Interfaces:**
+
 - Consumes: `mapDataError` (Task 1); `useAuth()` from `@/lib/auth/AuthProvider` (returns `{ session, loading, ... }` where `session: SessionUser | null` carries `role` and `companyId`); `dossiersRef` and `WithId<T>` from `@/lib/firestore/collections`.
 - Produces: `useDossiers(statuses: DossierStatus[], region?: Region | null): { data: WithId<Dossier>[]; loading: boolean; error: string | null }` — same signature as today, plus `error`.
 
@@ -249,11 +275,13 @@ git commit -m "refactor(schema): drop unused lastMessageAt and assignedTo from D
 ```sh
 git rm src/lib/data/__tests__/useDossiers.test.ts
 ```
+
 It asserts the stub's `setTimeout` timing, which has no successor once the hook is a listener. Replacement coverage is the rules tests (Task 7) and the Phase A walkthrough (Task 5). Do NOT write a mock-based replacement — mocking `onSnapshot` would assert the mock, not the query.
 
 - [ ] **Step 2: Rewrite `useDossiers.ts`**
 
 Replace the whole file:
+
 ```ts
 import { useEffect, useState } from "react";
 import {
@@ -335,6 +363,7 @@ export function useDossiers(statuses: DossierStatus[], region?: Region | null) {
 ```
 
 > **Two constraints shape this, do not "simplify" them away.**
+>
 > 1. `loading` is **derived** from a resolved-key, never `setState`-ed inside the
 >    effect body. `expo lint` (React Compiler) flags synchronous setState-in-effect;
 >    setState inside the async `onSnapshot` callbacks is fine. This is why the stub
@@ -346,6 +375,7 @@ export function useDossiers(statuses: DossierStatus[], region?: Region | null) {
 - [ ] **Step 3: Declare the composite indexes**
 
 Replace `firestore.indexes.json` entirely:
+
 ```json
 {
   "indexes": [
@@ -379,6 +409,7 @@ Replace `firestore.indexes.json` entirely:
   "fieldOverrides": []
 }
 ```
+
 These cover the three query shapes: b2b sections, back-office "Toute la France", and back-office region-filtered. (`where("status", "in", …)` counts as an equality for index purposes, so it precedes the `orderBy` field.)
 
 - [ ] **Step 4: Typecheck and lint**
@@ -403,16 +434,19 @@ git commit -m "feat(data): live dossier list via onSnapshot with claim-scoped qu
 ## Task 4: `useDossier` + `useMessages` → live listeners; retire the mock layer
 
 **Files:**
+
 - Modify: `src/lib/data/useDossier.ts`, `src/lib/data/useMessages.ts`, `src/components/screens/DashboardScreen.tsx`, `src/components/ui/DossiersSection.tsx`
 - Delete: `src/lib/data/fixtures.ts`, `src/lib/data/filter.ts`, `src/lib/data/__tests__/filter.test.ts`
 
 **Interfaces:**
+
 - Consumes: `mapDataError` (Task 1); `dossierDoc`, `messagesRef`, `WithId` from `@/lib/firestore/collections`.
 - Produces: `useDossier(id: string): { data: WithId<Dossier> | null; loading: boolean; error: string | null }`; `useMessages(dossierId: string): { data: Message[]; loading: boolean; error: string | null }`. `WithId<T>` is now imported from `@/lib/firestore/collections` everywhere.
 
 - [ ] **Step 1: Rewrite `useDossier.ts`**
 
 Replace the whole file:
+
 ```ts
 import { useEffect, useState } from "react";
 import { onSnapshot, type FirestoreError } from "firebase/firestore";
@@ -461,6 +495,7 @@ export function useDossier(id: string) {
 - [ ] **Step 2: Rewrite `useMessages.ts`**
 
 Replace the whole file:
+
 ```ts
 import { useEffect, useState } from "react";
 import {
@@ -495,7 +530,11 @@ export function useMessages(dossierId: string) {
           error: null,
         }),
       (err: FirestoreError) =>
-        setResolved({ key: dossierId, data: [], error: mapDataError(err.code) }),
+        setResolved({
+          key: dossierId,
+          data: [],
+          error: mapDataError(err.code),
+        }),
     );
   }, [session, dossierId]);
 
@@ -512,10 +551,13 @@ export function useMessages(dossierId: string) {
 - [ ] **Step 3: Repoint the two `WithId` importers**
 
 In `src/components/screens/DashboardScreen.tsx`, change:
+
 ```ts
 import type { WithId } from "@/lib/data/fixtures";
 ```
+
 to:
+
 ```ts
 import type { WithId } from "@/lib/firestore/collections";
 ```
@@ -527,6 +569,7 @@ In `src/components/ui/DossiersSection.tsx`, make the identical change.
 ```sh
 git rm src/lib/data/fixtures.ts src/lib/data/filter.ts src/lib/data/__tests__/filter.test.ts
 ```
+
 `filter.ts` (`selectByStatus`, `filterDossiersByRegion`) is dead now that the server filters — keeping it would leave two competing filter paths. `fixtures.ts` has nothing left: `MOCK_COMPANIES`/`MOCK_USERS` were already dead after slice 1, and its only other live export was a `WithId` forward. This completes slice 1's deferred "removal of `fixtures.ts`".
 
 - [ ] **Step 5: Typecheck, lint, test**
@@ -548,20 +591,23 @@ git commit -m "feat(data): live dossier + messages listeners; remove the fixture
 **Files:** none (verification gate).
 
 **Interfaces:**
+
 - Consumes: Tasks 1–4; `scripts/seed.ts`; the emulator config already in `firebase.json`.
 
 - [ ] **Step 1: Start the emulators**
 
 Run (terminal 1):
+
 ```sh
 npx -y firebase-tools@latest emulators:start --only auth,firestore,storage --project bike-eco-43a84
 ```
+
 Expected: auth on 9099, firestore on 8080, storage on 9199, Emulator UI up.
 
 - [ ] **Step 2: Seed**
 
 Run (terminal 2): `npm run seed`
-Expected: `Seed complete: user_b2b / user_bo / user_pending (password123).`
+Expected: `Seed complete: user_b2b_nord / user_bo / user_pending (password123).`
 
 - [ ] **Step 3: Run the app against the emulators**
 
@@ -603,6 +649,7 @@ database currently has none.
 ```sh
 npx -y firebase-tools@latest deploy --only firestore:indexes --project bike-eco-43a84
 ```
+
 Expected: the three `dossiers` indexes are created (building may take a few minutes
 on a populated collection; it is instant on an empty one).
 
@@ -627,9 +674,11 @@ git commit -m "fix(data): add composite index required by the live dossier queri
 ## Task 6: Storage paths + failure cleanup (TDD, pure)
 
 **Files:**
+
 - Create: `src/lib/storage/paths.ts`, `src/lib/storage/paths.test.ts`, `src/lib/storage/cleanup.ts`, `src/lib/storage/cleanup.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `dossierPhotoPath(companyId, dossierId, index, ext): string`
   - `dossierThumbnailPath(companyId, dossierId): string`
@@ -640,6 +689,7 @@ git commit -m "fix(data): add composite index required by the live dossier queri
 - [ ] **Step 1: Write the failing path tests**
 
 Create `src/lib/storage/paths.test.ts`:
+
 ```ts
 import { expect, test } from "@jest/globals";
 import {
@@ -698,6 +748,7 @@ Expected: FAIL — `Cannot find module './paths'`.
 - [ ] **Step 3: Implement `paths.ts`**
 
 Create `src/lib/storage/paths.ts`:
+
 ```ts
 /**
  * Storage layout for dossier files.
@@ -773,6 +824,7 @@ Expected: PASS (5 tests).
 - [ ] **Step 5: Write the failing cleanup tests**
 
 Create `src/lib/storage/cleanup.test.ts`:
+
 ```ts
 import { expect, jest, test } from "@jest/globals";
 import { cleanUpOnFailure } from "./cleanup";
@@ -850,6 +902,7 @@ Expected: FAIL — `Cannot find module './cleanup'`.
 - [ ] **Step 7: Implement `cleanup.ts`**
 
 Create `src/lib/storage/cleanup.ts`:
+
 ```ts
 /**
  * Run `work`, deleting every path it reported to `track` if it throws.
@@ -899,16 +952,19 @@ git commit -m "feat(storage): company-keyed path layout + failed-upload cleanup"
 Activate the **firebase-firestore** and **firebase-security-rules-auditor** skills before editing rules, and audit the final `firestore.rules` with the auditor skill.
 
 **Files:**
+
 - Modify: `firestore.rules`, `storage.rules`, `src/lib/firestore/__tests__/rules.test.ts`, `jest.rules.config.js`, `package.json`
 - Create: `src/lib/firestore/__tests__/storageRules.test.ts`
 
 **Interfaces:**
+
 - Consumes: claim shape `{ role, companyId, region, status }`; the Storage layout from Task 6.
 - Produces: rules permitting exactly the writes Phase B performs; `npm run test:rules` covering Firestore **and** Storage.
 
 - [ ] **Step 1: Add the write rules to `firestore.rules`**
 
 Replace the whole file:
+
 ```
 rules_version = '2';
 service cloud.firestore {
@@ -985,6 +1041,7 @@ service cloud.firestore {
 - [ ] **Step 2: Open the dossier paths in `storage.rules`**
 
 Replace the whole file:
+
 ```
 rules_version = '2';
 service firebase.storage {
@@ -1024,6 +1081,7 @@ service firebase.storage {
 - [ ] **Step 3: Extend the Firestore rules tests**
 
 Replace `src/lib/firestore/__tests__/rules.test.ts` entirely:
+
 ```ts
 import { afterAll, beforeAll, test } from "@jest/globals";
 import { readFileSync } from "fs";
@@ -1054,7 +1112,7 @@ const newDossier = (overrides: Record<string, unknown> = {}) => ({
   status: "a_traiter",
   region: "NORTH",
   companyId: "comp_1",
-  submittedBy: "user_b2b",
+  submittedBy: "user_b2b_nord",
   negotiatedPrice: null,
   photos: [],
   thumbnailUrl: null,
@@ -1062,7 +1120,7 @@ const newDossier = (overrides: Record<string, unknown> = {}) => ({
 });
 
 const newMessage = (overrides: Record<string, unknown> = {}) => ({
-  senderId: "user_b2b",
+  senderId: "user_b2b_nord",
   senderName: "Camille Durand - Garage du Nord",
   senderRole: "b2b",
   text: "Bonjour",
@@ -1095,7 +1153,7 @@ beforeAll(async () => {
       region: "SOUTH",
       negotiatedPrice: null,
     });
-    await setDoc(doc(db, "users/user_b2b"), { nom: "Durand" });
+    await setDoc(doc(db, "users/user_b2b_nord"), { nom: "Durand" });
   });
 });
 
@@ -1109,7 +1167,7 @@ test("unauthenticated reads are denied", async () => {
 });
 
 test("a b2b user reads only their company's dossiers", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertSucceeds(getDoc(doc(db, "dossiers/dos_1")));
   await assertFails(getDoc(doc(db, "dossiers/dos_2")));
 });
@@ -1120,34 +1178,38 @@ test("backoffice reads any dossier", async () => {
 });
 
 test("owner cannot escalate their own claims fields", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
-  await assertSucceeds(updateDoc(doc(db, "users/user_b2b"), { ville: "Lyon" }));
-  await assertFails(updateDoc(doc(db, "users/user_b2b"), { role: "backoffice" }));
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertSucceeds(
+    updateDoc(doc(db, "users/user_b2b_nord"), { ville: "Lyon" }),
+  );
+  await assertFails(
+    updateDoc(doc(db, "users/user_b2b_nord"), { role: "backoffice" }),
+  );
 });
 
 // ── dossier create ─────────────────────────────────────────────────────────
 
 test("a dealer files a dossier for their own company", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertSucceeds(addDoc(collection(db, "dossiers"), newDossier()));
 });
 
 test("a dealer cannot file against another company", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     addDoc(collection(db, "dossiers"), newDossier({ companyId: "comp_2" })),
   );
 });
 
 test("a dealer cannot file as someone else", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     addDoc(collection(db, "dossiers"), newDossier({ submittedBy: "user_bo" })),
   );
 });
 
 test("a dossier cannot be born already in progress or priced", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     addDoc(collection(db, "dossiers"), newDossier({ status: "en_cours" })),
   );
@@ -1157,14 +1219,16 @@ test("a dossier cannot be born already in progress or priced", async () => {
 });
 
 test("region must be a real region", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     addDoc(collection(db, "dossiers"), newDossier({ region: "EAST" })),
   );
 });
 
 test("a pending account cannot file anything", async () => {
-  const db = env.authenticatedContext("user_pending", pendingClaims).firestore();
+  const db = env
+    .authenticatedContext("user_pending", pendingClaims)
+    .firestore();
   await assertFails(addDoc(collection(db, "dossiers"), newDossier()));
 });
 
@@ -1196,7 +1260,7 @@ test("backoffice cannot move a dossier between companies", async () => {
 });
 
 test("a dealer cannot update their own dossier", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     updateDoc(doc(db, "dossiers/dos_1"), { negotiatedPrice: 99999 }),
   );
@@ -1205,21 +1269,21 @@ test("a dealer cannot update their own dossier", async () => {
 // ── messages ───────────────────────────────────────────────────────────────
 
 test("a dealer messages on their own dossier", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertSucceeds(
     addDoc(collection(db, "dossiers/dos_1/messages"), newMessage()),
   );
 });
 
 test("a dealer cannot message on another company's dossier", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     addDoc(collection(db, "dossiers/dos_2/messages"), newMessage()),
   );
 });
 
 test("a sender cannot impersonate someone else", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     addDoc(
       collection(db, "dossiers/dos_1/messages"),
@@ -1253,7 +1317,7 @@ test("messages are immutable once sent", async () => {
     );
     id = ref.id;
   });
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     updateDoc(doc(db, `dossiers/dos_1/messages/${id}`), { text: "edited" }),
   );
@@ -1263,6 +1327,7 @@ test("messages are immutable once sent", async () => {
 - [ ] **Step 4: Write the Storage rules tests**
 
 Create `src/lib/firestore/__tests__/storageRules.test.ts`:
+
 ```ts
 import { afterAll, beforeAll, test } from "@jest/globals";
 import { readFileSync } from "fs";
@@ -1305,7 +1370,9 @@ test("unauthenticated uploads are denied", async () => {
 });
 
 test("a dealer uploads into their own company's dossier path", async () => {
-  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const storage = env
+    .authenticatedContext("user_b2b_nord", b2bClaims)
+    .storage();
   await assertSucceeds(
     uploadBytes(ref(storage, "dossiers/comp_1/dos_1/photos/0.jpg"), jpeg, {
       contentType: "image/jpeg",
@@ -1314,7 +1381,9 @@ test("a dealer uploads into their own company's dossier path", async () => {
 });
 
 test("a dealer cannot upload into another company's path", async () => {
-  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const storage = env
+    .authenticatedContext("user_b2b_nord", b2bClaims)
+    .storage();
   await assertFails(
     uploadBytes(ref(storage, "dossiers/comp_2/dos_9/photos/0.jpg"), jpeg, {
       contentType: "image/jpeg",
@@ -1334,7 +1403,9 @@ test("backoffice attaches to any company's dossier", async () => {
 });
 
 test("only images and pdfs are accepted", async () => {
-  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const storage = env
+    .authenticatedContext("user_b2b_nord", b2bClaims)
+    .storage();
   await assertFails(
     uploadBytes(ref(storage, "dossiers/comp_1/dos_1/photos/x.html"), jpeg, {
       contentType: "text/html",
@@ -1343,7 +1414,9 @@ test("only images and pdfs are accepted", async () => {
 });
 
 test("oversized files are rejected", async () => {
-  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const storage = env
+    .authenticatedContext("user_b2b_nord", b2bClaims)
+    .storage();
   const tooBig = new Uint8Array(11 * 1024 * 1024);
   await assertFails(
     uploadBytes(ref(storage, "dossiers/comp_1/dos_1/photos/big.jpg"), tooBig, {
@@ -1353,9 +1426,13 @@ test("oversized files are rejected", async () => {
 });
 
 test("a dealer can delete their own upload (failed-submission cleanup)", async () => {
-  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const storage = env
+    .authenticatedContext("user_b2b_nord", b2bClaims)
+    .storage();
   const target = ref(storage, "dossiers/comp_1/dos_cleanup/photos/0.jpg");
-  await assertSucceeds(uploadBytes(target, jpeg, { contentType: "image/jpeg" }));
+  await assertSucceeds(
+    uploadBytes(target, jpeg, { contentType: "image/jpeg" }),
+  );
   await assertSucceeds(deleteObject(target));
 });
 
@@ -1367,7 +1444,9 @@ test("a dealer cannot delete another company's upload", async () => {
     }),
   );
 
-  const attacker = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const attacker = env
+    .authenticatedContext("user_b2b_nord", b2bClaims)
+    .storage();
   await assertFails(
     deleteObject(ref(attacker, "dossiers/comp_2/dos_victim/photos/0.jpg")),
   );
@@ -1377,10 +1456,13 @@ test("a dealer cannot delete another company's upload", async () => {
 - [ ] **Step 5: Point the rules Jest config at both suites**
 
 In `jest.rules.config.js`, replace the `testMatch` line:
+
 ```js
   testMatch: ["<rootDir>/src/lib/firestore/__tests__/rules.test.ts"],
 ```
+
 with:
+
 ```js
   testMatch: [
     "<rootDir>/src/lib/firestore/__tests__/rules.test.ts",
@@ -1389,6 +1471,7 @@ with:
 ```
 
 In `package.json`, add the new file to the main config's `testPathIgnorePatterns` so the jest-expo suite keeps skipping it:
+
 ```json
     "testPathIgnorePatterns": [
       "/node_modules/",
@@ -1398,6 +1481,7 @@ In `package.json`, add the new file to the main config's `testPathIgnorePatterns
 ```
 
 And widen the `test:rules` script to boot the Storage emulator and run both files:
+
 ```json
     "test:rules": "firebase emulators:exec --only firestore,storage --project bike-eco-43a84 \"jest --config jest.rules.config.js\"",
 ```
@@ -1406,6 +1490,7 @@ And widen the `test:rules` script to boot the Storage emulator and run both file
 
 Run: `npm run test:rules`
 Expected: PASS — both suites; the emulators boot, run, and tear down.
+
 > If the Storage suite cannot reach the emulator, confirm `emulators:exec` is
 > exporting `FIREBASE_STORAGE_EMULATOR_HOST`; `initializeTestEnvironment`
 > discovers ports through the emulator hub that `emulators:exec` starts.
@@ -1431,9 +1516,11 @@ git commit -m "feat(security): claim-pinned dossier write rules + storage rules 
 ## Task 8: `toDossierPayload` — form → document (TDD, pure)
 
 **Files:**
+
 - Create: `src/features/b2b-submission/toDossier.ts`, `src/features/b2b-submission/__tests__/toDossier.test.ts`
 
 **Interfaces:**
+
 - Consumes: `B2bSubmissionForm` from `./schema`; `SessionUser` from `@/lib/auth/session` (= `WithId<AppUser>`, so it carries `id`, `nom`, `prenom`, `departement`, `companyId`, `role`); `isSud` from `@/constants/departments`.
 - Produces:
   - `type DossierWrite = Omit<Dossier, "createdAt" | "updatedAt">`
@@ -1445,6 +1532,7 @@ Timestamps are deliberately excluded: `serverTimestamp()` would need a `firebase
 - [ ] **Step 1: Write the failing test**
 
 Create `src/features/b2b-submission/__tests__/toDossier.test.ts`:
+
 ```ts
 import { expect, test } from "@jest/globals";
 import { Timestamp } from "firebase/firestore";
@@ -1453,7 +1541,7 @@ import { B2B_SUBMISSION_DEFAULTS } from "../schema";
 import { regionForDepartement, toDossierPayload } from "../toDossier";
 
 const session: SessionUser = {
-  id: "user_b2b",
+  id: "user_b2b_nord",
   role: "b2b",
   companyId: "comp_nord",
   region: null,
@@ -1480,16 +1568,11 @@ test("région follows the submitter's département", () => {
 });
 
 test("a new dossier is unstarted, unpriced, and owned by the submitter", () => {
-  const d = toDossierPayload(
-    B2B_SUBMISSION_DEFAULTS,
-    session,
-    company,
-    photos,
-  );
+  const d = toDossierPayload(B2B_SUBMISSION_DEFAULTS, session, company, photos);
   expect(d.status).toBe("a_traiter");
   expect(d.negotiatedPrice).toBeNull();
   expect(d.companyId).toBe("comp_nord");
-  expect(d.submittedBy).toBe("user_b2b");
+  expect(d.submittedBy).toBe("user_b2b_nord");
   expect(d.region).toBe("NORTH");
   expect(d.submitter).toEqual({
     nom: "Durand",
@@ -1557,6 +1640,7 @@ Expected: FAIL — `Cannot find module '../toDossier'`.
 - [ ] **Step 3: Implement `toDossier.ts`**
 
 Create `src/features/b2b-submission/toDossier.ts`:
+
 ```ts
 import { isSud } from "@/constants/departments";
 import type { SessionUser } from "@/lib/auth/session";
@@ -1687,10 +1771,12 @@ git commit -m "feat(b2b): map the submission funnel onto a dossier document"
 ## Task 9: Real B2B submission — upload photos, write the dossier
 
 **Files:**
+
 - Create: `src/lib/storage/upload.ts`
 - Modify: `src/features/b2b-submission/submit.ts`, `src/app/(b2b)/vehicule-submission.tsx`, `package.json`
 
 **Interfaces:**
+
 - Consumes: `cleanUpOnFailure` (Task 6); path helpers (Task 6); `toDossierPayload` (Task 8); `mapDataError` (Task 1); `companyDoc`/`dossiersRef` from `@/lib/firestore/collections`; `SessionUser` from `@/lib/auth/session`.
 - Produces:
   - `uploadLocalFile(uri: string, path: string, contentType: string): Promise<string>` (download URL)
@@ -1701,14 +1787,17 @@ git commit -m "feat(b2b): map the submission funnel onto a dossier document"
 - [ ] **Step 1: Install the thumbnail dependency**
 
 Run:
+
 ```sh
 npx expo install expo-image-manipulator
 ```
+
 Expected: added to `package.json` dependencies.
 
 - [ ] **Step 2: Implement `upload.ts`**
 
 Create `src/lib/storage/upload.ts`:
+
 ```ts
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import {
@@ -1764,6 +1853,7 @@ export async function makeThumbnail(uri: string): Promise<string> {
 - [ ] **Step 3: Rewrite `submit.ts`**
 
 Replace `src/features/b2b-submission/submit.ts` entirely:
+
 ```ts
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 
@@ -1843,32 +1933,41 @@ export async function submitB2bSubmission(
   }
 }
 ```
+
 > `values.photos` is guaranteed non-empty: `b2bSubmissionSchema` requires
 > `.min(1, "Ajoutez au moins 1 photo du véhicule")`, so `photos[0]` is safe.
 
 - [ ] **Step 4: Pass the session at the call site**
 
 In `src/app/(b2b)/vehicule-submission.tsx`, add the import:
+
 ```ts
 import { useSession } from "@/lib/data/useSession";
 ```
+
 Add the hook inside the component, above `useStepForm`:
+
 ```ts
-  const { user } = useSession();
+const { user } = useSession();
 ```
+
 Then change the submit body from:
+
 ```ts
         try {
           await submitB2bSubmission(values);
           setSubmitted(true);
 ```
+
 to:
+
 ```ts
         try {
           if (!user) throw new Error("Votre session a expiré. Reconnectez-vous.");
           await submitB2bSubmission(values, user);
           setSubmitted(true);
 ```
+
 The existing `catch` already surfaces `err.message` through `Alert.alert("Envoi impossible", …)`, and every error thrown above is French copy from `mapDataError`.
 
 - [ ] **Step 5: Typecheck, lint, test**
@@ -1890,11 +1989,13 @@ git commit -m "feat(b2b): real dossier submission with photo upload and cleanup"
 Today every call site imports all three concerns to use one.
 
 **Files:**
+
 - Create: `src/lib/data/useDossierManagement.ts`, `src/lib/data/useInvite.ts`
 - Modify: `src/app/(backoffice)/dossier/[id]/management.tsx`, `src/app/(b2b)/add-colleague.tsx`
 - Delete: `src/lib/data/useDossierMutations.ts`
 
 **Interfaces:**
+
 - Consumes: `mapDataError` (Task 1); `dossierDoc` from `@/lib/firestore/collections`.
 - Produces:
   - `useDossierManagement(): { updateManagement(id: string, region: Region, status: DossierStatus, price: number | null): Promise<void> }`
@@ -1964,22 +2065,31 @@ export function useInvite() {
 - [ ] **Step 3: Repoint the management screen**
 
 In `src/app/(backoffice)/dossier/[id]/management.tsx`, change:
+
 ```ts
 import { useDossierMutations } from "@/lib/data/useDossierMutations";
 ```
+
 to:
+
 ```ts
 import { useDossierManagement } from "@/lib/data/useDossierManagement";
 ```
+
 and:
+
 ```ts
-  const { updateManagement } = useDossierMutations();
+const { updateManagement } = useDossierMutations();
 ```
+
 to:
+
 ```ts
-  const { updateManagement } = useDossierManagement();
+const { updateManagement } = useDossierManagement();
 ```
+
 The screen's existing `catch` shows a French `Alert`; `updateManagement` now throws French copy from `mapDataError`, so surface it — change the catch from:
+
 ```tsx
             } catch {
               Alert.alert(
@@ -1988,7 +2098,9 @@ The screen's existing `catch` shows a French `Alert`; `updateManagement` now thr
               );
             }
 ```
+
 to:
+
 ```tsx
             } catch (err) {
               Alert.alert(
@@ -2003,20 +2115,27 @@ to:
 - [ ] **Step 4: Repoint the invite screen**
 
 In `src/app/(b2b)/add-colleague.tsx`, change:
+
 ```ts
 import { useDossierMutations } from "@/lib/data/useDossierMutations";
 ```
+
 to:
+
 ```ts
 import { useInvite } from "@/lib/data/useInvite";
 ```
+
 and:
+
 ```ts
-  const { invite } = useDossierMutations();
+const { invite } = useDossierMutations();
 ```
+
 to:
+
 ```ts
-  const { invite } = useInvite();
+const { invite } = useInvite();
 ```
 
 - [ ] **Step 5: Delete the grab-bag hook**
@@ -2024,6 +2143,7 @@ to:
 ```sh
 git rm src/lib/data/useDossierMutations.ts
 ```
+
 > Its `sendMessage` moves to `useSendMessage` in Task 11. If `tsc` complains that
 > `DossierChatScreen` still imports `useDossierMutations`, leave it failing and
 > complete Task 11 — or do Steps 1–4 of Task 11 first.
@@ -2045,10 +2165,12 @@ git commit -m "refactor(data): split useDossierMutations into focused hooks"
 ## Task 11: Chat sending — `formatSenderName` + `useSendMessage`
 
 **Files:**
+
 - Create: `src/lib/chat/senderName.ts`, `src/lib/chat/senderName.test.ts`, `src/lib/data/useSendMessage.ts`
 - Modify: `src/components/screens/DossierChatScreen.tsx`
 
 **Interfaces:**
+
 - Consumes: `cleanUpOnFailure` + paths (Task 6); `mapDataError` (Task 1); `messagesRef` from `@/lib/firestore/collections`; `useDossier`/`useMessages` (Tasks 3–4).
 - Produces:
   - `formatSenderName(user: SessionUser, companyName: string): string`
@@ -2058,6 +2180,7 @@ git commit -m "refactor(data): split useDossierMutations into focused hooks"
 - [ ] **Step 1: Write the failing sender-name test**
 
 Create `src/lib/chat/senderName.test.ts`:
+
 ```ts
 import { expect, test } from "@jest/globals";
 import { Timestamp } from "firebase/firestore";
@@ -2107,6 +2230,7 @@ Expected: FAIL — `Cannot find module './senderName'`.
 - [ ] **Step 3: Implement `senderName.ts`**
 
 Create `src/lib/chat/senderName.ts`:
+
 ```ts
 import type { SessionUser } from "@/lib/auth/session";
 
@@ -2216,8 +2340,15 @@ export function useSendMessage(
 - [ ] **Step 6: Rewire `DossierChatScreen`**
 
 Replace `src/components/screens/DossierChatScreen.tsx` entirely:
+
 ```tsx
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  View,
+} from "react-native";
 import ChatComposer from "@/components/ui/chat/ChatComposer";
 import ChatThread from "@/components/ui/chat/ChatThread";
 import { formatSenderName } from "@/lib/chat/senderName";
@@ -2265,6 +2396,7 @@ export default function DossierChatScreen({ id }: { id: string }) {
 
 const styles = StyleSheet.create({ flex: { flex: 1 } });
 ```
+
 > Hooks run before the `if (!user || !dossier) return null` guard so their order
 > stays stable across renders — the placeholder values are never used, because
 > the guard blocks the UI that could call `send`.
@@ -2288,23 +2420,28 @@ git commit -m "feat(chat): send messages to Firestore with a claim-pinned sender
 `ChatThread` already renders attachments (file icon + name); only picking and uploading are missing.
 
 **Files:**
+
 - Modify: `src/components/ui/chat/ChatComposer.tsx`, `src/components/screens/DossierChatScreen.tsx`, `package.json`
 
 **Interfaces:**
+
 - Consumes: `PickedFile` and `useSendMessage(...).send(text, files)` (Task 11).
 - Produces: `ChatComposer` prop becomes `onSend: (text: string, files: PickedFile[]) => void`.
 
 - [ ] **Step 1: Install the document picker**
 
 Run:
+
 ```sh
 npx expo install expo-document-picker
 ```
+
 Expected: added to `package.json` dependencies. (No config plugin is needed — the iCloud options are only for iCloud storage, which this does not use.)
 
 - [ ] **Step 2: Rewrite `ChatComposer.tsx`**
 
 Replace the whole file:
+
 ```tsx
 import { BottomSheet, Button, Host } from "@expo/ui";
 import * as DocumentPicker from "expo-document-picker";
@@ -2388,7 +2525,9 @@ export default function ChatComposer({
   }
 
   return (
-    <View style={[styles.bar, { paddingBottom: insets.bottom + tokens.space.sm }]}>
+    <View
+      style={[styles.bar, { paddingBottom: insets.bottom + tokens.space.sm }]}
+    >
       {files.length > 0 && (
         <ScrollView
           horizontal
@@ -2434,7 +2573,10 @@ export default function ChatComposer({
       </View>
 
       <Host style={styles.sheetHost}>
-        <BottomSheet isPresented={sheetOpen} onDismiss={() => setSheetOpen(false)}>
+        <BottomSheet
+          isPresented={sheetOpen}
+          onDismiss={() => setSheetOpen(false)}
+        >
           <Button label="Photo" onPress={pickPhoto} />
           <Button label="PDF" onPress={pickPdf} />
         </BottomSheet>
@@ -2443,7 +2585,9 @@ export default function ChatComposer({
   );
 }
 ```
+
 Keep the file's existing `StyleSheet.create({...})` block as-is and add these three entries to it (the composer's controls moved into a `row`, and pending files need chips):
+
 ```ts
   row: {
     flexDirection: "row",
@@ -2463,29 +2607,33 @@ Keep the file's existing `StyleSheet.create({...})` block as-is and add these th
   },
   chipText: { fontSize: 12, color: tokens.colors.primary },
 ```
+
 Then remove `flexDirection: "row"` and `alignItems: "flex-end"` from the existing `bar` style — it is now a column wrapping the chips above the row.
 
 - [ ] **Step 3: Pass the picked files through**
 
 In `src/components/screens/DossierChatScreen.tsx`, change the composer usage from:
+
 ```tsx
-        <ChatComposer
-          onSend={(text) => {
-            send(text).catch((err: Error) =>
-              Alert.alert("Envoi impossible", err.message),
-            );
-          }}
-        />
+<ChatComposer
+  onSend={(text) => {
+    send(text).catch((err: Error) =>
+      Alert.alert("Envoi impossible", err.message),
+    );
+  }}
+/>
 ```
+
 to:
+
 ```tsx
-        <ChatComposer
-          onSend={(text, files) => {
-            send(text, files).catch((err: Error) =>
-              Alert.alert("Envoi impossible", err.message),
-            );
-          }}
-        />
+<ChatComposer
+  onSend={(text, files) => {
+    send(text, files).catch((err: Error) =>
+      Alert.alert("Envoi impossible", err.message),
+    );
+  }}
+/>
 ```
 
 - [ ] **Step 4: Typecheck, lint, test**
@@ -2505,65 +2653,104 @@ git commit -m "feat(chat): photo and pdf attachments via Storage"
 ## Task 13: Phase B verification walkthrough + final checks
 
 **Files:**
+
 - Modify: `scripts/seed.ts` (seed a second company + messages so the walkthrough has something to compare against)
 
 - [ ] **Step 1: Seed a second company and a chat thread**
 
 In `scripts/seed.ts`, add before the `console.log`:
-```ts
-  // A second company so cross-company isolation is checkable by hand.
-  await db.doc(`companies/comp_sud`).set({
-    siret: "98765432100022",
-    name: "Garage du Sud",
-    status: "active",
-    createdBy: "user_b2b_sud",
-    createdAt: now,
-  });
-  await upsertUser("user_b2b_sud", "b2b@garage-sud.fr", "password123", {
-    role: "b2b",
-    companyId: "comp_sud",
-    status: "active",
-  });
-  await db.doc(`users/user_b2b_sud`).set({
-    role: "b2b", companyId: "comp_sud", region: null,
-    nom: "Blanc", prenom: "Dominique", email: "b2b@garage-sud.fr",
-    telephone: "0621222324", departement: "13 - Bouches-du-Rhône",
-    ville: "Marseille", status: "active", createdAt: now, updatedAt: now,
-  });
-  await db.doc(`dossiers/dos_sud`).set({
-    status: "a_traiter", region: "SOUTH", companyId: "comp_sud",
-    submittedBy: "user_b2b_sud", negotiatedPrice: null,
-    submitter: { nom: "Blanc", prenom: "Dominique", companyName: "Garage du Sud" },
-    vehicle: {
-      electrique: "non", materiel: [], marque: "Ducati", modele: "Monster",
-      cylindree: 937, annee: 2021, kilometrage: 9200, accessoires: "",
-    },
-    keys: { aClesContact: "oui", cleNoire: 1, cleMarron: 0, cleRouge: 0, aTelecommande: "non", telecommande: null },
-    condition: { etat: "Bon état", naturePanne: "" },
-    papers: {
-      carteGrise: "oui", carteGriseAVotreNom: "oui", controleTechnique: "oui",
-      ctMoins6Mois: "oui", resultatCT: "Favorable", certificatNonGage: "oui",
-      carnetEntretien: "oui", factureEntretien: "non",
-    },
-    pricing: { prix: 7000, commentaires: "" },
-    photos: [], thumbnailUrl: null,
-    createdAt: now, updatedAt: now,
-  });
 
-  await db.doc(`dossiers/dos_1/messages/msg_1`).set({
-    senderId: "user_b2b",
-    senderName: "Camille Durand - Garage du Nord",
-    senderRole: "b2b",
-    text: "Bonjour, la moto est disponible immédiatement.",
-    attachments: [],
-    createdAt: now,
-  });
-```
-Update the final log line to:
 ```ts
-  console.log(
-    "Seed complete: user_b2b / user_b2b_sud / user_bo / user_pending (password123).",
-  );
+// A second company so cross-company isolation is checkable by hand.
+await db.doc(`companies/comp_sud`).set({
+  siret: "98765432100022",
+  name: "Garage du Sud",
+  status: "active",
+  createdBy: "user_b2b_sud",
+  createdAt: now,
+});
+await upsertUser("user_b2b_sud", "b2b@garage-sud.fr", "password123", {
+  role: "b2b",
+  companyId: "comp_sud",
+  status: "active",
+});
+await db.doc(`users/user_b2b_sud`).set({
+  role: "b2b",
+  companyId: "comp_sud",
+  region: null,
+  nom: "Blanc",
+  prenom: "Dominique",
+  email: "b2b@garage-sud.fr",
+  telephone: "0621222324",
+  departement: "13 - Bouches-du-Rhône",
+  ville: "Marseille",
+  status: "active",
+  createdAt: now,
+  updatedAt: now,
+});
+await db.doc(`dossiers/dos_sud`).set({
+  status: "a_traiter",
+  region: "SOUTH",
+  companyId: "comp_sud",
+  submittedBy: "user_b2b_sud",
+  negotiatedPrice: null,
+  submitter: {
+    nom: "Blanc",
+    prenom: "Dominique",
+    companyName: "Garage du Sud",
+  },
+  vehicle: {
+    electrique: "non",
+    materiel: [],
+    marque: "Ducati",
+    modele: "Monster",
+    cylindree: 937,
+    annee: 2021,
+    kilometrage: 9200,
+    accessoires: "",
+  },
+  keys: {
+    aClesContact: "oui",
+    cleNoire: 1,
+    cleMarron: 0,
+    cleRouge: 0,
+    aTelecommande: "non",
+    telecommande: null,
+  },
+  condition: { etat: "Bon état", naturePanne: "" },
+  papers: {
+    carteGrise: "oui",
+    carteGriseAVotreNom: "oui",
+    controleTechnique: "oui",
+    ctMoins6Mois: "oui",
+    resultatCT: "Favorable",
+    certificatNonGage: "oui",
+    carnetEntretien: "oui",
+    factureEntretien: "non",
+  },
+  pricing: { prix: 7000, commentaires: "" },
+  photos: [],
+  thumbnailUrl: null,
+  createdAt: now,
+  updatedAt: now,
+});
+
+await db.doc(`dossiers/dos_1/messages/msg_1`).set({
+  senderId: "user_b2b_nord",
+  senderName: "Camille Durand - Garage du Nord",
+  senderRole: "b2b",
+  text: "Bonjour, la moto est disponible immédiatement.",
+  attachments: [],
+  createdAt: now,
+});
+```
+
+Update the final log line to:
+
+```ts
+console.log(
+  "Seed complete: user_b2b_nord / user_b2b_sud / user_bo / user_pending (password123).",
+);
 ```
 
 - [ ] **Step 2: Re-seed and confirm idempotency**
@@ -2615,9 +2802,11 @@ UI (no link to another company's dossier); the error-state gap is logged as Mino
 - [ ] **Step 8: Full green sweep**
 
 Run:
+
 ```sh
 npx tsc --noEmit && npm run lint && npx jest && npm run test:rules
 ```
+
 Expected: all four clean.
 
 - [ ] **Step 9: Commit**
@@ -2648,7 +2837,7 @@ so both must land before anyone signs in for real:
 - [ ] Confirm in the console whether `bike-eco-db` currently has any ruleset. A
       database left on its creation-mode default is either deny-all (harmless) or
       open-until-a-date (**not** harmless — anyone with the public API key can read
-      every dossier). The MCP reports rules for the *default* instance, not the named
+      every dossier). The MCP reports rules for the _default_ instance, not the named
       one, so this needs human eyes.
 - [ ] `npx -y firebase-tools@latest deploy --only firestore:rules,storage:rules,firestore:indexes --project bike-eco-43a84`
 - [ ] Re-run the Phase A + B walkthroughs against the live project (no

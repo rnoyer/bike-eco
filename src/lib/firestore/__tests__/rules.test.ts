@@ -1,12 +1,10 @@
-import { afterAll, beforeAll, test } from "@jest/globals";
-import { readFileSync } from "fs";
-import { resolve } from "path";
 import {
   assertFails,
   assertSucceeds,
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
+import { afterAll, beforeAll, test } from "@jest/globals";
 import {
   addDoc,
   collection,
@@ -15,6 +13,8 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
+import { readFileSync } from "fs";
+import { resolve } from "path";
 
 let env: RulesTestEnvironment;
 
@@ -27,7 +27,7 @@ const newDossier = (overrides: Record<string, unknown> = {}) => ({
   status: "a_traiter",
   region: "NORTH",
   companyId: "comp_1",
-  submittedBy: "user_b2b",
+  submittedBy: "user_b2b_nord",
   negotiatedPrice: null,
   photos: [],
   thumbnailUrl: null,
@@ -35,7 +35,7 @@ const newDossier = (overrides: Record<string, unknown> = {}) => ({
 });
 
 const newMessage = (overrides: Record<string, unknown> = {}) => ({
-  senderId: "user_b2b",
+  senderId: "user_b2b_nord",
   senderName: "Camille Durand - Garage du Nord",
   senderRole: "b2b",
   text: "Bonjour",
@@ -68,7 +68,7 @@ beforeAll(async () => {
       region: "SOUTH",
       negotiatedPrice: null,
     });
-    await setDoc(doc(db, "users/user_b2b"), { nom: "Durand" });
+    await setDoc(doc(db, "users/user_b2b_nord"), { nom: "Durand" });
   });
 });
 
@@ -82,7 +82,7 @@ test("unauthenticated reads are denied", async () => {
 });
 
 test("a b2b user reads only their company's dossiers", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertSucceeds(getDoc(doc(db, "dossiers/dos_1")));
   await assertFails(getDoc(doc(db, "dossiers/dos_2")));
 });
@@ -93,34 +93,34 @@ test("backoffice reads any dossier", async () => {
 });
 
 test("owner cannot escalate their own claims fields", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
-  await assertSucceeds(updateDoc(doc(db, "users/user_b2b"), { ville: "Lyon" }));
-  await assertFails(updateDoc(doc(db, "users/user_b2b"), { role: "backoffice" }));
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertSucceeds(updateDoc(doc(db, "users/user_b2b_nord"), { ville: "Lyon" }));
+  await assertFails(updateDoc(doc(db, "users/user_b2b_nord"), { role: "backoffice" }));
 });
 
 // ── dossier create ─────────────────────────────────────────────────────────
 
 test("a dealer files a dossier for their own company", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertSucceeds(addDoc(collection(db, "dossiers"), newDossier()));
 });
 
 test("a dealer cannot file against another company", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     addDoc(collection(db, "dossiers"), newDossier({ companyId: "comp_2" })),
   );
 });
 
 test("a dealer cannot file as someone else", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     addDoc(collection(db, "dossiers"), newDossier({ submittedBy: "user_bo" })),
   );
 });
 
 test("a dossier cannot be born already in progress or priced", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     addDoc(collection(db, "dossiers"), newDossier({ status: "en_cours" })),
   );
@@ -130,7 +130,7 @@ test("a dossier cannot be born already in progress or priced", async () => {
 });
 
 test("region must be a real region", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     addDoc(collection(db, "dossiers"), newDossier({ region: "EAST" })),
   );
@@ -139,7 +139,7 @@ test("region must be a real region", async () => {
 test("a pending account cannot file anything", async () => {
   const db = env.authenticatedContext("user_pending", pendingClaims).firestore();
   // `submittedBy` must be this caller's own uid: with the fixture default
-  // ("user_b2b") the create is denied for impersonation, and the status gate —
+  // ("user_b2b_nord") the create is denied for impersonation, and the status gate —
   // the thing under test — never gets a say.
   await assertFails(
     addDoc(
@@ -189,7 +189,7 @@ test("backoffice cannot write an out-of-domain status, region or price", async (
 });
 
 test("a dealer cannot update their own dossier", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     updateDoc(doc(db, "dossiers/dos_1"), { negotiatedPrice: 99999 }),
   );
@@ -198,21 +198,21 @@ test("a dealer cannot update their own dossier", async () => {
 // ── messages ───────────────────────────────────────────────────────────────
 
 test("a dealer messages on their own dossier", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertSucceeds(
     addDoc(collection(db, "dossiers/dos_1/messages"), newMessage()),
   );
 });
 
 test("a dealer cannot message on another company's dossier", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     addDoc(collection(db, "dossiers/dos_2/messages"), newMessage()),
   );
 });
 
 test("a sender cannot impersonate someone else", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     addDoc(
       collection(db, "dossiers/dos_1/messages"),
@@ -240,13 +240,13 @@ test("backoffice messages on any dossier", async () => {
 // ── invitations & companies (server-only) ──────────────────────────────────
 
 test("clients cannot read or write invitations", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(getDoc(doc(db, "invitations/inv_1")));
   await assertFails(setDoc(doc(db, "invitations/inv_2"), { email: "x@x.fr" }));
 });
 
 test("clients cannot create a company", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     setDoc(doc(db, "companies/comp_x"), {
       siret: "12345678901234",
@@ -265,7 +265,7 @@ test("messages are immutable once sent", async () => {
     );
     id = ref.id;
   });
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     updateDoc(doc(db, `dossiers/dos_1/messages/${id}`), { text: "edited" }),
   );

@@ -1,11 +1,11 @@
+import type { SessionUser } from "@/lib/auth/session";
 import { expect, test } from "@jest/globals";
 import { Timestamp } from "firebase/firestore";
-import type { SessionUser } from "@/lib/auth/session";
 import { B2B_SUBMISSION_DEFAULTS } from "../schema";
 import { regionForDepartement, toDossierPayload } from "../toDossier";
 
 const session: SessionUser = {
-  id: "user_b2b",
+  id: "user_b2b_nord",
   role: "b2b",
   companyId: "comp_nord",
   region: null,
@@ -41,7 +41,7 @@ test("a new dossier is unstarted, unpriced, and owned by the submitter", () => {
   expect(d.status).toBe("a_traiter");
   expect(d.negotiatedPrice).toBeNull();
   expect(d.companyId).toBe("comp_nord");
-  expect(d.submittedBy).toBe("user_b2b");
+  expect(d.submittedBy).toBe("user_b2b_nord");
   expect(d.region).toBe("NORTH");
   expect(d.submitter).toEqual({
     nom: "Durand",

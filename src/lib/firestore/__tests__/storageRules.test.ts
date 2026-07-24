@@ -1,13 +1,13 @@
-import { afterAll, beforeAll, test } from "@jest/globals";
-import { readFileSync } from "fs";
-import { resolve } from "path";
 import {
   assertFails,
   assertSucceeds,
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
+import { afterAll, beforeAll, test } from "@jest/globals";
 import { deleteObject, ref, uploadBytes } from "firebase/storage";
+import { readFileSync } from "fs";
+import { resolve } from "path";
 
 let env: RulesTestEnvironment;
 
@@ -39,7 +39,7 @@ test("unauthenticated uploads are denied", async () => {
 });
 
 test("a dealer uploads into their own company's dossier path", async () => {
-  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const storage = env.authenticatedContext("user_b2b_nord", b2bClaims).storage();
   await assertSucceeds(
     uploadBytes(ref(storage, "dossiers/comp_1/dos_1/photos/0.jpg"), jpeg, {
       contentType: "image/jpeg",
@@ -48,7 +48,7 @@ test("a dealer uploads into their own company's dossier path", async () => {
 });
 
 test("a dealer cannot upload into another company's path", async () => {
-  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const storage = env.authenticatedContext("user_b2b_nord", b2bClaims).storage();
   await assertFails(
     uploadBytes(ref(storage, "dossiers/comp_2/dos_9/photos/0.jpg"), jpeg, {
       contentType: "image/jpeg",
@@ -68,7 +68,7 @@ test("backoffice attaches to any company's dossier", async () => {
 });
 
 test("only images and pdfs are accepted", async () => {
-  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const storage = env.authenticatedContext("user_b2b_nord", b2bClaims).storage();
   await assertFails(
     uploadBytes(ref(storage, "dossiers/comp_1/dos_1/photos/x.html"), jpeg, {
       contentType: "text/html",
@@ -81,7 +81,7 @@ test("only images and pdfs are accepted", async () => {
 // would be rejected under partial-match semantics too, so neither proves it —
 // a contentType that merely *starts* with an accepted type does.
 test("a content type that only prefixes an accepted one is rejected", async () => {
-  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const storage = env.authenticatedContext("user_b2b_nord", b2bClaims).storage();
   await assertFails(
     uploadBytes(ref(storage, "dossiers/comp_1/dos_1/photos/x.pdfx"), jpeg, {
       contentType: "application/pdfx",
@@ -95,7 +95,7 @@ test("a content type that only prefixes an accepted one is rejected", async () =
 // The left alternation branch must be end-anchored too: a type that merely
 // prefixes an accepted image subtype must be rejected. Proves the grouping.
 test("a content type prefixing an accepted image type is rejected", async () => {
-  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const storage = env.authenticatedContext("user_b2b_nord", b2bClaims).storage();
   await assertFails(
     uploadBytes(ref(storage, "dossiers/comp_1/dos_1/photos/x.jpgx"), jpeg, {
       contentType: "image/jpegx",
@@ -104,7 +104,7 @@ test("a content type prefixing an accepted image type is rejected", async () => 
 });
 
 test("svg images are rejected even though they are `image/*`", async () => {
-  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const storage = env.authenticatedContext("user_b2b_nord", b2bClaims).storage();
   await assertFails(
     uploadBytes(ref(storage, "dossiers/comp_1/dos_1/photos/x.svg"), jpeg, {
       contentType: "image/svg+xml",
@@ -113,7 +113,7 @@ test("svg images are rejected even though they are `image/*`", async () => {
 });
 
 test("oversized files are rejected", async () => {
-  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const storage = env.authenticatedContext("user_b2b_nord", b2bClaims).storage();
   const tooBig = new Uint8Array(11 * 1024 * 1024);
   await assertFails(
     uploadBytes(ref(storage, "dossiers/comp_1/dos_1/photos/big.jpg"), tooBig, {
@@ -123,7 +123,7 @@ test("oversized files are rejected", async () => {
 });
 
 test("a dealer can delete their own upload (failed-submission cleanup)", async () => {
-  const storage = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const storage = env.authenticatedContext("user_b2b_nord", b2bClaims).storage();
   const target = ref(storage, "dossiers/comp_1/dos_cleanup/photos/0.jpg");
   await assertSucceeds(uploadBytes(target, jpeg, { contentType: "image/jpeg" }));
   await assertSucceeds(deleteObject(target));
@@ -137,7 +137,7 @@ test("a dealer cannot delete another company's upload", async () => {
     }),
   );
 
-  const attacker = env.authenticatedContext("user_b2b", b2bClaims).storage();
+  const attacker = env.authenticatedContext("user_b2b_nord", b2bClaims).storage();
   await assertFails(
     deleteObject(ref(attacker, "dossiers/comp_2/dos_victim/photos/0.jpg")),
   );

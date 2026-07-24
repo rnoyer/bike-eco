@@ -19,8 +19,6 @@ interface Props {
   onChange: (value: string) => void;
   error?: string;
   searchable?: boolean;
-  /** Read-only: shows the value but cannot be opened or changed. */
-  disabled?: boolean;
 }
 
 export default function Dropdown({
@@ -31,7 +29,6 @@ export default function Dropdown({
   onChange,
   error,
   searchable,
-  disabled,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -56,19 +53,14 @@ export default function Dropdown({
     <View>
       <Text style={styles.label}>{label}</Text>
       <TouchableOpacity
-        style={[
-          styles.trigger,
-          error ? styles.triggerError : undefined,
-          disabled ? styles.triggerDisabled : undefined,
-        ]}
+        style={[styles.trigger, error ? styles.triggerError : undefined]}
         onPress={() => setOpen(true)}
         activeOpacity={0.7}
-        disabled={disabled}
       >
         <Text style={[styles.triggerText, !value && styles.placeholderText]}>
           {value ?? placeholder ?? 'Sélectionner'}
         </Text>
-        {!disabled && <Text style={styles.chevron}>›</Text>}
+        <Text style={styles.chevron}>›</Text>
       </TouchableOpacity>
       {error && <Text style={styles.error}>{error}</Text>}
 
@@ -136,9 +128,6 @@ const styles = StyleSheet.create({
   },
   triggerError: {
     borderColor: tokens.colors.danger,
-  },
-  triggerDisabled: {
-    backgroundColor: tokens.colors.divider,
   },
   triggerText: {
     flex: 1,

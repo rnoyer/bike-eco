@@ -1481,13 +1481,13 @@ Add to `src/lib/firestore/__tests__/rules.test.ts` (reuse the file's existing `d
 
 ```ts
 test("clients cannot read or write invitations", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(getDoc(doc(db, "invitations/inv_1")));
   await assertFails(setDoc(doc(db, "invitations/inv_2"), { email: "x@x.fr" }));
 });
 
 test("clients cannot create a company", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     setDoc(doc(db, "companies/comp_x"), {
       siret: "12345678901234",
@@ -1547,12 +1547,12 @@ git commit -m "feat(security): lock invitations + company creation server-side; 
 
 - Modify: `scripts/seed.ts`
 
-The invite flow needs an active b2b user to send from — `user_b2b` (comp_nord)
+The invite flow needs an active b2b user to send from — `user_b2b_nord` (comp_nord)
 already exists and is active in the seed, so `sendInvite` is testable as-is. Add
 nothing new unless a second inviter is wanted. This task is a **no-op checkpoint**:
 confirm the seed already provides an active b2b user; if it does, skip to Task 13.
 
-- [ ] **Step 1: Confirm** `scripts/seed.ts` seeds `user_b2b` with `status: active`, `role: b2b`, `companyId: comp_nord`. It does. No change required.
+- [ ] **Step 1: Confirm** `scripts/seed.ts` seeds `user_b2b_nord` with `status: active`, `role: b2b`, `companyId: comp_nord`. It does. No change required.
 
 ---
 

@@ -67,14 +67,8 @@ export function AccountFields({
   );
 }
 
-/** Step "Vos coordonnées": shared by company + invited registration.
- *  `departementDisabled` mirrors + locks the département to the company's
- *  (company registration prefills it from step 1). */
-export function CoordonneesFields({
-  departementDisabled = false,
-}: {
-  departementDisabled?: boolean;
-}) {
+/** Step "Vos coordonnées": shared by company + invited registration. */
+export function CoordonneesFields() {
   return (
     <>
       <ControlledField
@@ -107,7 +101,6 @@ export function CoordonneesFields({
         placeholder="Département"
         options={DEPARTMENTS}
         searchable
-        disabled={departementDisabled}
       />
       <ControlledField
         name="ville"

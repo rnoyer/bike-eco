@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Scaffold every B2B and Back-office *page* (plus shared sign-in) with a native-first component strategy (`@expo/ui` + `expo-router` NativeTabs), reading from a swappable mock data layer.
+**Goal:** Scaffold every B2B and Back-office _page_ (plus shared sign-in) with a native-first component strategy (`@expo/ui` + `expo-router` NativeTabs), reading from a swappable mock data layer.
 
 **Architecture:** Two `expo-router` route groups (`(b2b)`, `(backoffice)`) of thin route files that compose shared components. List/form/settings-shaped UI uses `@expo/ui` universal components (real SwiftUI/Compose); genuinely custom layouts (photo carousel, dossier card, chat) use React Native + `StyleSheet` against extracted theme tokens. All data comes from `src/lib/data/*` hooks backed by typed fixtures, so swapping to real Firestore later never touches a component.
 
@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - **Native-first, cross-platform (iOS + Android).** Prefer `@expo/ui` universal components and `expo-router` native chrome. Drop to RN + `StyleSheet` only where no native universal primitive exists (carousel, dossier card, chat).
-- **Out of scope:** real Firebase Auth/session/rules, all multi-step form *funnels* (B2B submission, registration), real file upload, real message send, thumbnail generation. Stub these.
+- **Out of scope:** real Firebase Auth/session/rules, all multi-step form _funnels_ (B2B submission, registration), real file upload, real message send, thumbnail generation. Stub these.
 - **Mock data only:** every page reads `src/lib/data/*` hooks returning `{ data, loading }` (or `{ data, loading, error }`). Types come from `src/lib/firestore/schema.ts` — do not redefine domain types.
 - **UI copy is French and exact.** Use the wording from `docs/specs/*` verbatim (e.g. empty-state messages, button labels).
 - **Region filter (back-office only):** dropdown label `"Région géré"`; options `"Moitié Nord"` → `NORTH`, `"Moitié sud"` → `SOUTH`, `"Toute la France"` → all (default). Persisted via `expo-sqlite/kv-store`, restored on restart. `Region = "NORTH" | "SOUTH"` already exists in `schema.ts`; "all" is represented as `null`.
@@ -72,26 +72,31 @@ src/app/
 ## Task 1: Project setup — deps, test runner, theme tokens
 
 **Files:**
+
 - Modify: `package.json` (deps + jest config + scripts)
 - Create: `jest.setup.js`
 - Create: `src/theme/tokens.ts`
 - Test: `src/theme/__tests__/tokens.test.ts`
 
 **Interfaces:**
+
 - Produces: `tokens` object → `tokens.colors.{primary,primaryText,muted,border,divider,disabled,surface,bg,danger}`, `tokens.radius.md`, `tokens.space.{xs,sm,md,lg,xl}`, `tokens.button.height`, `tokens.text.{title,subtitle}`.
 
 - [ ] **Step 1: Install runtime + dev dependencies**
 
 Run:
+
 ```bash
 npx expo install expo-sqlite
 npm i -D jest-expo jest @testing-library/react-native react-test-renderer
 ```
+
 Expected: packages added to `package.json`; `expo-sqlite` pinned to the SDK-56 version.
 
 - [ ] **Step 2: Add jest config + scripts to `package.json`**
 
 Add under the root object (merge, do not remove existing keys):
+
 ```json
 "scripts": {
   "test": "jest"
@@ -104,6 +109,7 @@ Add under the root object (merge, do not remove existing keys):
   ]
 }
 ```
+
 (Keep the existing `start`/`android`/`ios`/`web`/`lint` scripts; add `test` alongside.)
 
 - [ ] **Step 3: Create `jest.setup.js`**
@@ -111,7 +117,7 @@ Add under the root object (merge, do not remove existing keys):
 ```js
 // Silences the native-animation warning and provides a default kv-store mock
 // fallback. Individual tests override the kv-store mock as needed.
-jest.mock('expo-sqlite/kv-store', () => {
+jest.mock("expo-sqlite/kv-store", () => {
   const store = new Map();
   return {
     __esModule: true,
@@ -127,6 +133,7 @@ jest.mock('expo-sqlite/kv-store', () => {
 - [ ] **Step 4: Write the failing test for tokens**
 
 `src/theme/__tests__/tokens.test.ts`:
+
 ```ts
 import { tokens } from "@/theme/tokens";
 
@@ -196,11 +203,13 @@ git commit -m "chore: add test runner, expo-sqlite, and theme tokens"
 ## Task 2: Mock data — fixtures + pure filters
 
 **Files:**
+
 - Create: `src/lib/data/fixtures.ts`
 - Create: `src/lib/data/filter.ts`
 - Test: `src/lib/data/__tests__/filter.test.ts`
 
 **Interfaces:**
+
 - Consumes: domain types from `@/lib/firestore/schema` (`Dossier`, `AppUser`, `Company`, `Message`, `DossierStatus`, `Region`).
 - Produces:
   - `MOCK_COMPANIES: Company[]`, `MOCK_USERS: AppUser[]`, `MOCK_DOSSIERS: Dossier[]`, `messagesFor(dossierId: string): Message[]`. Each `Dossier` has a stable `id` via a wrapper type `WithId<T> = T & { id: string }`.
@@ -210,6 +219,7 @@ git commit -m "chore: add test runner, expo-sqlite, and theme tokens"
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/data/__tests__/filter.test.ts`:
+
 ```ts
 import { MOCK_DOSSIERS } from "@/lib/data/fixtures";
 import { filterDossiersByRegion, selectByStatus } from "@/lib/data/filter";
@@ -222,7 +232,7 @@ test("selectByStatus keeps only requested statuses", () => {
 
 test("filterDossiersByRegion null returns all", () => {
   expect(filterDossiersByRegion(MOCK_DOSSIERS, null)).toHaveLength(
-    MOCK_DOSSIERS.length
+    MOCK_DOSSIERS.length,
   );
 });
 
@@ -261,14 +271,14 @@ export const MOCK_COMPANIES: WithId<Company>[] = [
     siret: "12345678900011",
     name: "Garage du Nord",
     status: "active",
-    createdBy: "user_b2b",
+    createdBy: "user_b2b_nord",
     createdAt: ts("2026-05-01"),
   },
 ];
 
 export const MOCK_USERS: WithId<AppUser>[] = [
   {
-    id: "user_b2b",
+    id: "user_b2b_nord",
     role: "b2b",
     companyId: "comp_nord",
     region: null,
@@ -335,17 +345,21 @@ function makeDossier(
   status: Dossier["status"],
   region: Dossier["region"],
   marque: string,
-  modele: string
+  modele: string,
 ): WithId<Dossier> {
   return {
     id,
     status,
     region,
     companyId: "comp_nord",
-    submittedBy: "user_b2b",
+    submittedBy: "user_b2b_nord",
     assignedTo: null,
     negotiatedPrice: status === "cloture" ? 4200 : null,
-    submitter: { nom: "Durand", prenom: "Camille", companyName: "Garage du Nord" },
+    submitter: {
+      nom: "Durand",
+      prenom: "Camille",
+      companyName: "Garage du Nord",
+    },
     vehicle: { ...baseVehicle, marque, modele },
     keys: emptyKeys,
     condition: { etat: "Bon état", naturePanne: "" },
@@ -369,7 +383,7 @@ export const MOCK_DOSSIERS: WithId<Dossier>[] = [
 export function messagesFor(dossierId: string): Message[] {
   return [
     {
-      senderId: "user_b2b",
+      senderId: "user_b2b_nord",
       senderName: "Camille Durand - Garage du Nord",
       senderRole: "b2b",
       text: "Bonjour, la moto est disponible immédiatement.",
@@ -398,14 +412,14 @@ import type { WithId } from "./fixtures";
 
 export function selectByStatus(
   dossiers: WithId<Dossier>[],
-  statuses: DossierStatus[]
+  statuses: DossierStatus[],
 ): WithId<Dossier>[] {
   return dossiers.filter((d) => statuses.includes(d.status));
 }
 
 export function filterDossiersByRegion(
   dossiers: WithId<Dossier>[],
-  region: Region | null
+  region: Region | null,
 ): WithId<Dossier>[] {
   if (region == null) return dossiers;
   return dossiers.filter((d) => d.region === region);
@@ -429,12 +443,14 @@ git commit -m "feat(data): mock fixtures and pure dossier filters"
 ## Task 3: Persisted region filter + session
 
 **Files:**
+
 - Create: `src/lib/data/region-store.ts`
 - Create: `src/lib/data/useRegionFilter.ts`
 - Create: `src/lib/data/useSession.ts`
 - Test: `src/lib/data/__tests__/useRegionFilter.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Region` from `@/lib/firestore/schema`.
 - Produces:
   - `loadRegion(): Promise<Region | null>`, `saveRegion(r: Region | null): Promise<void>` (key `"bo.regionFilter"`, value `"NORTH"|"SOUTH"|"ALL"`).
@@ -444,6 +460,7 @@ git commit -m "feat(data): mock fixtures and pure dossier filters"
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/data/__tests__/useRegionFilter.test.ts`:
+
 ```ts
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import Storage from "expo-sqlite/kv-store";
@@ -565,6 +582,7 @@ git commit -m "feat(data): persisted region filter and stub session"
 ## Task 4: Read hooks + mutation stubs
 
 **Files:**
+
 - Create: `src/lib/data/useDossiers.ts`
 - Create: `src/lib/data/useDossier.ts`
 - Create: `src/lib/data/useMessages.ts`
@@ -573,6 +591,7 @@ git commit -m "feat(data): persisted region filter and stub session"
 - Test: `src/lib/data/__tests__/useDossiers.test.ts`
 
 **Interfaces:**
+
 - Consumes: `MOCK_DOSSIERS`, `MOCK_USERS`, `messagesFor`, `WithId` (Task 2); `selectByStatus`, `filterDossiersByRegion` (Task 2); `useSession` (Task 3).
 - Produces:
   - `useDossiers(statuses: DossierStatus[], region?: Region | null): { data: WithId<Dossier>[]; loading: boolean }`
@@ -584,6 +603,7 @@ git commit -m "feat(data): persisted region filter and stub session"
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/data/__tests__/useDossiers.test.ts`:
+
 ```ts
 import { renderHook, waitFor } from "@testing-library/react-native";
 import { useDossiers } from "@/lib/data/useDossiers";
@@ -626,7 +646,7 @@ export function useDossiers(statuses: DossierStatus[], region?: Region | null) {
     const t = setTimeout(() => {
       const byStatus = selectByStatus(MOCK_DOSSIERS, statuses);
       const sorted = [...byStatus].sort(
-        (a, b) => a.createdAt.toMillis() - b.createdAt.toMillis()
+        (a, b) => a.createdAt.toMillis() - b.createdAt.toMillis(),
       );
       setData(filterDossiersByRegion(sorted, region ?? null));
       setLoading(false);
@@ -711,7 +731,7 @@ export function useDossierMutations() {
       await delay();
       console.log("[stub] update", { id, status, price });
     },
-    []
+    [],
   );
   const sendMessage = useCallback(async (id: string, text: string) => {
     await delay();
@@ -742,11 +762,13 @@ git commit -m "feat(data): read hooks and mutation stubs"
 ## Task 5: RN dossier-list components (StatusBadge, DossierCard, DossiersSection)
 
 **Files:**
+
 - Create: `src/components/ui/StatusBadge.tsx`
 - Create: `src/components/ui/DossierCard.tsx`
 - Create: `src/components/ui/DossiersSection.tsx`
 
 **Interfaces:**
+
 - Consumes: `tokens` (Task 1); `WithId`, `Dossier` types; `DossierStatus`.
 - Produces:
   - `StatusBadge({ status }: { status: DossierStatus })`
@@ -882,7 +904,10 @@ export default function DossiersSection({
     <View style={styles.section}>
       <Text style={styles.title}>{title}</Text>
       {loading ? (
-        <ActivityIndicator style={styles.spinner} color={tokens.colors.primary} />
+        <ActivityIndicator
+          style={styles.spinner}
+          color={tokens.colors.primary}
+        />
       ) : dossiers.length === 0 ? (
         <Text style={styles.empty}>{emptyMessage}</Text>
       ) : (
@@ -918,10 +943,12 @@ git commit -m "feat(ui): status badge, dossier card, dossiers section"
 ## Task 6: PhotoCarousel + ConfirmationView
 
 **Files:**
+
 - Create: `src/components/ui/PhotoCarousel.tsx`
 - Create: `src/components/ui/ConfirmationView.tsx`
 
 **Interfaces:**
+
 - Consumes: `tokens`; `expo-image`; `expo-router` `useRouter`, `Href`.
 - Produces:
   - `PhotoCarousel({ photos, status }: { photos: string[]; status?: DossierStatus })` — horizontal paged images with a `StatusBadge` overlaid top-right.
@@ -1082,10 +1109,12 @@ git commit -m "feat(ui): photo carousel and confirmation view"
 ## Task 7: Chat components (ChatThread, ChatComposer)
 
 **Files:**
+
 - Create: `src/components/ui/chat/ChatThread.tsx`
 - Create: `src/components/ui/chat/ChatComposer.tsx`
 
 **Interfaces:**
+
 - Consumes: `tokens`; `Message`, `MessageAttachment` types; `@expo/ui` `BottomSheet`, `Host`, `Button` for the attach menu.
 - Produces:
   - `ChatThread({ messages, currentUserId }: { messages: Message[]; currentUserId: string })` — scrollable bubbles; own messages right-aligned. Each bubble shows sender name, text, attachment chips, timestamp.
@@ -1317,9 +1346,11 @@ git commit -m "feat(ui): chat thread and composer"
 ## Task 8: ThirdPartyAuthButtons (RN)
 
 **Files:**
+
 - Create: `src/components/ui/ThirdPartyAuthButtons.tsx`
 
 **Interfaces:**
+
 - Consumes: `tokens`.
 - Produces: `ThirdPartyAuthButtons({ onPress }: { onPress: (provider: "google" | "apple" | "facebook") => void })` — a divider, the text "Ou continuez avec", then three buttons.
 
@@ -1364,7 +1395,11 @@ export default function ThirdPartyAuthButtons({
 
 const styles = StyleSheet.create({
   wrap: { gap: tokens.space.md },
-  dividerRow: { flexDirection: "row", alignItems: "center", gap: tokens.space.md },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: tokens.space.md,
+  },
   line: { flex: 1, height: 1, backgroundColor: tokens.colors.border },
   or: { fontSize: 13, color: tokens.colors.muted },
   btn: {
@@ -1392,10 +1427,12 @@ git commit -m "feat(ui): third-party auth buttons"
 ## Task 9: @expo/ui screens — AccountInfoList + DossierInfoList
 
 **Files:**
+
 - Create: `src/components/native/AccountInfoList.tsx`
 - Create: `src/components/native/DossierInfoList.tsx`
 
 **Interfaces:**
+
 - Consumes: `@expo/ui` `Host`, `List`, `ListItem`; `AppUser`, `Dossier` types; `WithId`.
 - Produces:
   - `AccountInfoList({ user }: { user: AppUser })` — label/value rows (Nom, Prénom, Email, Téléphone, Département, Ville; for backoffice also Région).
@@ -1485,6 +1522,7 @@ git commit -m "feat(native): account and dossier info lists"
 ## Task 10: @expo/ui forms — SettingsList, DossierManagementForm, SignInFields, AddColleagueForm
 
 **Files:**
+
 - Create: `src/lib/navigation/regionOptions.ts`
 - Create: `src/components/native/SettingsList.tsx`
 - Create: `src/components/native/DossierManagementForm.tsx`
@@ -1492,6 +1530,7 @@ git commit -m "feat(native): account and dossier info lists"
 - Create: `src/components/native/AddColleagueForm.tsx`
 
 **Interfaces:**
+
 - Consumes: `@expo/ui` `Host`, `FieldGroup`, `Picker`, `TextInput`, `Button`, `List`, `ListItem`, `useNativeState`; `Region`, `DossierStatus`; `useRegionFilter`.
 - Produces:
   - `REGION_OPTIONS: { label: string; value: "NORTH" | "SOUTH" | "ALL" }[]` and `toRegion(v): Region | null` / `fromRegion(r): "NORTH"|"SOUTH"|"ALL"`.
@@ -1554,8 +1593,16 @@ export default function SettingsList({ role, onInvite, onDelete }: Props) {
           </FieldGroup.Section>
         ) : null}
         <FieldGroup.Section>
-          <Button variant="outlined" label="Inviter un collègue" onPress={onInvite} />
-          <Button variant="text" label="Supprimer son compte" onPress={onDelete} />
+          <Button
+            variant="outlined"
+            label="Inviter un collègue"
+            onPress={onInvite}
+          />
+          <Button
+            variant="text"
+            label="Supprimer son compte"
+            onPress={onDelete}
+          />
         </FieldGroup.Section>
       </FieldGroup>
     </Host>
@@ -1566,7 +1613,14 @@ export default function SettingsList({ role, onInvite, onDelete }: Props) {
 - [ ] **Step 3: Implement `DossierManagementForm.tsx`**
 
 ```tsx
-import { Button, FieldGroup, Host, Picker, TextInput, useNativeState } from "@expo/ui";
+import {
+  Button,
+  FieldGroup,
+  Host,
+  Picker,
+  TextInput,
+  useNativeState,
+} from "@expo/ui";
 import { useState } from "react";
 import type { DossierStatus } from "@/lib/firestore/schema";
 
@@ -1588,7 +1642,9 @@ export default function DossierManagementForm({
   onSubmit,
 }: Props) {
   const [status, setStatus] = useState<DossierStatus>(initialStatus);
-  const price = useNativeState(initialPrice != null ? String(initialPrice) : "");
+  const price = useNativeState(
+    initialPrice != null ? String(initialPrice) : "",
+  );
 
   return (
     <Host matchContents>
@@ -1646,10 +1702,21 @@ export default function SignInFields({ onSubmit, onForgotPassword }: Props) {
           />
         </FieldGroup.Section>
         <FieldGroup.Section title="Mot de passe *">
-          <TextInput value={password} placeholder="Mot de passe" secureTextEntry />
+          <TextInput
+            value={password}
+            placeholder="Mot de passe"
+            secureTextEntry
+          />
         </FieldGroup.Section>
-        <Button variant="text" label="Mot de passe oublié" onPress={onForgotPassword} />
-        <Button label="Login" onPress={() => onSubmit(email.value, password.value)} />
+        <Button
+          variant="text"
+          label="Mot de passe oublié"
+          onPress={onForgotPassword}
+        />
+        <Button
+          label="Login"
+          onPress={() => onSubmit(email.value, password.value)}
+        />
       </FieldGroup>
     </Host>
   );
@@ -1681,7 +1748,10 @@ export default function AddColleagueForm({
             autoComplete="email"
           />
         </FieldGroup.Section>
-        <Button label="Envoyer l'invitation" onPress={() => onSubmit(email.value)} />
+        <Button
+          label="Envoyer l'invitation"
+          onPress={() => onSubmit(email.value)}
+        />
       </FieldGroup>
     </Host>
   );
@@ -1706,12 +1776,14 @@ git commit -m "feat(native): settings, management, signin, and invite forms"
 ## Task 11: Navigation helpers, auth route, landing wiring
 
 **Files:**
+
 - Create: `src/lib/navigation/headerOptions.ts`
 - Create: `src/app/(auth)/_layout.tsx`
 - Create: `src/app/(auth)/signin.tsx`
 - Modify: `src/app/index.tsx:15-17` (replace the `SIGNIN_ROUTE` cast with a real typed route)
 
 **Interfaces:**
+
 - Consumes: `useSession` (Task 3); `SignInFields`, `ThirdPartyAuthButtons`.
 - Produces: `headerOptions({ title, back })` → an object for `Stack.Screen` `options` honoring left(back)/middle(title); `back` defaults to `true`.
 
@@ -1796,7 +1868,10 @@ export default function SignInScreen() {
               B2B
             </Text>
             <Text
-              style={[styles.devChip, role === "backoffice" && styles.devChipOn]}
+              style={[
+                styles.devChip,
+                role === "backoffice" && styles.devChipOn,
+              ]}
               onPress={() => setRole("backoffice")}
             >
               Back-office
@@ -1848,15 +1923,19 @@ const styles = StyleSheet.create({
 - [ ] **Step 4: Update `src/app/index.tsx` to use the real route**
 
 Replace lines 15-17 (the `SIGNIN_ROUTE` comment + cast) and its usage so the landing pushes the real route. Change:
+
 ```tsx
-  // TODO: build the garagiste/concessionnaire sign-in screen at src/app/signin.tsx.
-  // Cast is required until that route exists, since typed routes only knows real files.
-  const SIGNIN_ROUTE = "/signin" as Href;
+// TODO: build the garagiste/concessionnaire sign-in screen at src/app/signin.tsx.
+// Cast is required until that route exists, since typed routes only knows real files.
+const SIGNIN_ROUTE = "/signin" as Href;
 ```
+
 to:
+
 ```tsx
-  const SIGNIN_ROUTE: Href = "/(auth)/signin";
+const SIGNIN_ROUTE: Href = "/(auth)/signin";
 ```
+
 Leave the `onPress={() => router.push(SIGNIN_ROUTE)}` as-is. Keep the `Href` import.
 
 - [ ] **Step 5: Typecheck + lint**
@@ -1880,6 +1959,7 @@ git commit -m "feat(nav): header helper, sign-in screen, landing wiring"
 ## Task 12: B2B group — layout, tabs, dashboard, account, settings, add-colleague, confirmation
 
 **Files:**
+
 - Create: `src/app/(b2b)/_layout.tsx`
 - Create: `src/app/(b2b)/(tabs)/_layout.tsx`
 - Create: `src/app/(b2b)/(tabs)/dashboard.tsx`
@@ -1889,6 +1969,7 @@ git commit -m "feat(nav): header helper, sign-in screen, landing wiring"
 - Create: `src/app/(b2b)/confirmation.tsx`
 
 **Interfaces:**
+
 - Consumes: `useSession`, `useDossiers`, `useAccount`, `useDossierMutations`; `DossiersSection`, `DossierCard`, `AccountInfoList`, `SettingsList`, `AddColleagueForm`, `ConfirmationView`; `headerOptions`.
 - Produces: the B2B navigable surface. Tab titles set via each screen's `<Stack.Screen options={headerOptions({ title, back:false })} />`.
 
@@ -1935,7 +2016,13 @@ export default function B2bTabsLayout() {
 
 ```tsx
 import { Stack, useRouter } from "expo-router";
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+} from "react-native";
 import DossierCard from "@/components/ui/DossierCard";
 import DossiersSection from "@/components/ui/DossiersSection";
 import { useDossiers } from "@/lib/data/useDossiers";
@@ -1949,13 +2036,18 @@ export default function B2bDashboard() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={headerOptions({ title: "Dashboard", back: false })} />
+      <Stack.Screen
+        options={headerOptions({ title: "Dashboard", back: false })}
+      />
 
       <TouchableOpacity
         style={styles.cta}
         activeOpacity={0.85}
         onPress={() =>
-          Alert.alert("Bientôt disponible", "Le formulaire B2B arrive prochainement.")
+          Alert.alert(
+            "Bientôt disponible",
+            "Le formulaire B2B arrive prochainement.",
+          )
         }
       >
         <Text style={styles.ctaText}>Vendre une moto</Text>
@@ -2007,7 +2099,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  ctaText: { color: tokens.colors.primaryText, fontSize: 16, fontWeight: "700" },
+  ctaText: {
+    color: tokens.colors.primaryText,
+    fontSize: 16,
+    fontWeight: "700",
+  },
 });
 ```
 
@@ -2025,7 +2121,9 @@ export default function B2bAccount() {
   const { data } = useAccount();
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={headerOptions({ title: "Mon Compte", back: false })} />
+      <Stack.Screen
+        options={headerOptions({ title: "Mon Compte", back: false })}
+      />
       <AccountInfoList user={data} />
     </ScrollView>
   );
@@ -2049,12 +2147,17 @@ export default function B2bSettings() {
   const router = useRouter();
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={headerOptions({ title: "Paramètres", back: false })} />
+      <Stack.Screen
+        options={headerOptions({ title: "Paramètres", back: false })}
+      />
       <SettingsList
         role="b2b"
         onInvite={() => router.push("/(b2b)/add-colleague")}
         onDelete={() =>
-          Alert.alert("Supprimer son compte", "Action non disponible pour le moment.")
+          Alert.alert(
+            "Supprimer son compte",
+            "Action non disponible pour le moment.",
+          )
         }
       />
     </ScrollView>
@@ -2135,11 +2238,13 @@ git commit -m "feat(b2b): tabs, dashboard, account, settings, add-colleague, con
 ## Task 13: B2B dossier detail — tabs, info, chat
 
 **Files:**
+
 - Create: `src/app/(b2b)/dossier/[id]/_layout.tsx`
 - Create: `src/app/(b2b)/dossier/[id]/index.tsx`
 - Create: `src/app/(b2b)/dossier/[id]/chat.tsx`
 
 **Interfaces:**
+
 - Consumes: `useDossier`, `useMessages`, `useSession`, `useDossierMutations`; `PhotoCarousel`, `DossierInfoList`, `ChatThread`, `ChatComposer`; `headerOptions`.
 - Produces: the B2B dossier-level surface with a 2-tab native bar (Dossier · Messages). Each tab sets the parent Stack header title via `<Stack.Screen>`.
 
@@ -2168,7 +2273,13 @@ export default function B2bDossierTabs() {
 
 ```tsx
 import { Stack, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import DossierInfoList from "@/components/native/DossierInfoList";
 import PhotoCarousel from "@/components/ui/PhotoCarousel";
 import { useDossier } from "@/lib/data/useDossier";
@@ -2183,7 +2294,10 @@ export default function B2bDossierDetail() {
     <ScrollView contentContainerStyle={styles.content}>
       <Stack.Screen options={headerOptions({ title: "Dossier" })} />
       {loading || !data ? (
-        <ActivityIndicator style={styles.spinner} color={tokens.colors.primary} />
+        <ActivityIndicator
+          style={styles.spinner}
+          color={tokens.colors.primary}
+        />
       ) : (
         <>
           <PhotoCarousel photos={data.photos} status={data.status} />
@@ -2261,6 +2375,7 @@ git commit -m "feat(b2b): dossier detail and chat tabs"
 ## Task 14: Back-office group — layout, tabs, dashboard (region-filtered), account, settings, confirmation
 
 **Files:**
+
 - Create: `src/app/(backoffice)/_layout.tsx`
 - Create: `src/app/(backoffice)/(tabs)/_layout.tsx`
 - Create: `src/app/(backoffice)/(tabs)/dashboard.tsx`
@@ -2269,6 +2384,7 @@ git commit -m "feat(b2b): dossier detail and chat tabs"
 - Create: `src/app/(backoffice)/confirmation.tsx`
 
 **Interfaces:**
+
 - Consumes: same hooks/components as Task 12 plus `useRegionFilter`; `SettingsList` BO variant.
 - Produces: BO navigable surface with 3 dashboard sections filtered by the persisted region.
 
@@ -2338,7 +2454,9 @@ export default function BackofficeDashboard() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={headerOptions({ title: "Dashboard", back: false })} />
+      <Stack.Screen
+        options={headerOptions({ title: "Dashboard", back: false })}
+      />
       <DossiersSection
         title="Dossiers à traiter"
         dossiers={aTraiter.data}
@@ -2374,6 +2492,7 @@ const styles = StyleSheet.create({
 - [ ] **Step 4: Implement `(backoffice)/(tabs)/account.tsx`**
 
 Same as `(b2b)/(tabs)/account.tsx` (Task 12 Step 4) but the component function name is `BackofficeAccount`. Full code:
+
 ```tsx
 import { Stack } from "expo-router";
 import { ScrollView, StyleSheet } from "react-native";
@@ -2386,7 +2505,9 @@ export default function BackofficeAccount() {
   const { data } = useAccount();
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={headerOptions({ title: "Mon Compte", back: false })} />
+      <Stack.Screen
+        options={headerOptions({ title: "Mon Compte", back: false })}
+      />
       <AccountInfoList user={data} />
     </ScrollView>
   );
@@ -2407,14 +2528,22 @@ import { tokens } from "@/theme/tokens";
 export default function BackofficeSettings() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={headerOptions({ title: "Paramètres", back: false })} />
+      <Stack.Screen
+        options={headerOptions({ title: "Paramètres", back: false })}
+      />
       <SettingsList
         role="backoffice"
         onInvite={() =>
-          Alert.alert("Inviter un collègue", "Action non disponible pour le moment.")
+          Alert.alert(
+            "Inviter un collègue",
+            "Action non disponible pour le moment.",
+          )
         }
         onDelete={() =>
-          Alert.alert("Supprimer son compte", "Action non disponible pour le moment.")
+          Alert.alert(
+            "Supprimer son compte",
+            "Action non disponible pour le moment.",
+          )
         }
       />
     </ScrollView>
@@ -2466,12 +2595,14 @@ git commit -m "feat(backoffice): tabs, region-filtered dashboard, account, setti
 ## Task 15: Back-office dossier detail — tabs, info, chat, management
 
 **Files:**
+
 - Create: `src/app/(backoffice)/dossier/[id]/_layout.tsx`
 - Create: `src/app/(backoffice)/dossier/[id]/index.tsx`
 - Create: `src/app/(backoffice)/dossier/[id]/chat.tsx`
 - Create: `src/app/(backoffice)/dossier/[id]/management.tsx`
 
 **Interfaces:**
+
 - Consumes: `useDossier`, `useMessages`, `useSession`, `useDossierMutations`; `PhotoCarousel`, `DossierInfoList`, `ChatThread`, `ChatComposer`, `DossierManagementForm`; `headerOptions`.
 - Produces: BO dossier surface with a 3-tab native bar (Dossier · Messages · Statut dossier).
 
@@ -2503,9 +2634,16 @@ export default function BackofficeDossierTabs() {
 - [ ] **Step 2: Implement `(backoffice)/dossier/[id]/index.tsx`**
 
 Identical body to Task 13 Step 2 but with `export default function BackofficeDossierDetail()` and header title "Dossier". Full code:
+
 ```tsx
 import { Stack, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import DossierInfoList from "@/components/native/DossierInfoList";
 import PhotoCarousel from "@/components/ui/PhotoCarousel";
 import { useDossier } from "@/lib/data/useDossier";
@@ -2519,7 +2657,10 @@ export default function BackofficeDossierDetail() {
     <ScrollView contentContainerStyle={styles.content}>
       <Stack.Screen options={headerOptions({ title: "Dossier" })} />
       {loading || !data ? (
-        <ActivityIndicator style={styles.spinner} color={tokens.colors.primary} />
+        <ActivityIndicator
+          style={styles.spinner}
+          color={tokens.colors.primary}
+        />
       ) : (
         <>
           <PhotoCarousel photos={data.photos} status={data.status} />
@@ -2546,6 +2687,7 @@ const styles = StyleSheet.create({
 - [ ] **Step 3: Implement `(backoffice)/dossier/[id]/chat.tsx`**
 
 Identical to Task 13 Step 3 but `export default function BackofficeDossierChat()`. Full code:
+
 ```tsx
 import { Stack, useLocalSearchParams } from "expo-router";
 import { KeyboardAvoidingView, Platform, View } from "react-native";
@@ -2597,7 +2739,10 @@ export default function BackofficeDossierManagement() {
     <ScrollView contentContainerStyle={styles.content}>
       <Stack.Screen options={headerOptions({ title: "Statut dossier" })} />
       {loading || !data ? (
-        <ActivityIndicator style={styles.spinner} color={tokens.colors.primary} />
+        <ActivityIndicator
+          style={styles.spinner}
+          color={tokens.colors.primary}
+        />
       ) : (
         <DossierManagementForm
           initialStatus={data.status}
@@ -2639,6 +2784,7 @@ git commit -m "feat(backoffice): dossier detail, chat, and management tabs"
 ## Task 16: Spec sync + full verification
 
 **Files:**
+
 - Modify: `docs/specs/component-navbar.md`
 - Modify: `docs/specs/component-tab-bar.md`
 
@@ -2647,6 +2793,7 @@ git commit -m "feat(backoffice): dossier detail, chat, and management tabs"
 - [ ] **Step 1: Update `docs/specs/component-navbar.md`**
 
 Replace the file's body so it describes the native implementation. New content:
+
 ```markdown
 # Navbar (top header)
 
@@ -2664,6 +2811,7 @@ Each screen sets its header via `<Stack.Screen options={headerOptions({ title, b
 - [ ] **Step 2: Update `docs/specs/component-tab-bar.md`**
 
 Replace the file's body:
+
 ```markdown
 # Tab bar (bottom)
 
@@ -2672,10 +2820,12 @@ native bottom tab bar (UITabBar on iOS, BottomNavigation on Android). Defined pe
 in a `(tabs)/_layout.tsx` or `dossier/[id]/_layout.tsx`.
 
 Each tab is a `<NativeTabs.Trigger name="<route>">` with:
+
 - `<NativeTabs.Trigger.Icon sf="<SF Symbol>" md="<Material icon>" />` (cross-platform)
 - `<NativeTabs.Trigger.Label>` (title)
 
 Contexts:
+
 - App level (B2B & BO): Dashboard · Mon compte · Paramètres.
 - Dossier level (B2B): Dossier · Messages.
 - Dossier level (BO): Dossier · Messages · Statut dossier.
@@ -2694,6 +2844,7 @@ Expected: no errors.
 - [ ] **Step 5: Full manual smoke (both roles)**
 
 Run `npx expo start`, then verify on a simulator, end to end:
+
 1. Landing → garagiste → sign-in card renders ("Bienvenue !", email/password, "Mot de passe oublié", "Login", divider, 3 third-party buttons).
 2. B2B: dashboard (2 sections) → dossier (carousel + info) → chat (bubbles + composer + attach sheet); account; settings → invite → confirmation.
 3. Back-office (DEV chip): dashboard (3 sections, company-prefixed cards) → dossier (3 tabs incl. Statut dossier) → management update → confirmation; settings region picker filters the dashboard and **persists across an app restart**.

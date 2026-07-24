@@ -39,18 +39,18 @@ async function main() {
     status: "active",
     departement: "75 - Paris",
     region: "NORTH",
-    createdBy: "user_b2b",
+    createdBy: "user_b2b_nord",
     createdByName: "Camille Durand",
     validatedAt: now,
     createdAt: now,
   });
 
-  await upsertUser("user_b2b", "b2b@garage-nord.fr", "password123", {
+  await upsertUser("user_b2b_nord", "b2b@garage-nord.fr", "password123", {
     role: "b2b",
     companyId: "comp_nord",
     status: "active",
   });
-  await db.doc(`users/user_b2b`).set({
+  await db.doc(`users/user_b2b_nord`).set({
     role: "b2b", companyId: "comp_nord", region: null,
     nom: "Durand", prenom: "Camille", email: "b2b@garage-nord.fr",
     telephone: "0601020304", departement: "75 - Paris", ville: "Paris",
@@ -87,7 +87,7 @@ async function main() {
     ["dos_2", "SOUTH", "Kawasaki", "Z650", "en_cours"],
   ] as const) {
     await db.doc(`dossiers/${id}`).set({
-      status, region, companyId: "comp_nord", submittedBy: "user_b2b",
+      status, region, companyId: "comp_nord", submittedBy: "user_b2b_nord",
       negotiatedPrice: null,
       submitter: { nom: "Durand", prenom: "Camille", companyName: "Garage du Nord" },
       vehicle: {
@@ -151,7 +151,7 @@ async function main() {
   });
 
   await db.doc(`dossiers/dos_1/messages/msg_1`).set({
-    senderId: "user_b2b",
+    senderId: "user_b2b_nord",
     senderName: "Camille Durand - Garage du Nord",
     senderRole: "b2b",
     text: "Bonjour, la moto est disponible immédiatement.",
@@ -184,7 +184,7 @@ async function main() {
   });
 
   console.log(
-    "Seed complete: user_b2b / user_b2b_sud / user_bo / user_pending / user_pending_owner (password123).",
+    "Seed complete: user_b2b_nord / user_b2b_sud / user_bo / user_pending / user_pending_owner (password123).",
   );
   // The Emulator UI opens on `(default)`, which this project never writes to.
   console.log(`Data is in "${DB_ID}": http://localhost:4000/firestore/${DB_ID}/data`);
