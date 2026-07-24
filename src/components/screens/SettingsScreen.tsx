@@ -1,7 +1,6 @@
 import SettingsList from "@/components/form/SettingsList";
 import type { UserRole } from "@/lib/firestore/schema";
-import { tokens } from "@/theme/tokens";
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView } from "react-native";
 
 interface Props {
   role: UserRole;
@@ -15,7 +14,7 @@ export default function SettingsScreen({
   onManageCompanies,
 }: Props) {
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView>
       <SettingsList
         role={role}
         onInvite={onInvite}
@@ -24,5 +23,3 @@ export default function SettingsScreen({
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({ content: { padding: tokens.space.lg } });

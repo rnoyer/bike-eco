@@ -1,6 +1,7 @@
 import Dropdown from "@/components/form/Dropdown";
 import Button from "@/components/ui/Button";
 import Section from "@/components/ui/Section";
+import SectionWrapper from "@/components/ui/SectionWrapper";
 import { useRegionFilter } from "@/lib/data/useRegionFilter";
 import type { UserRole } from "@/lib/firestore/schema";
 import {
@@ -8,8 +9,6 @@ import {
   fromRegion,
   toRegion,
 } from "@/lib/navigation/regionOptions";
-import { tokens } from "@/theme/tokens";
-import { StyleSheet, View } from "react-native";
 
 const REGION_LABELS = REGION_OPTIONS.map((o) => o.label);
 
@@ -29,19 +28,17 @@ export default function SettingsList({
     REGION_OPTIONS.find((o) => o.value === fromRegion(region))?.label ?? null;
 
   return (
-    <View style={styles.container}>
+    <SectionWrapper>
       {role === "backoffice" ? (
-        <>
-          <Dropdown
-            label="Région gérée"
-            options={REGION_LABELS}
-            value={currentLabel}
-            onChange={(label) => {
-              const option = REGION_OPTIONS.find((o) => o.label === label);
-              if (option) setRegion(toRegion(option.value));
-            }}
-          />
-        </>
+        <Dropdown
+          label="Région gérée"
+          options={REGION_LABELS}
+          value={currentLabel}
+          onChange={(label) => {
+            const option = REGION_OPTIONS.find((o) => o.label === label);
+            if (option) setRegion(toRegion(option.value));
+          }}
+        />
       ) : null}
       {role === "backoffice" ? (
         <Section title="Gestion des entreprises">
@@ -59,10 +56,6 @@ export default function SettingsList({
           onPress={onInvite}
         />
       </Section>
-    </View>
+    </SectionWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: tokens.space.md },
-});
