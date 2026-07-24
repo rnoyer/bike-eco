@@ -1,3 +1,4 @@
+import { tokens } from "@/theme/tokens";
 import {
   StyleSheet,
   Text,
@@ -5,7 +6,6 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { tokens } from "@/theme/tokens";
 
 type Variant = "primary" | "outlined" | "text";
 
@@ -39,7 +39,9 @@ export default function Button({
       onPress={disabled ? undefined : onPress}
       activeOpacity={disabled ? 1 : 0.8}
     >
-      <Text style={[styles.label, variant === "primary" && styles.labelPrimary]}>
+      <Text
+        style={[styles.label, variant === "primary" && styles.labelPrimary]}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -59,6 +61,7 @@ const styles = StyleSheet.create({
   outlined: {
     height: tokens.button.height,
     borderWidth: 1.5,
+    backgroundColor: tokens.colors.surfaceAlt,
     borderColor: tokens.colors.border,
   },
   text: {
