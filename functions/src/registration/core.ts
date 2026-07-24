@@ -1,4 +1,5 @@
 import { generateInviteCode, hashInviteCode, INVITE_TTL_MS } from "./inviteCode";
+import { resolveRegion } from "../regions";
 import type {
   AcceptInviteInput,
   RegisterCompanyInput,
@@ -76,8 +77,16 @@ export async function registerCompanyCore(
     email = authEmail;
   }
   const companyId = deps.newCompanyId();
+  const companyDepartement = input.companyDepartement ?? input.departement;
   await deps.writeCompany(companyId, {
-    siret: input.siret, name: input.companyName, status: "pending", createdBy: uid,
+    siret: input.siret,
+    name: input.companyName,
+    status: "pending",
+    departement: companyDepartement,
+    region: resolveRegion(companyDepartement),
+    createdBy: uid,
+    createdByName: `${input.prenom} ${input.nom}`,
+    validatedAt: null,
   });
   await deps.writeUser(uid, profileDoc(input, email, companyId, "pending"));
   await deps.setClaims(uid, { role: "b2b", companyId, status: "pending" });

@@ -38,7 +38,15 @@ const companyInput = {
 test("registerCompany (password) creates pending company+user, pins claims, emails applicant", async () => {
   const d = fakeDeps();
   await registerCompanyCore(companyInput, null, null, d);
-  expect(d.calls.companies["comp_new"]).toMatchObject({ siret: "12345678901234", status: "pending", createdBy: "uid_new" });
+  expect(d.calls.companies["comp_new"]).toMatchObject({
+    siret: "12345678901234",
+    status: "pending",
+    createdBy: "uid_new",
+    departement: "75 - Paris",
+    region: "NORTH",
+    createdByName: "Camille Durand",
+    validatedAt: null,
+  });
   expect(d.calls.users["uid_new"]).toMatchObject({ role: "b2b", companyId: "comp_new", status: "pending" });
   expect(d.calls.claims).toEqual({ uid: "uid_new", claims: { role: "b2b", companyId: "comp_new", status: "pending" } });
   expect(d.calls.emails).toEqual([{ kind: "applicant", to: "c@x.fr", name: "Garage X" }]);

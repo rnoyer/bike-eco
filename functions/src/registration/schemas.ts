@@ -24,6 +24,9 @@ export const registerCompanySchema = z
   .object({
     siret: z.string().regex(/^\d{14}$/),
     companyName: z.string().trim().min(1),
+    // The company's own département (registration step 1). Optional so older
+    // clients still register — core falls back to the user's `departement`.
+    companyDepartement: z.string().trim().min(1).optional(),
     ...profile,
   })
   .and(registerCredential);
