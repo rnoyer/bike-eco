@@ -7,8 +7,6 @@ const valid = {
   nom: "Doe",
   prenom: "Jane",
   telephone: "0612345678",
-  departement: "13 - Bouches du Rhone",
-  ville: "Marseille",
 };
 
 describe("b2bInvitedRegistrationSchema", () => {

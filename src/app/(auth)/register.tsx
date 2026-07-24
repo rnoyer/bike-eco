@@ -41,11 +41,11 @@ export default function RegisterScreen() {
               method: "google",
               siret: values.siret,
               companyName: values.companyName,
+              companyDepartement: values.companyDepartement,
+              companyVille: values.companyVille,
               nom: values.nom,
               prenom: values.prenom,
               telephone: values.telephone,
-              departement: values.departement,
-              ville: values.ville,
             });
           } else {
             // Password mode: creates the Auth user server-side; the client

@@ -20,7 +20,7 @@ export const B2B_INVITED_REGISTRATION_STEPS: InvitedStep[] = [
     progress: 66,
     title: "Vos coordonnées",
     subtitle: "Informations relative à votre compte utilisateur",
-    fields: ["nom", "prenom", "telephone", "departement", "ville"],
+    fields: ["nom", "prenom", "telephone"],
     render: () => <CoordonneesFields />,
   },
 ];

@@ -52,12 +52,12 @@ export function regionForDepartement(departement: string): Region {
 export function toDossierPayload(
   values: B2bSubmissionForm,
   session: SessionUser,
-  company: { id: string; name: string },
+  company: { id: string; name: string; departement: string },
   photos: { urls: string[]; thumbnailUrl: string | null },
 ): DossierWrite {
   return {
     status: "a_traiter",
-    region: regionForDepartement(session.departement),
+    region: regionForDepartement(company.departement),
     companyId: company.id,
     submittedBy: session.id,
     negotiatedPrice: null,

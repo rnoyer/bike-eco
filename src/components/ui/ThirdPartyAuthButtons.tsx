@@ -1,12 +1,12 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { tokens } from "@/theme/tokens";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Provider = "google" | "apple" | "facebook";
 
 const PROVIDERS: { id: Provider; label: string; enabled: boolean }[] = [
   { id: "google", label: "Google", enabled: true },
-  { id: "apple", label: "Apple — bientôt disponible", enabled: false },
-  { id: "facebook", label: "Facebook — bientôt disponible", enabled: false },
+  // { id: "apple", label: "Apple — bientôt disponible", enabled: false },
+  // { id: "facebook", label: "Facebook — bientôt disponible", enabled: false },
 ];
 
 export default function ThirdPartyAuthButtons({
@@ -38,7 +38,11 @@ export default function ThirdPartyAuthButtons({
 
 const styles = StyleSheet.create({
   wrap: { gap: tokens.space.md },
-  dividerRow: { flexDirection: "row", alignItems: "center", gap: tokens.space.md },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: tokens.space.md,
+  },
   line: { flex: 1, height: 1, backgroundColor: tokens.colors.border },
   or: { fontSize: 13, color: tokens.colors.muted },
   btn: {

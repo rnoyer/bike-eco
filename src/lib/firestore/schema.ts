@@ -19,7 +19,9 @@ export type OuiNon = "oui" | "non";
 export type Region = "NORTH" | "SOUTH";
 export type UserRole = "b2b" | "backoffice";
 
-export const COMPANY_STATUSES = ["pending", "active", "rejected"] as const;
+// Decline hard-deletes the applicant (frees the SIRET), so a company only ever
+// exists in `pending` or `active` — there is no persisted `rejected` state.
+export const COMPANY_STATUSES = ["pending", "active"] as const;
 export type CompanyStatus = (typeof COMPANY_STATUSES)[number];
 
 export const USER_STATUSES = ["pending", "active"] as const;
@@ -54,7 +56,12 @@ export interface Company {
   siret: string; // 14 digits, immutable
   name: string;
   status: CompanyStatus; // manual validation by the Bike-eco team
+  departement: string; // "33 - Gironde" — captured at registration
+  ville: string; // company city
+  region: Region; // derived from departement; drives back-office routing
   createdBy: string; // uid of the first registrant
+  createdByName: string; // denormalized "prénom nom" for the company card subtitle
+  validatedAt: Timestamp | null; // set on approve; null while pending
   createdAt: Timestamp;
 }
 
@@ -64,13 +71,10 @@ export interface Company {
 export interface AppUser {
   role: UserRole;
   companyId: string | null; // b2b only
-  region: Region | null; // backoffice routing
   nom: string;
   prenom: string;
   email: string; // PII — owner + team read only
   telephone: string; // PII
-  departement: string;
-  ville: string;
   status: UserStatus; // pending until the company is validated
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -140,7 +144,7 @@ export interface DossierPricing {
 
 export interface Dossier {
   status: DossierStatus;
-  region: Region; // initially derived from the submitter's departement; reassignable by the back-office (page-dossier-management)
+  region: Region; // initially derived from the submitter's company departement; reassignable by the back-office (page-dossier-management)
   companyId: string;
   submittedBy: string; // uid
   negotiatedPrice: number | null; // back-office deal outcome (page-dossier-management)

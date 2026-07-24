@@ -7,6 +7,7 @@ export default function BackofficeDashboard() {
     <DashboardScreen
       role="backoffice"
       onOpenDossier={(id) => router.push(`/(backoffice)/dossier/${id}`)}
+      onOpenCompanies={() => router.push("/(backoffice)/companies")}
     />
   );
 }

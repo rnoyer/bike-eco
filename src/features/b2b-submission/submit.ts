@@ -59,6 +59,7 @@ export async function submitB2bSubmission(
     // Reachability gate — also the source of the company name (see the note above).
     const companySnap = await getDocFromServer(companyDoc(companyId));
     const companyName = companySnap.data()?.name ?? "";
+    const companyDepartement = companySnap.data()?.departement ?? "";
 
     await cleanUpOnFailure(async (track) => {
       const thumbPath = dossierThumbnailPath(companyId, ref.id);
@@ -86,7 +87,11 @@ export async function submitB2bSubmission(
             ...toDossierPayload(
               values,
               session,
-              { id: companyId, name: companyName },
+              {
+                id: companyId,
+                name: companyName,
+                departement: companyDepartement,
+              },
               { urls, thumbnailUrl },
             ),
             createdAt: serverTimestamp(),

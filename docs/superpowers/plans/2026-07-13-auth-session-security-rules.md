@@ -28,11 +28,13 @@
 These require Firebase/Google console access, secret files, and a native rebuild on your machine. Do **Section A** before Task 2 (emulator dev), and **Section B/C** before Task 9 (Google).
 
 ### A. Firebase console — enable providers _(before Task 2)_
+
 1. Firebase console → project **bike-eco-43a84** → **Authentication → Sign-in method**.
 2. Enable **Email/Password**.
 3. Enable **Google** (pick a support email). Leave it enabled — Task 9 uses it, verified live.
 
 ### B. Google OAuth config files & client IDs _(before Task 9)_
+
 1. Firebase console → **Project settings → Your apps**. Ensure an **Android app** (`com.bikeeco.app`) and an **iOS app** (`com.bikeeco.app`) exist; create them if missing. This identifier must match `expo.android.package` / `expo.ios.bundleIdentifier` in `app.json` exactly — Gradle's Google Services plugin fails the build ("No matching client found for package name") when it doesn't.
 2. **Android:** add your debug + release **SHA-1** fingerprints (Project settings → Android app → "Add fingerprint"). Get debug SHA-1 with:
    ```sh
@@ -49,15 +51,20 @@ These require Firebase/Google console access, secret files, and a native rebuild
    For **web** Google sign-in, also add `<web client id>`'s authorized JavaScript origins for your dev host (e.g. `http://localhost:8081`) in Google Cloud console → Credentials.
 
 ### C. Dev-client rebuild for the Google native module _(after Task 9's code, before verifying Google on device)_
+
 The google-signin native module links at build time. After Task 9 edits `app.json`:
+
 ```sh
 npx expo prebuild --clean
 npx expo run:ios      # or: npx expo run:android
 ```
+
 Run this on a machine with Xcode / Android Studio configured (see Expo "Local app development"). Email/password sign-in and everything else in this slice work in the existing dev client **without** this rebuild — only Google needs it.
 
 ### D. Firebase CLI (used by emulators + rules tests + seed)
+
 Confirm the CLI is available (the repo already uses it for functions):
+
 ```sh
 npx -y firebase-tools@latest --version
 ```
@@ -67,6 +74,7 @@ npx -y firebase-tools@latest --version
 ## File map
 
 **Create:**
+
 - `firebase.core.ts` (root) — platform-neutral: `app`, `db`, `storage`, emulator flag/host helpers, Firestore+Storage emulator connect.
 - `firebaseConfig.web.ts` (root) — web `auth` via `getAuth`, re-exports core.
 - `src/lib/auth/authErrors.ts` — `mapAuthError(code)`; pure.
@@ -84,6 +92,7 @@ npx -y firebase-tools@latest --version
 - `scripts/seed.ts` — Admin SDK emulator seed.
 
 **Modify:**
+
 - `firebaseConfig.ts` (root) — native `auth` via `initializeAuth` + persistence; re-export core.
 - `firebase.json` — add `firestore`/`storage`/emulator sections.
 - `src/lib/firestore/collections.ts` — export `WithId<T>` (relocated home).
@@ -102,25 +111,30 @@ npx -y firebase-tools@latest --version
 ## Task 1: Platform-split Firebase Auth init + emulator wiring
 
 **Files:**
+
 - Create: `firebase.core.ts`, `firebaseConfig.web.ts`
 - Modify: `firebaseConfig.ts`
 - Test: `firebase.core.test.ts`
 
 **Interfaces:**
+
 - Consumes: existing `app`/`db`/`storage` config values.
 - Produces: `auth` (Firebase `Auth`), `app`, `db`, `storage` exported from `firebaseConfig` (native) and `firebaseConfig.web` (web); `emulatorHost(os: string): string` and `USE_EMULATORS: boolean` from `firebase.core.ts`.
 
 - [ ] **Step 1: Install AsyncStorage**
 
 Run:
+
 ```sh
 npx expo install @react-native-async-storage/async-storage
 ```
+
 Expected: package added to `package.json` dependencies.
 
 - [ ] **Step 2: Write the failing test for the emulator host resolver**
 
 Create `firebase.core.test.ts`:
+
 ```ts
 import { expect, test } from "@jest/globals";
 import { emulatorHost } from "./firebase.core";
@@ -194,6 +208,7 @@ Expected: PASS (2 tests).
 - [ ] **Step 6: Rewrite `firebaseConfig.ts` (native) to add `auth`**
 
 Replace the whole file with:
+
 ```ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -278,22 +293,25 @@ git commit -m "feat(auth): add platform-split Firebase Auth init + emulator wiri
 Activate the **firebase-firestore** and **firebase-security-rules-auditor** skills before writing rules; audit the final `firestore.rules` with the auditor skill.
 
 **Files:**
+
 - Create: `firestore.rules`, `storage.rules`, `firestore.indexes.json`, `src/lib/firestore/__tests__/rules.test.ts`
 - Modify: `firebase.json`, `package.json`
 
 **Interfaces:**
+
 - Consumes: the `bike-eco-db` database name; claim shape `{ role, companyId, region, status }`.
 - Produces: deployed-ready rules; a `test:rules` npm script.
 
 - [ ] **Step 1: Add the emulator + rules sections to `firebase.json`**
 
 Add these keys alongside the existing `functions`/`emulators` config (merge, don't replace `functions`):
+
 ```jsonc
 {
   "firestore": {
     "database": "bike-eco-db",
     "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
+    "indexes": "firestore.indexes.json",
   },
   "storage": { "rules": "storage.rules" },
   "emulators": {
@@ -302,8 +320,8 @@ Add these keys alongside the existing `functions`/`emulators` config (merge, don
     "firestore": { "port": 8080 },
     "storage": { "port": 9199 },
     "ui": { "enabled": true },
-    "singleProjectMode": true
-  }
+    "singleProjectMode": true,
+  },
 }
 ```
 
@@ -378,10 +396,13 @@ service cloud.firestore {
 - [ ] **Step 5: Install the rules test harness + add scripts**
 
 Run:
+
 ```sh
 npm install --save-dev @firebase/rules-unit-testing
 ```
+
 Add to `package.json` `scripts` (the wrapper boots the firestore emulator around the test):
+
 ```json
 "test:rules": "firebase emulators:exec --only firestore --project bike-eco-43a84 \"jest --runTestsByPath src/lib/firestore/__tests__/rules.test.ts\""
 ```
@@ -389,16 +410,11 @@ Add to `package.json` `scripts` (the wrapper boots the firestore emulator around
 - [ ] **Step 6: Write the rules tests**
 
 Create `src/lib/firestore/__tests__/rules.test.ts`:
+
 ```ts
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import {
-  afterAll,
-  beforeAll,
-  describe,
-  expect,
-  test,
-} from "@jest/globals";
+import { afterAll, beforeAll, describe, expect, test } from "@jest/globals";
 import {
   assertFails,
   assertSucceeds,
@@ -416,7 +432,10 @@ beforeAll(async () => {
   env = await initializeTestEnvironment({
     projectId: "bike-eco-43a84",
     firestore: {
-      rules: readFileSync(resolve(__dirname, "../../../../firestore.rules"), "utf8"),
+      rules: readFileSync(
+        resolve(__dirname, "../../../../firestore.rules"),
+        "utf8",
+      ),
     },
   });
   // Seed docs bypassing rules.
@@ -424,7 +443,7 @@ beforeAll(async () => {
     const db = ctx.firestore();
     await setDoc(doc(db, "dossiers/dos_1"), { companyId: "comp_1" });
     await setDoc(doc(db, "dossiers/dos_2"), { companyId: "comp_2" });
-    await setDoc(doc(db, "users/user_b2b"), { nom: "Durand" });
+    await setDoc(doc(db, "users/user_b2b_nord"), { nom: "Durand" });
   });
 });
 
@@ -436,7 +455,7 @@ test("unauthenticated reads are denied", async () => {
 });
 
 test("a b2b user reads only their company's dossiers", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertSucceeds(getDoc(doc(db, "dossiers/dos_1")));
   await assertFails(getDoc(doc(db, "dossiers/dos_2")));
 });
@@ -447,9 +466,13 @@ test("backoffice reads any dossier", async () => {
 });
 
 test("owner cannot escalate their own claims fields", async () => {
-  const db = env.authenticatedContext("user_b2b", b2bClaims).firestore();
-  await assertSucceeds(updateDoc(doc(db, "users/user_b2b"), { ville: "Lyon" }));
-  await assertFails(updateDoc(doc(db, "users/user_b2b"), { role: "backoffice" }));
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertSucceeds(
+    updateDoc(doc(db, "users/user_b2b_nord"), { ville: "Lyon" }),
+  );
+  await assertFails(
+    updateDoc(doc(db, "users/user_b2b_nord"), { role: "backoffice" }),
+  );
 });
 ```
 
@@ -457,6 +480,7 @@ test("owner cannot escalate their own claims fields", async () => {
 
 Run: `npm run test:rules`
 Expected: PASS (4 tests). The emulator boots, runs, and tears down.
+
 > If the emulator can't bind the named `bike-eco-db` for unit-testing, the rules
 > logic is database-agnostic — tests use the emulator's default instance; the
 > `firebase.json` `firestore.database` binds the same rules file to `bike-eco-db`
@@ -479,20 +503,25 @@ git commit -m "feat(security): default-deny claim-scoped Firestore + Storage rul
 ## Task 3: Admin SDK seed script
 
 **Files:**
+
 - Create: `scripts/seed.ts`
 - Modify: `package.json`
 
 **Interfaces:**
+
 - Consumes: `firebase-admin` (already in `functions/node_modules`; add as a root devDependency for standalone run). The `AppUser`/`Company`/`Dossier` shapes from `src/lib/firestore/schema.ts`.
 - Produces: `npm run seed` → creates auth users with claims + matching Firestore docs against the emulators.
 
 - [ ] **Step 1: Add firebase-admin + ts runner devDeps and a script**
 
 Run:
+
 ```sh
 npm install --save-dev firebase-admin tsx
 ```
+
 Add to `package.json` `scripts`:
+
 ```json
 "seed": "FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 tsx scripts/seed.ts"
 ```
@@ -539,20 +568,28 @@ async function main() {
     siret: "12345678900011",
     name: "Garage du Nord",
     status: "active",
-    createdBy: "user_b2b",
+    createdBy: "user_b2b_nord",
     createdAt: now,
   });
 
-  await upsertUser("user_b2b", "b2b@garage-nord.fr", "password123", {
+  await upsertUser("user_b2b_nord", "b2b@garage-nord.fr", "password123", {
     role: "b2b",
     companyId: "comp_nord",
     status: "active",
   });
-  await db.doc(`users/user_b2b`).set({
-    role: "b2b", companyId: "comp_nord", region: null,
-    nom: "Durand", prenom: "Camille", email: "b2b@garage-nord.fr",
-    telephone: "0601020304", departement: "75 - Paris", ville: "Paris",
-    status: "active", createdAt: now, updatedAt: now,
+  await db.doc(`users/user_b2b_nord`).set({
+    role: "b2b",
+    companyId: "comp_nord",
+    region: null,
+    nom: "Durand",
+    prenom: "Camille",
+    email: "b2b@garage-nord.fr",
+    telephone: "0601020304",
+    departement: "75 - Paris",
+    ville: "Paris",
+    status: "active",
+    createdAt: now,
+    updatedAt: now,
   });
 
   await upsertUser("user_bo", "bo@bike-eco.fr", "password123", {
@@ -562,10 +599,18 @@ async function main() {
     status: "active",
   });
   await db.doc(`users/user_bo`).set({
-    role: "backoffice", companyId: null, region: "NORTH",
-    nom: "Martin", prenom: "Alex", email: "bo@bike-eco.fr",
-    telephone: "0605060708", departement: "45 - Loiret", ville: "Montargis",
-    status: "active", createdAt: now, updatedAt: now,
+    role: "backoffice",
+    companyId: null,
+    region: "NORTH",
+    nom: "Martin",
+    prenom: "Alex",
+    email: "bo@bike-eco.fr",
+    telephone: "0605060708",
+    departement: "45 - Loiret",
+    ville: "Montargis",
+    status: "active",
+    createdAt: now,
+    updatedAt: now,
   });
 
   await upsertUser("user_pending", "pending@garage-nord.fr", "password123", {
@@ -574,10 +619,18 @@ async function main() {
     status: "pending",
   });
   await db.doc(`users/user_pending`).set({
-    role: "b2b", companyId: "comp_nord", region: null,
-    nom: "Petit", prenom: "Sam", email: "pending@garage-nord.fr",
-    telephone: "0611121314", departement: "75 - Paris", ville: "Paris",
-    status: "pending", createdAt: now, updatedAt: now,
+    role: "b2b",
+    companyId: "comp_nord",
+    region: null,
+    nom: "Petit",
+    prenom: "Sam",
+    email: "pending@garage-nord.fr",
+    telephone: "0611121314",
+    departement: "75 - Paris",
+    ville: "Paris",
+    status: "pending",
+    createdAt: now,
+    updatedAt: now,
   });
 
   for (const [id, region, marque, modele, status] of [
@@ -585,37 +638,73 @@ async function main() {
     ["dos_2", "SOUTH", "Kawasaki", "Z650", "en_cours"],
   ] as const) {
     await db.doc(`dossiers/${id}`).set({
-      status, region, companyId: "comp_nord", submittedBy: "user_b2b",
-      assignedTo: null, negotiatedPrice: null,
-      submitter: { nom: "Durand", prenom: "Camille", companyName: "Garage du Nord" },
-      vehicle: {
-        electrique: "non", materiel: [], marque, modele,
-        cylindree: 689, annee: 2019, kilometrage: 18450, accessoires: "",
+      status,
+      region,
+      companyId: "comp_nord",
+      submittedBy: "user_b2b_nord",
+      assignedTo: null,
+      negotiatedPrice: null,
+      submitter: {
+        nom: "Durand",
+        prenom: "Camille",
+        companyName: "Garage du Nord",
       },
-      keys: { aClesContact: "oui", cleNoire: 2, cleMarron: 0, cleRouge: 0, aTelecommande: "non", telecommande: null },
+      vehicle: {
+        electrique: "non",
+        materiel: [],
+        marque,
+        modele,
+        cylindree: 689,
+        annee: 2019,
+        kilometrage: 18450,
+        accessoires: "",
+      },
+      keys: {
+        aClesContact: "oui",
+        cleNoire: 2,
+        cleMarron: 0,
+        cleRouge: 0,
+        aTelecommande: "non",
+        telecommande: null,
+      },
       condition: { etat: "Bon état", naturePanne: "" },
       papers: {
-        carteGrise: "oui", carteGriseAVotreNom: "oui", controleTechnique: "oui",
-        ctMoins6Mois: "oui", resultatCT: "Favorable", certificatNonGage: "oui",
-        carnetEntretien: "oui", factureEntretien: "non",
+        carteGrise: "oui",
+        carteGriseAVotreNom: "oui",
+        controleTechnique: "oui",
+        ctMoins6Mois: "oui",
+        resultatCT: "Favorable",
+        certificatNonGage: "oui",
+        carnetEntretien: "oui",
+        factureEntretien: "non",
       },
       pricing: { prix: 5000, commentaires: "" },
-      photos: [], thumbnailUrl: null,
-      createdAt: now, updatedAt: now, lastMessageAt: null,
+      photos: [],
+      thumbnailUrl: null,
+      createdAt: now,
+      updatedAt: now,
+      lastMessageAt: null,
     });
   }
 
-  console.log("Seed complete: user_b2b / user_bo / user_pending (password123).");
+  console.log(
+    "Seed complete: user_b2b_nord / user_bo / user_pending (password123).",
+  );
 }
 
-main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
+main()
+  .then(() => process.exit(0))
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
 ```
 
 - [ ] **Step 3: Run the emulators, then seed**
 
 Run (terminal 1): `npx -y firebase-tools@latest emulators:start --only auth,firestore --project bike-eco-43a84`
 Run (terminal 2): `npm run seed`
-Expected: "Seed complete: user_b2b / user_bo / user_pending (password123)." in terminal 2; users + docs visible in the Emulator UI.
+Expected: "Seed complete: user_b2b_nord / user_bo / user_pending (password123)." in terminal 2; users + docs visible in the Emulator UI.
 
 - [ ] **Step 4: Verify idempotency**
 
@@ -634,14 +723,17 @@ git commit -m "feat(dev): Admin SDK emulator seed for b2b/backoffice/pending use
 ## Task 4: `mapAuthError` — French auth error copy (TDD)
 
 **Files:**
+
 - Create: `src/lib/auth/authErrors.ts`, `src/lib/auth/authErrors.test.ts`
 
 **Interfaces:**
+
 - Produces: `mapAuthError(code: string): string` — maps a Firebase Auth error code to French user copy. Consumed by Task 7 (sign-in) and Task 9 (Google).
 
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/auth/authErrors.test.ts`:
+
 ```ts
 import { expect, test } from "@jest/globals";
 import { mapAuthError } from "./authErrors";
@@ -712,10 +804,12 @@ git commit -m "feat(auth): mapAuthError French error copy"
 ## Task 5: Session assembly + AuthProvider + rewire hooks
 
 **Files:**
+
 - Create: `src/lib/auth/session.ts`, `src/lib/auth/session.test.ts`, `src/lib/auth/AuthProvider.tsx`
 - Modify: `src/lib/firestore/collections.ts`, `src/lib/data/fixtures.ts`, `src/lib/data/useSession.ts`, `src/lib/data/useAccount.ts`, `src/app/_layout.tsx`
 
 **Interfaces:**
+
 - Consumes: `AppUser` (schema), `auth`/`db` from `firebaseConfig`, `userDoc` from `collections`.
 - Produces:
   - `WithId<T>` exported from `src/lib/firestore/collections.ts`.
@@ -728,11 +822,14 @@ git commit -m "feat(auth): mapAuthError French error copy"
 - [ ] **Step 1: Relocate `WithId` into `collections.ts`**
 
 In `src/lib/firestore/collections.ts`, add near the top exports:
+
 ```ts
 /** A Firestore document paired with its id (docs don't carry their own id). */
 export type WithId<T> = T & { id: string };
 ```
+
 In `src/lib/data/fixtures.ts`, replace the local `export type WithId<T> = T & { id: string };` with a re-export so existing importers keep working:
+
 ```ts
 export type { WithId } from "@/lib/firestore/collections";
 ```
@@ -740,6 +837,7 @@ export type { WithId } from "@/lib/firestore/collections";
 - [ ] **Step 2: Write the failing test for `buildSessionUser`**
 
 `src/lib/auth/session.test.ts`:
+
 ```ts
 import { expect, test } from "@jest/globals";
 import { Timestamp } from "firebase/firestore";
@@ -747,21 +845,30 @@ import { buildSessionUser } from "./session";
 import type { AppUser } from "@/lib/firestore/schema";
 
 const profile: AppUser = {
-  role: "b2b", companyId: "comp_1", region: null,
-  nom: "Durand", prenom: "Camille", email: "c@x.fr",
-  telephone: "0600000000", departement: "75 - Paris", ville: "Paris",
-  status: "active", createdAt: Timestamp.now(), updatedAt: Timestamp.now(),
+  role: "b2b",
+  companyId: "comp_1",
+  region: null,
+  nom: "Durand",
+  prenom: "Camille",
+  email: "c@x.fr",
+  telephone: "0600000000",
+  departement: "75 - Paris",
+  ville: "Paris",
+  status: "active",
+  createdAt: Timestamp.now(),
+  updatedAt: Timestamp.now(),
 };
 
 test("merges uid + claims + profile, with claims authoritative for role/status", () => {
-  const user = buildSessionUser("uid_1",
+  const user = buildSessionUser(
+    "uid_1",
     { role: "b2b", companyId: "comp_1", region: null, status: "active" },
     { ...profile, role: "backoffice", status: "pending" }, // stale profile
   );
   expect(user.id).toBe("uid_1");
-  expect(user.role).toBe("b2b");     // from claims, not the stale profile
+  expect(user.role).toBe("b2b"); // from claims, not the stale profile
   expect(user.status).toBe("active"); // from claims
-  expect(user.nom).toBe("Durand");   // from profile
+  expect(user.nom).toBe("Durand"); // from profile
 });
 ```
 
@@ -773,7 +880,12 @@ Expected: FAIL — cannot find `./session`.
 - [ ] **Step 4: Implement `session.ts`**
 
 ```ts
-import type { AppUser, Region, UserRole, UserStatus } from "@/lib/firestore/schema";
+import type {
+  AppUser,
+  Region,
+  UserRole,
+  UserStatus,
+} from "@/lib/firestore/schema";
 import type { WithId } from "@/lib/firestore/collections";
 
 export interface AuthClaims {
@@ -903,6 +1015,7 @@ export function useAuth(): AuthState {
 - [ ] **Step 7: Rewrite `useSession.ts` to consume the provider**
 
 Replace the whole file:
+
 ```ts
 import { useAuth } from "@/lib/auth/AuthProvider";
 
@@ -922,6 +1035,7 @@ export function useSession() {
 - [ ] **Step 8: Rewrite `useAccount.ts`**
 
 Replace the whole file:
+
 ```ts
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { SessionUser } from "@/lib/auth/session";
@@ -935,6 +1049,7 @@ export function useAccount(): { data: SessionUser | null; loading: boolean } {
 - [ ] **Step 9: Guard the two `user`-consuming screens against null**
 
 `AccountScreen.tsx` and `DossierChatScreen.tsx` now receive `user`/`data` that can be `null` while loading. In `AccountScreen.tsx`:
+
 ```tsx
 export default function AccountScreen() {
   const { data, loading } = useAccount();
@@ -946,11 +1061,13 @@ export default function AccountScreen() {
   );
 }
 ```
+
 In `DossierChatScreen.tsx`, replace `const { user } = useSession();` usage so a null `user` is handled: gate the composer/send on `user` being present (e.g. `if (!user) return null;` at the top, matching the file's existing early-return style).
 
 - [ ] **Step 10: Mount `AuthProvider` in the root layout**
 
 In `src/app/_layout.tsx`, wrap the stack (guard logic is added in Task 6; here just provide context):
+
 ```tsx
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -984,35 +1101,48 @@ git commit -m "feat(auth): claims-backed AuthProvider + session hooks"
 ## Task 6: Route guard (TDD) + pending screen
 
 **Files:**
+
 - Create: `src/lib/auth/routeGuard.ts`, `src/lib/auth/routeGuard.test.ts`, `src/app/(auth)/pending.tsx`
 - Modify: `src/app/_layout.tsx`
 
 **Interfaces:**
+
 - Consumes: `useAuth()` from Task 5; `useSegments`/`router` from expo-router.
 - Produces: `resolveAuthRoute(state): AuthRoute` where `AuthRoute = "loading" | "signin" | "pending" | "b2b" | "backoffice"`.
 
 - [ ] **Step 1: Write the failing test**
 
 `src/lib/auth/routeGuard.test.ts`:
+
 ```ts
 import { expect, test } from "@jest/globals";
 import { resolveAuthRoute } from "./routeGuard";
 
 test("loading wins over everything", () => {
-  expect(resolveAuthRoute({ loading: true, role: null, status: null })).toBe("loading");
+  expect(resolveAuthRoute({ loading: true, role: null, status: null })).toBe(
+    "loading",
+  );
 });
 
 test("no session routes to signin", () => {
-  expect(resolveAuthRoute({ loading: false, role: null, status: null })).toBe("signin");
+  expect(resolveAuthRoute({ loading: false, role: null, status: null })).toBe(
+    "signin",
+  );
 });
 
 test("non-active status is blocked at the pending screen", () => {
-  expect(resolveAuthRoute({ loading: false, role: "b2b", status: "pending" })).toBe("pending");
+  expect(
+    resolveAuthRoute({ loading: false, role: "b2b", status: "pending" }),
+  ).toBe("pending");
 });
 
 test("active users route by role", () => {
-  expect(resolveAuthRoute({ loading: false, role: "b2b", status: "active" })).toBe("b2b");
-  expect(resolveAuthRoute({ loading: false, role: "backoffice", status: "active" })).toBe("backoffice");
+  expect(
+    resolveAuthRoute({ loading: false, role: "b2b", status: "active" }),
+  ).toBe("b2b");
+  expect(
+    resolveAuthRoute({ loading: false, role: "backoffice", status: "active" }),
+  ).toBe("backoffice");
 });
 ```
 
@@ -1049,6 +1179,7 @@ Expected: PASS (4 tests).
 - [ ] **Step 5: Create the pending screen**
 
 `src/app/(auth)/pending.tsx`:
+
 ```tsx
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -1062,12 +1193,18 @@ export default function PendingScreen() {
   const { signOut } = useSession();
   return (
     <PhotoBackground>
-      <View style={[styles.center, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <View
+        style={[
+          styles.center,
+          { paddingTop: insets.top, paddingBottom: insets.bottom },
+        ]}
+      >
         <View style={styles.card}>
           <Text style={styles.title}>Compte en attente de validation</Text>
           <Text style={styles.body}>
-            Votre inscription a bien été reçue. Un membre de l’équipe Bike-eco doit
-            valider votre compte avant que vous puissiez accéder à votre tableau de bord.
+            Votre inscription a bien été reçue. Un membre de l’équipe Bike-eco
+            doit valider votre compte avant que vous puissiez accéder à votre
+            tableau de bord.
           </Text>
           <Button label="Se déconnecter" variant="outlined" onPress={signOut} />
         </View>
@@ -1077,19 +1214,34 @@ export default function PendingScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: tokens.space.lg },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: tokens.space.lg,
+  },
   card: {
-    width: "100%", maxWidth: 420, gap: tokens.space.md, padding: tokens.space.lg,
-    borderRadius: tokens.radius.lg, backgroundColor: tokens.colors.surface,
+    width: "100%",
+    maxWidth: 420,
+    gap: tokens.space.md,
+    padding: tokens.space.lg,
+    borderRadius: tokens.radius.lg,
+    backgroundColor: tokens.colors.surface,
   },
   title: { ...tokens.text.title, textAlign: "center" },
-  body: { fontSize: 14, color: tokens.colors.muted, textAlign: "center", lineHeight: 20 },
+  body: {
+    fontSize: 14,
+    color: tokens.colors.muted,
+    textAlign: "center",
+    lineHeight: 20,
+  },
 });
 ```
 
 - [ ] **Step 6: Apply the guard in the root layout**
 
 Update `src/app/_layout.tsx` to redirect from a component nested inside `AuthProvider` (hooks need the context). The public B2C funnel (`index`, `b2cSubmissionForm`) stays reachable while signed out.
+
 ```tsx
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
@@ -1107,7 +1259,11 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
-    const route = resolveAuthRoute({ loading, role: session?.role ?? null, status });
+    const route = resolveAuthRoute({
+      loading,
+      role: session?.role ?? null,
+      status,
+    });
     const top = segments[0] ?? "index";
     const inAuthGroup = top === "(auth)";
     const isPublic = PUBLIC_SEGMENTS.has(top);
@@ -1163,15 +1319,18 @@ git commit -m "feat(auth): route guard + pending-account gate"
 ## Task 7: Wire email/password sign-in + forgot password
 
 **Files:**
+
 - Modify: `src/app/(auth)/signin.tsx`
 
 **Interfaces:**
+
 - Consumes: `auth` from `firebaseConfig`; `mapAuthError` (Task 4); `SignInFields` (unchanged `onSubmit(email, password)` / `onForgotPassword` props).
 - Produces: functioning email/password sign-in. Navigation is handled by the Task 6 guard (no manual dashboard push).
 
 - [ ] **Step 1: Rewrite `signin.tsx`**
 
 Remove the DEV role-toggle and the `DASHBOARDS`/`goToDashboard` manual nav; add real sign-in with an inline error and forgot-password. Keep the `PhotoBackground`/card layout and `ThirdPartyAuthButtons` slot (Task 9 wires Google).
+
 ```tsx
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -1208,12 +1367,16 @@ export default function SignInScreen() {
   const handleForgot = async (email: string) => {
     setError(null);
     if (!email) {
-      setError("Saisissez d’abord votre email pour réinitialiser le mot de passe.");
+      setError(
+        "Saisissez d’abord votre email pour réinitialiser le mot de passe.",
+      );
       return;
     }
     try {
       await sendPasswordResetEmail(auth, email);
-      setNotice("Email de réinitialisation envoyé. Vérifiez votre boîte de réception.");
+      setNotice(
+        "Email de réinitialisation envoyé. Vérifiez votre boîte de réception.",
+      );
     } catch (e) {
       setError(mapAuthError((e as { code?: string }).code ?? ""));
     }
@@ -1230,7 +1393,10 @@ export default function SignInScreen() {
       >
         <View style={styles.card}>
           <Text style={styles.title}>Bienvenue !</Text>
-          <SignInFields onSubmit={handleSignIn} onForgotPassword={handleForgot} />
+          <SignInFields
+            onSubmit={handleSignIn}
+            onForgotPassword={handleForgot}
+          />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {notice ? <Text style={styles.notice}>{notice}</Text> : null}
           {/* Interim no-op; Google is wired into this call site in Task 9. */}
@@ -1248,12 +1414,23 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, justifyContent: "center", paddingHorizontal: tokens.space.lg },
+  container: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: tokens.space.lg,
+  },
   card: {
-    gap: tokens.space.lg, padding: tokens.space.lg, borderRadius: tokens.radius.lg,
+    gap: tokens.space.lg,
+    padding: tokens.space.lg,
+    borderRadius: tokens.radius.lg,
     backgroundColor: tokens.colors.surface,
     ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 16 },
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+      },
       android: { elevation: 6 },
     }),
   },
@@ -1261,7 +1438,9 @@ const styles = StyleSheet.create({
   error: { fontSize: 14, color: tokens.colors.danger, textAlign: "center" },
   notice: { fontSize: 14, color: tokens.colors.primary, textAlign: "center" },
   registerLink: {
-    fontSize: 14, color: tokens.colors.primary, textAlign: "center",
+    fontSize: 14,
+    color: tokens.colors.primary,
+    textAlign: "center",
     textDecorationLine: "underline",
   },
 });
@@ -1273,20 +1452,23 @@ const styles = StyleSheet.create({
 - [ ] **Step 2: Update `SignInFields.tsx` forgot-password signature**
 
 In `src/components/form/SignInFields.tsx`:
+
 - Change the prop: `onForgotPassword: (email: string) => void;`
 - Change the button: `onPress={() => onForgotPassword(form.getValues("email"))}`
 
 - [ ] **Step 3: Verify against the emulators (manual, scripted check)**
 
 Start emulators + seed (Task 3 Step 3), then run the app pointed at emulators:
+
 ```sh
 EXPO_PUBLIC_USE_EMULATORS=1 npx expo start
 ```
+
 - Sign in as `b2b@garage-nord.fr` / `password123` → lands on the B2B dashboard.
 - Sign in as `pending@garage-nord.fr` → blocked on the pending screen.
 - Sign in as `bo@bike-eco.fr` → back-office dashboard.
 - Wrong password → "Email ou mot de passe incorrect."
-Expected: all four behaviors observed.
+  Expected: all four behaviors observed.
 
 - [ ] **Step 4: Typecheck + lint + commit**
 
@@ -1301,15 +1483,18 @@ git commit -m "feat(auth): wire email/password sign-in + password reset"
 ## Task 8: Sign-out in settings
 
 **Files:**
+
 - Modify: `src/components/form/SettingsList.tsx`, `src/components/screens/SettingsScreen.tsx`, `src/app/(b2b)/(tabs)/settings.tsx`, `src/app/(backoffice)/(tabs)/settings.tsx`
 
 **Interfaces:**
+
 - Consumes: `useSession().signOut` (Task 5).
 - Produces: a "Se déconnecter" action; the guard returns the user to sign-in on sign-out.
 
 - [ ] **Step 1: Add `onSignOut` to `SettingsList`**
 
 In `src/components/form/SettingsList.tsx`, add `onSignOut: () => void` to `Props` and render it as the last button:
+
 ```tsx
 <Button variant="text" label="Se déconnecter" onPress={onSignOut} />
 ```
@@ -1321,6 +1506,7 @@ In `src/components/screens/SettingsScreen.tsx`, add `onSignOut: () => void` to `
 - [ ] **Step 3: Wire both settings routes**
 
 In `src/app/(b2b)/(tabs)/settings.tsx` and `src/app/(backoffice)/(tabs)/settings.tsx`, pull `signOut` from `useSession` and pass `onSignOut={signOut}`:
+
 ```tsx
 import { useSession } from "@/lib/data/useSession";
 // …
@@ -1349,16 +1535,19 @@ git commit -m "feat(auth): sign-out from settings"
 **Prerequisite:** Manual setup Sections **B** and **C** above.
 
 **Files:**
+
 - Create: `src/lib/auth/google.ts`, `src/lib/auth/google.web.ts`
 - Modify: `src/components/ui/ThirdPartyAuthButtons.tsx`, `src/app/(auth)/signin.tsx` (swap the interim `onPress={() => {}}` to `onError={setError}`), `app.json`, `package.json`
 
 **Interfaces:**
+
 - Consumes: `auth` from `firebaseConfig`; `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`.
 - Produces: `signInWithGoogle(): Promise<void>` (platform-split). `ThirdPartyAuthButtons` prop becomes `{ onError: (msg: string) => void }`; Google enabled, Apple/Facebook disabled.
 
 - [ ] **Step 1: Install the native module**
 
 Run:
+
 ```sh
 npx expo install @react-native-google-signin/google-signin
 ```
@@ -1366,26 +1555,29 @@ npx expo install @react-native-google-signin/google-signin
 - [ ] **Step 2: Add the config plugin to `app.json`**
 
 In `expo.plugins`, add:
+
 ```json
 [
   "@react-native-google-signin/google-signin",
-  { "iosUrlScheme": "com.googleusercontent.apps.REPLACE_WITH_REVERSED_CLIENT_ID" }
+  {
+    "iosUrlScheme": "com.googleusercontent.apps.REPLACE_WITH_REVERSED_CLIENT_ID"
+  }
 ]
 ```
+
 Also add, at the `expo.ios` / `expo.android` level:
+
 ```json
 "ios": { "googleServicesFile": "./GoogleService-Info.plist", "bundleIdentifier": "com.bikeeco.app" },
 "android": { "googleServicesFile": "./google-services.json", "package": "com.bikeeco.app", … }
 ```
+
 (Keep the existing icon config; only add the `googleServicesFile` keys.)
 
 - [ ] **Step 3: Implement native `google.ts`**
 
 ```ts
-import {
-  GoogleAuthProvider,
-  signInWithCredential,
-} from "firebase/auth";
+import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import {
   GoogleSignin,
   statusCodes,
@@ -1423,6 +1615,7 @@ export async function signInWithGoogle(): Promise<void> {
 - [ ] **Step 5: Rewrite `ThirdPartyAuthButtons.tsx`**
 
 Google enabled; Apple/Facebook disabled with "bientôt disponible".
+
 ```tsx
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { signInWithGoogle } from "@/lib/auth/google";
@@ -1452,7 +1645,11 @@ export default function ThirdPartyAuthButtons({
         <Text style={styles.or}>Ou continuez avec</Text>
         <View style={styles.line} />
       </View>
-      <TouchableOpacity style={styles.btn} onPress={handleGoogle} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.btn}
+        onPress={handleGoogle}
+        activeOpacity={0.7}
+      >
         <Text style={styles.btnText}>Google</Text>
       </TouchableOpacity>
       {(["Apple", "Facebook"] as const).map((label) => (
@@ -1473,12 +1670,20 @@ export default function ThirdPartyAuthButtons({
 
 const styles = StyleSheet.create({
   wrap: { gap: tokens.space.md },
-  dividerRow: { flexDirection: "row", alignItems: "center", gap: tokens.space.md },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: tokens.space.md,
+  },
   line: { flex: 1, height: 1, backgroundColor: tokens.colors.border },
   or: { fontSize: 13, color: tokens.colors.muted },
   btn: {
-    height: tokens.button.height, borderRadius: tokens.radius.md, borderWidth: 1.5,
-    borderColor: tokens.colors.border, alignItems: "center", justifyContent: "center",
+    height: tokens.button.height,
+    borderRadius: tokens.radius.md,
+    borderWidth: 1.5,
+    borderColor: tokens.colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
   btnDisabled: { opacity: 0.5 },
   btnText: { fontSize: 16, fontWeight: "600", color: tokens.colors.primary },
@@ -1500,9 +1705,10 @@ Expected: app builds with the Google native module linked.
 - [ ] **Step 7: Verify Google against the LIVE project (Decision 5)**
 
 Run WITHOUT the emulator flag so auth hits live: `npx expo start` (dev client).
+
 - Tap "Google" → complete the Google account picker → signs in.
 - Note: a brand-new Google user has no `users/{uid}` doc/claims yet, so the guard routes them to the pending screen (expected until registration/Slice 4). Verify with a Google account you have pre-provisioned via the seed/console, or simply confirm sign-in succeeds and lands on pending.
-Expected: Firebase Auth shows the Google user; no crash.
+  Expected: Firebase Auth shows the Google user; no crash.
 
 - [ ] **Step 8: Typecheck + lint + commit**
 

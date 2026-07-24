@@ -1,3 +1,4 @@
+import HeaderBackButton from "@/components/ui/HeaderBackButton";
 import {
   type Href,
   type NativeStackNavigationOptions,
@@ -5,7 +6,6 @@ import {
   useGlobalSearchParams,
   useSegments,
 } from "expo-router";
-import HeaderBackButton from "@/components/ui/HeaderBackButton";
 
 /**
  * Header config for the screens that are themselves `NativeTabs` navigators nested

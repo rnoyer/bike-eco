@@ -1,10 +1,8 @@
 import { useFormContext } from "react-hook-form";
 import { Alert, StyleSheet, Text } from "react-native";
 
-import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
-import { DEPARTMENTS } from "@/constants/departments";
 import type { B2bCompanyRegistrationForm } from "@/features/b2b-registration/schema";
 import { signInWithGoogle } from "@/lib/auth/googleSignIn";
 import { digitsOnly } from "@/lib/forms/transforms";
@@ -94,20 +92,6 @@ export function CoordonneesFields() {
         keyboardType="phone-pad"
         autoComplete="tel"
         transform={digitsOnly(10)}
-      />
-      <ControlledDropdown
-        name="departement"
-        label="Département *"
-        placeholder="Département"
-        options={DEPARTMENTS}
-        searchable
-      />
-      <ControlledField
-        name="ville"
-        label="Ville *"
-        placeholder="Ville"
-        autoCapitalize="words"
-        returnKeyType="done"
       />
       <Text style={styles.note}>* Champs obligatoires</Text>
     </>

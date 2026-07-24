@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import { HttpsError, onCall } from "firebase-functions/https";
 import * as logger from "firebase-functions/logger";
 import { ZodError } from "zod";
@@ -16,15 +17,17 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 import { B2C_EMAIL_SECRETS } from "../email";
+import { approveCompanyCore, deleteCompanyCore, type BackofficeDeps } from "./backoffice";
 import {
   acceptInviteCore,
   RegError,
   registerCompanyCore, resolveInviteCore, sendInviteCore,
-  type Deps, type StoredInvitation,
+  type CallerClaims, type Deps, type StoredInvitation,
 } from "./core";
-import { sendApplicantEmail, sendInviteEmail } from "./emails";
+import { sendApplicantEmail, sendApprovalEmail, sendInviteEmail } from "./emails";
 import {
-  acceptInviteSchema, registerCompanySchema, resolveInviteSchema, sendInviteSchema,
+  acceptInviteSchema, companyActionSchema, registerCompanySchema,
+  resolveInviteSchema, sendInviteSchema,
 } from "./schemas";
 
 // Guard against a double-init: an unguarded initializeApp() throws
@@ -66,6 +69,67 @@ function realDeps(): Deps {
     now: () => Date.now(),
     sendApplicantEmail,
     sendInviteEmail,
+  };
+}
+
+function callerFrom(req: { auth?: { uid: string; token: Record<string, unknown> } }): CallerClaims {
+  const token = req.auth!.token;
+  return {
+    uid: req.auth!.uid,
+    role: token.role as string,
+    status: token.status as string,
+    companyId: (token.companyId as string) ?? null,
+  };
+}
+
+function backofficeDeps(): BackofficeDeps {
+  return {
+    getCompany: async (id) => {
+      const snap = await db().collection("companies").doc(id).get();
+      if (!snap.exists) return null;
+      const d = snap.data()!;
+      return { name: d.name, status: d.status };
+    },
+    getPendingCompanyUsers: async (companyId) => {
+      const snap = await db().collection("users")
+        .where("companyId", "==", companyId).where("status", "==", "pending").get();
+      return snap.docs.map((doc) => ({ uid: doc.id, email: doc.data().email as string }));
+    },
+    activateUser: async (uid) => {
+      await db().collection("users").doc(uid).update({
+        status: "active", updatedAt: FieldValue.serverTimestamp(),
+      });
+      const existing = (await getAuth().getUser(uid)).customClaims ?? {};
+      await getAuth().setCustomUserClaims(uid, { ...existing, status: "active" });
+    },
+    setCompanyActive: async (id) => {
+      await db().collection("companies").doc(id).update({
+        status: "active", validatedAt: FieldValue.serverTimestamp(),
+      });
+    },
+    sendApprovalEmail,
+    deleteStorage: async (companyId) => {
+      await getStorage().bucket().deleteFiles({ prefix: `dossiers/${companyId}/` });
+    },
+    deleteDossiers: async (companyId) => {
+      const snap = await db().collection("dossiers").where("companyId", "==", companyId).get();
+      await Promise.all(snap.docs.map((doc) => db().recursiveDelete(doc.ref)));
+    },
+    deleteUsers: async (companyId) => {
+      const snap = await db().collection("users").where("companyId", "==", companyId).get();
+      await Promise.all(snap.docs.map(async (doc) => {
+        await getAuth().deleteUser(doc.id).catch((err: unknown) => {
+          // The Auth user may already be gone; anything else is a real failure.
+          if ((err as { code?: string })?.code !== "auth/user-not-found") throw err;
+        });
+        await doc.ref.delete();
+      }));
+    },
+    deleteInvitations: async (companyId) => {
+      const snap = await db().collection("invitations").where("companyId", "==", companyId).get();
+      await Promise.all(snap.docs.map((doc) => doc.ref.delete()));
+    },
+    deleteCompany: async (id) => { await db().collection("companies").doc(id).delete(); },
   };
 }
 
@@ -130,6 +194,24 @@ export const acceptInvite = onCall(async (req) => {
   try {
     const input = acceptInviteSchema.parse(req.data);
     await acceptInviteCore(input, req.auth?.uid ?? null, req.auth?.token.email ?? null, realDeps());
+    return { ok: true };
+  } catch (e) { toHttps(e); }
+});
+
+export const approveCompany = onCall({ secrets: B2C_EMAIL_SECRETS }, async (req) => {
+  if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
+  try {
+    const { companyId } = companyActionSchema.parse(req.data);
+    await approveCompanyCore(companyId, callerFrom(req), backofficeDeps());
+    return { ok: true };
+  } catch (e) { toHttps(e); }
+});
+
+export const deleteCompany = onCall(async (req) => {
+  if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
+  try {
+    const { companyId } = companyActionSchema.parse(req.data);
+    await deleteCompanyCore(companyId, callerFrom(req), backofficeDeps());
     return { ok: true };
   } catch (e) { toHttps(e); }
 });

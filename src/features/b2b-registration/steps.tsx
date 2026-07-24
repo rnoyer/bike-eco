@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Text } from "react-native";
 
+import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
+import { DEPARTMENTS } from "@/constants/departments";
 import { AccountFields, CoordonneesFields } from "@/features/registration/fields";
 import { digitsOnly } from "@/lib/forms/transforms";
 import type { StepConfig } from "@/lib/forms/useStepForm";
@@ -16,7 +18,9 @@ function EntrepriseFields() {
   return (
     <>
       <ControlledField name="siret" label="Numéro SIRET *" placeholder="14 chiffres" keyboardType="numeric" maxLength={14} transform={digitsOnly(14)} returnKeyType="next" />
-      <ControlledField name="companyName" label="Nom de votre entreprise *" placeholder="Nom de votre entreprise" autoCapitalize="words" returnKeyType="done" />
+      <ControlledField name="companyName" label="Nom de votre entreprise *" placeholder="Nom de votre entreprise" autoCapitalize="words" returnKeyType="next" />
+      <ControlledDropdown name="companyDepartement" label="Département *" placeholder="Département" options={DEPARTMENTS} searchable />
+      <ControlledField name="companyVille" label="Ville *" placeholder="Ville de l'entreprise" autoCapitalize="words" returnKeyType="done" />
       <Text style={styles.note}>* Champs obligatoires</Text>
     </>
   );
@@ -27,7 +31,7 @@ export const B2B_COMPANY_REGISTRATION_STEPS: CompanyStep[] = [
     progress: 25,
     title: "Coordonnées Entreprise",
     subtitle: "Indiquez le numéro SIRET de votre entreprise",
-    fields: ["siret", "companyName"],
+    fields: ["siret", "companyName", "companyDepartement", "companyVille"],
     render: () => <EntrepriseFields />,
   },
   {
@@ -41,7 +45,7 @@ export const B2B_COMPANY_REGISTRATION_STEPS: CompanyStep[] = [
     progress: 75,
     title: "Vos coordonnées",
     subtitle: "Informations relative à votre compte utilisateur",
-    fields: ["nom", "prenom", "telephone", "departement", "ville"],
+    fields: ["nom", "prenom", "telephone"],
     render: () => <CoordonneesFields />,
   },
 ];

@@ -72,8 +72,6 @@ export default function RegisterInvitedScreen() {
               nom: values.nom,
               prenom: values.prenom,
               telephone: values.telephone,
-              departement: values.departement,
-              ville: values.ville,
             });
             completed.current = {
               method: "google",

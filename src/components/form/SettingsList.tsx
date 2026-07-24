@@ -1,32 +1,34 @@
-import { StyleSheet, View } from "react-native";
-
 import Dropdown from "@/components/form/Dropdown";
 import Button from "@/components/ui/Button";
+import Section from "@/components/ui/Section";
+import SectionWrapper from "@/components/ui/SectionWrapper";
 import { useRegionFilter } from "@/lib/data/useRegionFilter";
+import type { UserRole } from "@/lib/firestore/schema";
 import {
   REGION_OPTIONS,
   fromRegion,
   toRegion,
 } from "@/lib/navigation/regionOptions";
-import type { UserRole } from "@/lib/firestore/schema";
-import { tokens } from "@/theme/tokens";
 
 const REGION_LABELS = REGION_OPTIONS.map((o) => o.label);
 
 interface Props {
   role: UserRole;
   onInvite: () => void;
-  onDelete: () => void;
-  onSignOut: () => void;
+  onManageCompanies?: () => void;
 }
 
-export default function SettingsList({ role, onInvite, onDelete, onSignOut }: Props) {
+export default function SettingsList({
+  role,
+  onInvite,
+  onManageCompanies,
+}: Props) {
   const { region, setRegion } = useRegionFilter();
   const currentLabel =
     REGION_OPTIONS.find((o) => o.value === fromRegion(region))?.label ?? null;
 
   return (
-    <View style={styles.container}>
+    <SectionWrapper>
       {role === "backoffice" ? (
         <Dropdown
           label="Région gérée"
@@ -38,17 +40,22 @@ export default function SettingsList({ role, onInvite, onDelete, onSignOut }: Pr
           }}
         />
       ) : null}
-      <Button
-        variant="outlined"
-        label="Inviter un collègue"
-        onPress={onInvite}
-      />
-      <Button variant="text" label="Supprimer son compte" onPress={onDelete} />
-      <Button variant="text" label="Se déconnecter" onPress={onSignOut} />
-    </View>
+      {role === "backoffice" ? (
+        <Section title="Gestion des entreprises">
+          <Button
+            variant="outlined"
+            label="Ajouter/Supprimer une entreprises"
+            onPress={() => onManageCompanies?.()}
+          />
+        </Section>
+      ) : null}
+      <Section title="Gestion des membres">
+        <Button
+          variant="outlined"
+          label="Inviter un collègue"
+          onPress={onInvite}
+        />
+      </Section>
+    </SectionWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: tokens.space.md },
-});

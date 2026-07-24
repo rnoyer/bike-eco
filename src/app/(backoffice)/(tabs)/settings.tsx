@@ -1,19 +1,19 @@
-import { Alert } from "react-native";
 import SettingsScreen from "@/components/screens/SettingsScreen";
-import { useSession } from "@/lib/data/useSession";
+import { useRouter } from "expo-router";
+import { Alert } from "react-native";
 
 export default function BackofficeSettings() {
-  const { signOut } = useSession();
+  const router = useRouter();
   return (
     <SettingsScreen
       role="backoffice"
+      onManageCompanies={() => router.push("/(backoffice)/companies")}
       onInvite={() =>
-        Alert.alert("Inviter un collègue", "Action non disponible pour le moment.")
+        Alert.alert(
+          "Inviter un collègue",
+          "Action non disponible pour le moment.",
+        )
       }
-      onDelete={() =>
-        Alert.alert("Supprimer son compte", "Action non disponible pour le moment.")
-      }
-      onSignOut={signOut}
     />
   );
 }

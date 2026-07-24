@@ -1,4 +1,5 @@
 import { generateInviteCode, hashInviteCode, INVITE_TTL_MS } from "./inviteCode";
+import { resolveRegion } from "../regions";
 import type {
   AcceptInviteInput,
   RegisterCompanyInput,
@@ -8,7 +9,7 @@ import type {
 
 export type RegErrorCode =
   | "unauthenticated" | "permission-denied" | "already-exists"
-  | "invalid-argument" | "not-found";
+  | "invalid-argument" | "not-found" | "failed-precondition";
 
 export class RegError extends Error {
   constructor(public code: RegErrorCode, message: string) {
@@ -47,11 +48,11 @@ export interface Deps {
   sendInviteEmail(to: string, code: string): Promise<void>;
 }
 
-function profileDoc(input: { nom: string; prenom: string; telephone: string; departement: string; ville: string }, email: string, companyId: string, status: "pending" | "active") {
+function profileDoc(input: { nom: string; prenom: string; telephone: string }, email: string, companyId: string, status: "pending" | "active") {
   return {
-    role: "b2b", companyId, region: null,
+    role: "b2b", companyId,
     nom: input.nom, prenom: input.prenom, email,
-    telephone: input.telephone, departement: input.departement, ville: input.ville,
+    telephone: input.telephone,
     status,
   };
 }
@@ -77,7 +78,15 @@ export async function registerCompanyCore(
   }
   const companyId = deps.newCompanyId();
   await deps.writeCompany(companyId, {
-    siret: input.siret, name: input.companyName, status: "pending", createdBy: uid,
+    siret: input.siret,
+    name: input.companyName,
+    status: "pending",
+    departement: input.companyDepartement,
+    ville: input.companyVille,
+    region: resolveRegion(input.companyDepartement),
+    createdBy: uid,
+    createdByName: `${input.prenom} ${input.nom}`,
+    validatedAt: null,
   });
   await deps.writeUser(uid, profileDoc(input, email, companyId, "pending"));
   await deps.setClaims(uid, { role: "b2b", companyId, status: "pending" });

@@ -4,8 +4,6 @@ const profile = {
   nom: z.string().trim().min(1),
   prenom: z.string().trim().min(1),
   telephone: z.string().regex(/^\d{10}$/),
-  departement: z.string().trim().min(1),
-  ville: z.string().trim().min(1),
 };
 
 // Company signup: password mode carries the new account's email + password.
@@ -24,6 +22,8 @@ export const registerCompanySchema = z
   .object({
     siret: z.string().regex(/^\d{14}$/),
     companyName: z.string().trim().min(1),
+    companyDepartement: z.string().trim().min(1), // company location (step 1)
+    companyVille: z.string().trim().min(1),
     ...profile,
   })
   .and(registerCredential);
@@ -39,3 +39,6 @@ export type RegisterCompanyInput = z.infer<typeof registerCompanySchema>;
 export type AcceptInviteInput = z.infer<typeof acceptInviteSchema>;
 export type SendInviteInput = z.infer<typeof sendInviteSchema>;
 export type ResolveInviteInput = z.infer<typeof resolveInviteSchema>;
+
+export const companyActionSchema = z.object({ companyId: z.string().trim().min(1) });
+export type CompanyActionInput = z.infer<typeof companyActionSchema>;

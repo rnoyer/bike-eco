@@ -9,8 +9,6 @@ export const b2bInvitedRegistrationSchema = z.object({
   nom: requiredText("Indiquez votre nom"),
   prenom: requiredText("Indiquez votre prénom"),
   telephone: z.string().regex(/^\d{10}$/, "Saisissez un numéro à 10 chiffres"),
-  departement: requiredText("Sélectionnez un département"),
-  ville: requiredText("Indiquez votre ville"),
 });
 
 export type B2bInvitedRegistrationForm = z.infer<typeof b2bInvitedRegistrationSchema>;
@@ -21,6 +19,4 @@ export const B2B_INVITED_REGISTRATION_DEFAULTS: B2bInvitedRegistrationForm = {
   nom: "",
   prenom: "",
   telephone: "",
-  departement: "",
-  ville: "",
 };
