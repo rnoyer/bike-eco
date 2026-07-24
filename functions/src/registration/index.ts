@@ -1,41 +1,21 @@
-import { getApp, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { HttpsError, onCall } from "firebase-functions/https";
-import * as logger from "firebase-functions/logger";
-import { ZodError } from "zod";
 
-// Point the admin SDK at the local emulators in dev. Deployed Gen2 functions
-// always run with NODE_ENV="production", so this block is skipped in prod — do
-// NOT weaken that guard, or a deploy would target 127.0.0.1 and fail every
-// registration. The `??=` also respects the hosts the emulator injects itself,
-// so these hardcoded fallbacks only matter when nothing else set them.
-if (process.env.NODE_ENV !== "production") {
-  process.env.FIREBASE_AUTH_EMULATOR_HOST ??= "127.0.0.1:9099";
-  process.env.FIRESTORE_EMULATOR_HOST ??= "127.0.0.1:8080";
-}
-
+import { db, callerFrom, toHttps } from "../callable";
 import { B2C_EMAIL_SECRETS } from "../email";
 import { approveCompanyCore, deleteCompanyCore, type BackofficeDeps } from "./backoffice";
 import {
   acceptInviteCore,
-  RegError,
   registerCompanyCore, resolveInviteCore, sendInviteCore,
-  type CallerClaims, type Deps, type StoredInvitation,
+  type Deps, type StoredInvitation,
 } from "./core";
 import { sendApplicantEmail, sendApprovalEmail, sendInviteEmail } from "./emails";
 import {
   acceptInviteSchema, companyActionSchema, registerCompanySchema,
   resolveInviteSchema, sendInviteSchema,
 } from "./schemas";
-
-// Guard against a double-init: an unguarded initializeApp() throws
-// "app already exists" at cold start, which would take down every function in
-// this module (including sendB2cSubmission), not just registration.
-if (!getApps().length) initializeApp();
-
-const db = () => getFirestore(getApp(), "bike-eco-db");
 
 function realDeps(): Deps {
   return {
@@ -69,16 +49,6 @@ function realDeps(): Deps {
     now: () => Date.now(),
     sendApplicantEmail,
     sendInviteEmail,
-  };
-}
-
-function callerFrom(req: { auth?: { uid: string; token: Record<string, unknown> } }): CallerClaims {
-  const token = req.auth!.token;
-  return {
-    uid: req.auth!.uid,
-    role: token.role as string,
-    status: token.status as string,
-    companyId: (token.companyId as string) ?? null,
   };
 }
 
@@ -131,36 +101,6 @@ function backofficeDeps(): BackofficeDeps {
     },
     deleteCompany: async (id) => { await db().collection("companies").doc(id).delete(); },
   };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function toHttps(err: unknown): never {
-  if (err instanceof RegError) throw new HttpsError(err.code, err.message);
-  if (err instanceof ZodError) throw new HttpsError("invalid-argument", "Données du formulaire invalides.");
-
-  if (isRecord(err) && typeof err.code === "string") {
-    const code = err.code as string;
-    if (code === "auth/email-already-exists") {
-      throw new HttpsError("already-exists", "Cette adresse email est déjà utilisée.");
-    }
-    if (code === "auth/weak-password") {
-      throw new HttpsError("invalid-argument", "Le mot de passe doit contenir au moins 8 caractères.");
-    }
-    if (code === "auth/invalid-password") {
-      throw new HttpsError("invalid-argument", "Le mot de passe est invalide.");
-    }
-  }
-
-  // Unexpected error: log the real cause server-side for debugging, but return a
-  // generic French message. An HttpsError's message is propagated to the client
-  // for every code (including "internal"), so throwing the raw string here would
-  // leak internal detail AND defeat the client's `functions/internal` mapping.
-  const message = err instanceof Error ? err.message : String(err);
-  logger.error("Registration callable failed", { error: message });
-  throw new HttpsError("internal", "Une erreur est survenue. Veuillez réessayer.");
 }
 
 export const registerCompany = onCall({ secrets: B2C_EMAIL_SECRETS }, async (req) => {
