@@ -2,7 +2,11 @@ import {
   GoogleSignin,
   isSuccessResponse,
 } from "@react-native-google-signin/google-signin";
-import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import {
+  getAdditionalUserInfo,
+  GoogleAuthProvider,
+  signInWithCredential,
+} from "firebase/auth";
 import { auth } from "../../../firebaseConfig";
 import { emailsMatch, GoogleEmailMismatchError } from "./googleEmail";
 
@@ -20,6 +24,9 @@ export async function signInWithGoogle(opts?: {
   prenom: string | null;
   nom: string | null;
   email: string | null;
+  /** True when this sign-in created the Firebase Auth record, so a caller that
+   *  rejects the identity can delete it instead of leaving a dormant account. */
+  isNewUser: boolean;
 }> {
   await GoogleSignin.hasPlayServices();
   // On Android the native module can silently reuse the last selected Google
@@ -38,6 +45,11 @@ export async function signInWithGoogle(opts?: {
     await GoogleSignin.signOut();
     throw new GoogleEmailMismatchError(user.email, opts.expectedEmail);
   }
-  await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
-  return { prenom: user.givenName ?? null, nom: user.familyName ?? null, email: user.email ?? null };
+  const cred = await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+  return {
+    prenom: user.givenName ?? null,
+    nom: user.familyName ?? null,
+    email: user.email ?? null,
+    isNewUser: getAdditionalUserInfo(cred)?.isNewUser ?? false,
+  };
 }
