@@ -17,8 +17,18 @@ const PROVIDERS: {
     icon: require("@/assets/images/icons/googleIcon.svg"),
     enabled: true,
   },
-  // { id: "apple", label: "Apple — bientôt disponible", icon: require("@/assets/images/icons/appleIcon.svg"), enabled: false },
-  // { id: "facebook", label: "Facebook — bientôt disponible", icon: require("@/assets/images/icons/facebookIcon.svg"), enabled: false },
+  // {
+  //   id: "apple",
+  //   label: "Apple",
+  //   icon: require("@/assets/images/icons/appleIcon.svg"),
+  //   enabled: false,
+  // },
+  // {
+  //   id: "facebook",
+  //   label: "Facebook",
+  //   icon: require("@/assets/images/icons/facebookIcon.svg"),
+  //   enabled: false,
+  // },
 ];
 
 export default function ThirdPartyAuthButtons({
