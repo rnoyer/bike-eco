@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { clampIndex } from "./imageGallery";
 import { ZoomableImage } from "./ZoomableImage";
 
@@ -20,6 +21,11 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
  * it on tap and unmounts it via `onClose`), so its initial page is set once from
  * props with no effect. Horizontal paging is suspended while the current image is
  * zoomed, so a pan moves within the image instead of turning the page.
+ *
+ * The content is wrapped in its OWN `GestureHandlerRootView`: a React Native
+ * `Modal` renders into a separate native view hierarchy, so the one at the app root
+ * does not cover it and gesture-handler gestures (pinch/double-tap) inside would
+ * never be recognized. Required by gesture-handler — do not remove.
  */
 export default function ImageGalleryModal({
   images,
@@ -44,7 +50,7 @@ export default function ImageGalleryModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={styles.root}>
+      <GestureHandlerRootView style={styles.root}>
         <ScrollView
           horizontal
           pagingEnabled
@@ -79,7 +85,7 @@ export default function ImageGalleryModal({
             ))}
           </View>
         ) : null}
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
