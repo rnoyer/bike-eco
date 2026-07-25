@@ -1,15 +1,12 @@
 ---
 name: bike-eco-forms
 description: >-
-  How to build, edit, or review forms in the bike-eco Expo app — the shared
-  useStepForm + FormLayout multi-step engine, single-step react-hook-form
-  screens, Zod v4 schemas, the Controlled* field wrappers, design tokens, and
-  the French copy/validation conventions. Use this whenever you implement, edit,
-  or review ANY form, multi-step funnel, registration/signup flow, form field,
-  dropdown, checkbox group, photo picker, validation schema, or submit handler
-  in this project — including the pending B2B vehicle-submission,
-  company-registration, and invited-registration funnels — even if the user
-  doesn't say the word "form".
+  Use when implementing, editing or reviewing ANY form in the bike-eco Expo app —
+  a multi-step funnel or single-step screen, a registration or signup flow, a
+  password or confirm-password field, a change-password or forgot/reset-password
+  form, a dropdown, checkbox group or photo picker, a Zod validation schema or
+  error message, a conditional field, or a submit handler — even if the request
+  never says the word "form".
 ---
 
 # Building forms in bike-eco
@@ -46,7 +43,7 @@ A funnel is three files in `src/features/<name>/` plus one route file:
 |---|---|
 | `schema.ts` | One Zod v4 schema + `z.infer` type + a `*_DEFAULTS` object. The single source of truth for field types and validation. |
 | `steps.tsx` | Declarative `Step[]` array (`progress`, `title`, `subtitle`, `fields`, `render`). Field UI only — no state, no validation. |
-| `submit.ts` | The submit handler. **Stubbed** this milestone (simulate latency, `console.log` under `__DEV__`), shaped so the real Firebase call is a drop-in later. |
+| `submit.ts` | The submit handler. Wraps a callable (`@/lib/data/*`) or an HTTP endpoint; keeps the mapping from form values to payload in one place. |
 | `src/app/.../<route>.tsx` | Full-screen headerless route that calls `useStepForm`, renders `FormLayout`, and swaps to `FormConfirmation` on success. |
 
 The route wiring is mechanical and identical across funnels — copy it from
@@ -80,20 +77,49 @@ These come from `AGENTS.md` and the B2B forms plan; violating them fails review.
 - **Conditional fields** (reveal a field based on another's value) use `useWatch`,
   not local state — see `ElectriqueFields`/`ClesFields` in the b2c `steps.tsx`.
 
-## Reuse-or-extract shared building blocks
+## Reuse the shared building blocks
 
-Prefer these over re-declaring option lists or helpers inline. Some are created by
-the B2B forms plan (`docs/superpowers/plans/2026-06-30-b2b-forms.md`); if a module
-doesn't exist yet, **extract it there rather than duplicating**:
+All of these exist. Reach for them instead of re-declaring option lists or helpers inline:
 
-- `@/constants/departments` — `DEPARTMENTS`, `isNord`, `isSud` (exists).
-- `@/constants/vehicle` — `OUI_NON`, `COUNT_OPTIONS`, `ETAT_OPTIONS`, … (plan Task 1).
-- `@/lib/forms/transforms` — `digitsOnly(max?)` (plan Task 1; today it's inline in the b2c `steps.tsx`).
-- `@/features/registration/fields` — `AccountFields`, `CoordonneesFields` (plan Task 5).
-- `@/components/form/FormConfirmation` — the button-driven terminal screen (plan Task 2).
+- `@/constants/departments` — `DEPARTMENTS`, `isNord`, `isSud`.
+- `@/constants/vehicle` — `OUI_NON`, `COUNT_OPTIONS`, `ETAT_OPTIONS`, …
+- `@/lib/forms/transforms` — `digitsOnly(max?)`.
+- `@/features/registration/fields` — `AccountFields`, `CoordonneesFields`.
+- `@/components/form/FormConfirmation` — the button-driven terminal screen.
 
 The registration field groups require the schema to use exact field names:
 `email, password, nom, prenom, telephone, departement, ville`.
+
+## Password fields
+
+Any form with a confirmation field enforces equality **in the schema**, not in the UI, so
+the rule is unit-tested. Attach the issue to the confirmation field — otherwise the error
+renders under the first password box, where the user did nothing wrong:
+
+```ts
+z.object({
+  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères"),
+  confirmPassword: z.string(),
+}).refine((v) => v.password === v.confirmPassword, {
+  message: "Les mots de passe ne correspondent pas",
+  path: ["confirmPassword"],
+});
+```
+
+`ControlledField` takes `secureTextEntry` for password inputs. Server-side auth failures
+(wrong current password, expired reset link) are **not** schema errors — they come back
+from Firebase and are mapped by `mapAuthError`; see `bike-eco-auth`.
+
+## Single-step forms
+
+A one-question screen (forgot password, add a colleague) uses `useForm` directly, not the
+step engine — reference: `src/components/form/AddColleagueForm.tsx`. Same Zod schema, same
+`Controlled*` wrappers, plain `<View>` + `ui/Button` instead of `FormLayout`.
+
+Terminate on success with `FormConfirmation` (button-driven) or `ui/ConfirmationView`
+(delayed auto-redirect, see `docs/specs/page-confirmation.md`) rather than routing away
+immediately — the user needs to read what happened. For anything about *which* email
+exists, the confirmation must not reveal it (`bike-eco-auth`).
 
 ## Mapping a spec to code
 
@@ -105,31 +131,21 @@ year, long text, dropdown, checkboxes, département, photos, SIRET, conditional)
 
 ## Testing and verification
 
-Per project convention, **only pure logic is unit-tested — the Zod schema.** Write
-the schema test first (TDD): assert a valid object parses, and that each rule
-rejects (bad email, wrong-length SIRET/phone, missing photo, failed `.refine`).
-Import jest globals explicitly: `import { describe, expect, test } from "@jest/globals";`.
-Step/route/field UI has **no** unit tests — it's gated by `tsc` + lint.
+**Write the schema test first (TDD).** The Zod schema is the only part of a form that is
+unit-tested: assert a valid object parses, and that each rule rejects — bad email,
+wrong-length SIRET/phone, missing photo, mismatched password confirmation, failed
+`.refine`. Step/route/field UI has no unit tests.
 
-Gate every change with:
+The gate, the typed-routes regeneration trick (**required after adding a route file**),
+and the spec-sync rule are in **`docs/tech/verification.md`**. Follow it before calling a
+form done.
 
-```bash
-npx tsc --noEmit && npx expo lint && npm test
-```
+## Related skills
 
-**Typed-routes gotcha:** adding a new route file means `tsc` can't resolve its href
-until `.expo/types/router.d.ts` is regenerated, and **bare `tsc` does not regenerate
-it** — the dev server does. After adding a route:
-
-```bash
-rm -f .expo/types/router.d.ts
-( npx expo start > /tmp/expo-typegen.log 2>&1 & )
-for i in $(seq 1 30); do [ -f .expo/types/router.d.ts ] && echo "TYPES REGENERATED" && break; sleep 1; done
-pkill -f "expo start"; pkill -f "expo/cli"; sleep 1
-```
-
-**Keep specs in sync.** If a change alters a form's behavior, update its
-`docs/specs/form-*.md` in the same commit.
+- `bike-eco-auth` — password/session semantics, `mapAuthError`, making a form's screen
+  reachable while logged out.
+- `bike-eco-functions` — the callable a `submit.ts` wraps, and its server-side validation.
+- `bike-eco-ui` — tokens, buttons, confirmation screens.
 
 ## Quick checklist
 

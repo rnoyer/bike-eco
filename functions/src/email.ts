@@ -19,7 +19,7 @@ export const B2C_EMAIL_SECRETS = [SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS];
  * (per the product spec). Swap these for the real mailboxes and flip
  * DEV_EMAIL_OVERRIDE off when going live.
  */
-const DEV_EMAIL_OVERRIDE = true;
+const DEV_EMAIL_OVERRIDE = false;
 const DEV_EMAIL = "romain.noyer@gmail.com";
 const NORTH_MAILBOX = "romain.noyer@gmail.com"; // TODO: real NORTH mailbox
 const SOUTH_MAILBOX = "romain.noyer@gmail.com"; // TODO: real SOUTH mailbox
