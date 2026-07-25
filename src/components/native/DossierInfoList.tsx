@@ -1,5 +1,5 @@
-import { Column, Host, Row, Spacer, Text } from "@expo/ui";
 import type { Dossier } from "@/lib/firestore/schema";
+import { Column, Host, Row, Spacer, Text } from "@expo/ui";
 
 const LABEL = { fontSize: 14, color: "#71727A" } as const;
 const VALUE = { fontSize: 14, fontWeight: "500", color: "#111" } as const;
