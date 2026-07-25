@@ -1,6 +1,18 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
+import { useState } from "react";
+import {
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import ImageGalleryModal from "@/components/ui/ImageGalleryModal";
 import type { Message, MessageAttachment } from "@/lib/firestore/schema";
 import { tokens } from "@/theme/tokens";
+import { threadImageUrls } from "./threadImages";
 
 function timeLabel(m: Message): string {
   return m.createdAt.toDate().toLocaleString("fr-FR", {
@@ -11,14 +23,40 @@ function timeLabel(m: Message): string {
   });
 }
 
-function Attachment({ a }: { a: MessageAttachment }) {
+async function openPdf(url: string) {
+  try {
+    await Linking.openURL(url);
+  } catch {
+    Alert.alert("Pièce jointe", "Impossible d'ouvrir le PDF.");
+  }
+}
+
+function Attachment({
+  a,
+  onOpenImage,
+}: {
+  a: MessageAttachment;
+  onOpenImage: (url: string) => void;
+}) {
+  if (a.type === "image") {
+    return (
+      <Pressable onPress={() => onOpenImage(a.url)}>
+        <Image
+          source={{ uri: a.url }}
+          style={styles.thumb}
+          contentFit="cover"
+          transition={100}
+        />
+      </Pressable>
+    );
+  }
   return (
-    <View style={styles.attach}>
-      <Text style={styles.attachIcon}>{a.type === "pdf" ? "📄" : "🖼️"}</Text>
-      <Text style={styles.attachName} numberOfLines={1}>
+    <Pressable style={styles.pdf} onPress={() => openPdf(a.url)}>
+      <Text style={styles.pdfIcon}>📄</Text>
+      <Text style={styles.pdfName} numberOfLines={1}>
         {a.name}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -29,39 +67,53 @@ export default function ChatThread({
   messages: Message[];
   currentUserId: string;
 }) {
+  const images = threadImageUrls(messages);
+  const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
+  const openImage = (url: string) => setGalleryIndex(images.indexOf(url));
+
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {messages.map((m, i) => {
-        const mine = m.senderId === currentUserId;
-        return (
-          <View
-            key={`${m.senderId}-${i}`}
-            style={[styles.row, mine ? styles.rowMine : styles.rowTheirs]}
-          >
-            <View style={[styles.bubble, mine ? styles.mine : styles.theirs]}>
-              <Text style={[styles.sender, mine && styles.senderMine]}>
-                {m.senderName}
-              </Text>
-              {m.text ? (
-                <Text style={[styles.text, mine && styles.textMine]}>
-                  {m.text}
+    <>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {messages.map((m, i) => {
+          const mine = m.senderId === currentUserId;
+          return (
+            <View
+              key={`${m.senderId}-${i}`}
+              style={[styles.row, mine ? styles.rowMine : styles.rowTheirs]}
+            >
+              <View style={[styles.bubble, mine ? styles.mine : styles.theirs]}>
+                <Text style={[styles.sender, mine && styles.senderMine]}>
+                  {m.senderName}
                 </Text>
-              ) : null}
-              {m.attachments.map((a) => (
-                <Attachment key={a.url} a={a} />
-              ))}
-              <Text style={[styles.time, mine && styles.timeMine]}>
-                {timeLabel(m)}
-              </Text>
+                {m.text ? (
+                  <Text style={[styles.text, mine && styles.textMine]}>
+                    {m.text}
+                  </Text>
+                ) : null}
+                {m.attachments.map((a) => (
+                  <Attachment key={a.url} a={a} onOpenImage={openImage} />
+                ))}
+                <Text style={[styles.time, mine && styles.timeMine]}>
+                  {timeLabel(m)}
+                </Text>
+              </View>
             </View>
-          </View>
-        );
-      })}
-    </ScrollView>
+          );
+        })}
+      </ScrollView>
+
+      {galleryIndex !== null ? (
+        <ImageGalleryModal
+          images={images}
+          initialIndex={galleryIndex}
+          onClose={() => setGalleryIndex(null)}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -85,14 +137,20 @@ const styles = StyleSheet.create({
   textMine: { color: tokens.colors.primaryText },
   time: { fontSize: 10, color: tokens.colors.muted, alignSelf: "flex-end" },
   timeMine: { color: "rgba(255,255,255,0.6)" },
-  attach: {
+  thumb: {
+    width: 160,
+    height: 160,
+    borderRadius: tokens.radius.sm,
+    backgroundColor: "rgba(0,0,0,0.06)",
+  },
+  pdf: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: tokens.space.sm,
     backgroundColor: "rgba(0,0,0,0.06)",
-    padding: 6,
+    padding: tokens.space.sm,
     borderRadius: tokens.radius.sm,
   },
-  attachIcon: { fontSize: 14 },
-  attachName: { fontSize: 12, flex: 1 },
+  pdfIcon: { fontSize: 28 },
+  pdfName: { fontSize: 13, flex: 1, color: tokens.colors.primary },
 });
