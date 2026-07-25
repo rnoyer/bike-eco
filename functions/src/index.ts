@@ -10,6 +10,7 @@ export {
   registerCompany, sendInvite, resolveInvite, acceptInvite,
   approveCompany, deleteCompany,
 } from "./registration";
+export { sendMessage } from "./messages";
 
 // Per-function caps still apply; this bounds the blast radius of autoscaling.
 setGlobalOptions({ maxInstances: 10 });

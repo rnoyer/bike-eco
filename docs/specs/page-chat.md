@@ -13,6 +13,12 @@ From top to bottom
 - scrollable view with all chats and file attached (represented by an file icon)
 - an input section for entering chat message. Left to the input section a "+" icon to add only pdf or photos from phone
 
+Sends go through the `sendMessage` Cloud callable: the client uploads any
+attachments then calls it with the message text and attachment metadata. The
+sender label ("[prénom nom] - [société]" or "[prénom nom] - Bike-eco") is
+stamped server-side from the caller's own identity — it is never
+client-authored, so it can't be forged.
+
 ## Tab bar props
 
 ### B2B

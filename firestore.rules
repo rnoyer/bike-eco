@@ -66,10 +66,7 @@ service cloud.firestore {
 
       match /messages/{messageId} {
         allow read: if isDossierParticipant(dossierId);
-        allow create: if isDossierParticipant(dossierId)
-          && request.resource.data.senderId == request.auth.uid
-          && request.resource.data.senderRole == claims().role;
-        allow update, delete: if false;
+        allow create, update, delete: if false;
       }
     }
 
