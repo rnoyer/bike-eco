@@ -3,12 +3,16 @@ import Button from "@/components/ui/Button";
 import PhotoBackground from "@/components/ui/PhotoBackground";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
 import { mapAuthError } from "@/lib/auth/authErrors";
+import { signInWithGoogle } from "@/lib/auth/googleSignIn";
+import { userDoc } from "@/lib/firestore/collections";
 import { tokens } from "@/theme/tokens";
 import { useRouter } from "expo-router";
 import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signOut,
 } from "firebase/auth";
+import { getDoc } from "firebase/firestore";
 import { useState } from "react";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,6 +23,7 @@ export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [googleBusy, setGoogleBusy] = useState(false);
 
   const handleSignIn = async (email: string, password: string) => {
     setError(null);
@@ -28,6 +33,39 @@ export default function SignInScreen() {
       // The root AuthGate redirects on the resulting auth-state change.
     } catch (e) {
       setError(mapAuthError((e as { code?: string }).code ?? ""));
+    }
+  };
+
+  const handleThirdParty = async (provider: "google" | "apple" | "facebook") => {
+    if (provider !== "google" || googleBusy) return;
+    setError(null);
+    setNotice(null);
+    setGoogleBusy(true);
+    try {
+      await signInWithGoogle();
+      const user = auth.currentUser;
+      // Sign-in is not registration: a Google identity with no users/{uid}
+      // profile has never been through the funnel, and would otherwise sit
+      // authenticated-but-sessionless on this screen (see AuthProvider).
+      if (!user || !(await getDoc(userDoc(user.uid))).exists()) {
+        await signOut(auth);
+        setError(
+          "Aucun compte Bike-eco n’est associé à ce compte Google. Créez un compte pour continuer.",
+        );
+        return;
+      }
+      // The root AuthGate redirects on the resulting auth-state change.
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      setError(
+        code?.startsWith("auth/")
+          ? mapAuthError(code)
+          : e instanceof Error
+            ? e.message
+            : "La connexion a échoué. Veuillez réessayer.",
+      );
+    } finally {
+      setGoogleBusy(false);
     }
   };
 
@@ -66,8 +104,10 @@ export default function SignInScreen() {
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {notice ? <Text style={styles.notice}>{notice}</Text> : null}
-          {/* Interim no-op; Google is wired into this call site in Task 9. */}
-          <ThirdPartyAuthButtons onPress={() => {}} />
+          <ThirdPartyAuthButtons
+            onPress={handleThirdParty}
+            disabled={googleBusy}
+          />
           <View style={styles.dividerRow}>
             <View style={styles.line} />
             <Text style={styles.or}>Pas encore de compte ?</Text>
