@@ -57,21 +57,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const gen = ++generationRef.current;
     setFirebaseUser(user);
     setLoading(true);
-    const [token, snap] = await Promise.all([
-      user.getIdTokenResult(true),
-      getDoc(userDoc(user.uid)),
-    ]);
-    // A newer auth event superseded this one while we awaited — drop this result.
-    if (gen !== generationRef.current) return;
-    const claims = parseClaims(token.claims as Record<string, unknown>);
-    const profile = (snap.data() as AppUser | undefined) ?? null;
-    // No users/{uid} profile doc yet (e.g. mid-registration) → session stays null,
-    // which currently routes to sign-in via resolveAuthRoute. The Google/registration
-    // slice should instead route a claimless/profileless authenticated user to the
-    // pending gate; deferred to that slice, not changed here.
-    setSession(profile ? buildSessionUser(user.uid, claims, profile) : null);
-    setLoading(false);
-    setInitializing(false);
+    try {
+      const [token, snap] = await Promise.all([
+        user.getIdTokenResult(true),
+        getDoc(userDoc(user.uid)),
+      ]);
+      // A newer auth event superseded this one while we awaited — drop this result.
+      if (gen !== generationRef.current) return;
+      const claims = parseClaims(token.claims as Record<string, unknown>);
+      const profile = (snap.data() as AppUser | undefined) ?? null;
+      // No users/{uid} profile doc yet (e.g. mid-registration) → session stays null,
+      // which currently routes to sign-in via resolveAuthRoute. The Google/registration
+      // slice should instead route a claimless/profileless authenticated user to the
+      // pending gate; deferred to that slice, not changed here.
+      setSession(profile ? buildSessionUser(user.uid, claims, profile) : null);
+    } catch (err) {
+      // Without this the rejection escapes into the async onAuthStateChanged
+      // callback, `loading` never clears, and AuthGate's `if (loading) return`
+      // silently kills every redirect for the rest of the process — a tap on
+      // sign-in would appear to do nothing at all. Fail to a null session so the
+      // guard sends the user back to sign-in instead of stranding them.
+      if (gen !== generationRef.current) return;
+      console.warn("[auth] session load failed", err);
+      setSession(null);
+    } finally {
+      // Only the newest call owns the flags; a superseded one must not clear
+      // them out from under the call that replaced it.
+      if (gen === generationRef.current) {
+        setLoading(false);
+        setInitializing(false);
+      }
+    }
   }
 
   useEffect(() => {

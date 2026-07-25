@@ -1,4 +1,10 @@
 {
+  "permissions": {
+    "allow": [
+      "Skill(code-review:code-review)",
+      "Skill(code-review:code-review:*)"
+    ]
+  },
   "enabledPlugins": {
     "expo@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,

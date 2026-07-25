@@ -23,8 +23,11 @@ const PROVIDERS: {
 
 export default function ThirdPartyAuthButtons({
   onPress,
+  disabled = false,
 }: {
   onPress: (provider: Provider) => void;
+  /** Locks every provider while a sign-in round-trip is in flight. */
+  disabled?: boolean;
 }) {
   return (
     <View style={styles.wrap}>
@@ -36,9 +39,9 @@ export default function ThirdPartyAuthButtons({
       {PROVIDERS.map((p) => (
         <TouchableOpacity
           key={p.id}
-          style={[styles.btn, !p.enabled && styles.btnDisabled]}
-          disabled={!p.enabled}
-          onPress={() => p.enabled && onPress(p.id)}
+          style={[styles.btn, (!p.enabled || disabled) && styles.btnDisabled]}
+          disabled={!p.enabled || disabled}
+          onPress={() => p.enabled && !disabled && onPress(p.id)}
           activeOpacity={0.7}
         >
           <Image source={p.icon} style={styles.btnIcon} contentFit="contain" />

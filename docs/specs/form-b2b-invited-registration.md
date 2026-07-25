@@ -48,6 +48,14 @@ mandatory : yes
 
 Button : Google authentication
 
+Le compte Google choisi doit être celui de l'invitation. Si l'utilisateur
+sélectionne un autre compte dans le sélecteur Google, la comparaison est faite
+**avant** toute création de compte : aucun compte n'est enregistré dans Firebase
+Authentication, une alerte "Connexion Google" nomme les deux adresses (celle
+choisie et celle de l'invitation), et le formulaire **reste sur ce step** — le
+step "Vos coordonnées" n'est pas accessible tant que le bon compte n'a pas été
+sélectionné. Le contrôle est répété côté serveur par `acceptInvite`.
+
 Texte d'information : "\* Champs obligatoires"
 
 ---

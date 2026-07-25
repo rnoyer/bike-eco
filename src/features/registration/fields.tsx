@@ -22,7 +22,12 @@ export function AccountFields({
   async function handleAuthPress(provider: "google" | "apple" | "facebook") {
     if (provider !== "google") return;
     try {
-      const profile = await signInWithGoogle();
+      // Invited flow only (`emailDisabled` locks the email to the invitation):
+      // a mismatch throws, so `onGoogleProfile` below is never reached and the
+      // funnel stays on this step instead of failing at the final submit.
+      const profile = await signInWithGoogle({
+        expectedEmail: emailDisabled ? form.getValues("email") : undefined,
+      });
       form.setValue("prenom", profile.prenom ?? "");
       form.setValue("nom", profile.nom ?? "");
       if (!emailDisabled) form.setValue("email", profile.email ?? "");

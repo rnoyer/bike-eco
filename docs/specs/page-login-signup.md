@@ -23,6 +23,14 @@ mandatory : yes
 - Divider
 - Text : "Ou continuez avec"
 - Three Buttons for third party auth : Google, Apple, Facebook
+
+  Google est le seul fournisseur actif (Apple et Facebook sont désactivés). La
+  connexion Google est réservée aux comptes déjà inscrits : si l'identité Google
+  n'a pas de document `users/{uid}`, elle n'a jamais suivi le funnel — la session
+  est refermée et le message "Aucun compte Bike-eco n'est associé à ce compte
+  Google. Créez un compte pour continuer." s'affiche sous le formulaire. Les
+  boutons sont désactivés pendant l'aller-retour.
+
 - Link : "Pas encore de compte ? Créer un compte" → form-b2b-company-registration
 - Link : "J'ai un code d'invitation" → écran de saisie du code d'invitation
   (voir form-b2b-invited-registration)
