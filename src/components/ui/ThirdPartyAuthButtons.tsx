@@ -17,14 +17,27 @@ const PROVIDERS: {
     icon: require("@/assets/images/icons/googleIcon.svg"),
     enabled: true,
   },
-  // { id: "apple", label: "Apple — bientôt disponible", icon: require("@/assets/images/icons/appleIcon.svg"), enabled: false },
-  // { id: "facebook", label: "Facebook — bientôt disponible", icon: require("@/assets/images/icons/facebookIcon.svg"), enabled: false },
+  // {
+  //   id: "apple",
+  //   label: "Apple",
+  //   icon: require("@/assets/images/icons/appleIcon.svg"),
+  //   enabled: false,
+  // },
+  // {
+  //   id: "facebook",
+  //   label: "Facebook",
+  //   icon: require("@/assets/images/icons/facebookIcon.svg"),
+  //   enabled: false,
+  // },
 ];
 
 export default function ThirdPartyAuthButtons({
   onPress,
+  disabled = false,
 }: {
   onPress: (provider: Provider) => void;
+  /** Locks every provider while a sign-in round-trip is in flight. */
+  disabled?: boolean;
 }) {
   return (
     <View style={styles.wrap}>
@@ -36,9 +49,9 @@ export default function ThirdPartyAuthButtons({
       {PROVIDERS.map((p) => (
         <TouchableOpacity
           key={p.id}
-          style={[styles.btn, !p.enabled && styles.btnDisabled]}
-          disabled={!p.enabled}
-          onPress={() => p.enabled && onPress(p.id)}
+          style={[styles.btn, (!p.enabled || disabled) && styles.btnDisabled]}
+          disabled={!p.enabled || disabled}
+          onPress={() => p.enabled && !disabled && onPress(p.id)}
           activeOpacity={0.7}
         >
           <Image source={p.icon} style={styles.btnIcon} contentFit="contain" />
