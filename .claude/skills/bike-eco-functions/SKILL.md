@@ -1,0 +1,125 @@
+---
+name: bike-eco-functions
+description: >-
+  Use when working in functions/ of the bike-eco app — adding or changing a
+  callable or HTTP endpoint, server-side validation of a request payload,
+  privileged writes or custom claims, sending a transactional email, rate limits
+  or abuse guards, App Check, secrets, the Firebase emulators, deploying
+  functions, or an error surfacing in the app as the wrong French message.
+---
+
+# Cloud Functions in bike-eco
+
+Gen 2 `firebase-functions`, TypeScript, deployed from `functions/`. Anything the client
+must not be trusted to do — creating Auth users, setting custom claims, stamping a sender
+name, sending email — lives here. Gate with `docs/tech/verification.md`.
+
+## Module layout
+
+Every feature is three files. The split exists so the logic is testable without the
+Firebase runtime.
+
+| File | Contents | Tested |
+|---|---|---|
+| `core.ts` | Pure logic, all I/O injected via a `Deps` object | **Yes** — the real unit tests |
+| `schemas.ts` | Zod v4 schemas validating the request payload | **Yes** |
+| `index.ts` | Thin `onCall` wiring: parse → call core → `toHttps` | No |
+
+`registration/` and `messages/` both follow it. A new callable does too — resist putting
+logic straight in `index.ts`, because nothing there is reachable from a unit test.
+
+The `Deps` pattern: `core.ts` declares an interface (`Deps`, `BackofficeDeps`) of the
+operations it needs (`createUser`, `setClaims`, `writeCompany`, `sendInviteEmail`, `now`),
+and `index.ts` supplies a `realDeps()` built from the admin SDK. Tests pass fakes.
+
+## Callable boilerplate
+
+```ts
+export const doThing = onCall(async (req) => {
+  if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
+  try {
+    const input = doThingSchema.parse(req.data);
+    await doThingCore(input, callerFrom(req), realDeps());
+    return { ok: true };
+  } catch (e) { toHttps(e); }
+});
+```
+
+From `functions/src/callable.ts`:
+
+- **`db()`** — the admin Firestore handle for the **named `bike-eco-db`** database. Never
+  `getFirestore()` bare; that targets `(default)` and silently reads nothing.
+- **`callerFrom(req)`** — `{ uid, role, status, companyId }` from the verified token.
+  Claims come from the token, never from `req.data`.
+- **`toHttps(err)`** — the single error funnel: `RegError` → its own code, `ZodError` →
+  `invalid-argument`, known `auth/*` codes → French `HttpsError`, anything else → logged
+  and rethrown as a generic `internal`. Raw internals never reach the client.
+- Add `{ secrets: B2C_EMAIL_SECRETS }` to any callable that sends email.
+
+Callables that must reject unauthenticated callers do so explicitly — `onCall` does not.
+
+## The error contract crosses the wire
+
+Server `toHttps()` pairs with client `frenchError()` in `src/lib/data/callable.ts`, and
+**a server-authored `HttpsError` message wins** over the client's generic per-code map.
+So a specific French message written server-side reaches the user verbatim; a bare code
+falls back to the client map. Changing copy on one side means checking the other.
+
+## Validation
+
+Every payload is parsed with a Zod v4 schema before it reaches core logic —
+`req.data` is attacker-controlled. Limits belong in the schema, where they are testable:
+`text` max 4096 chars, `attachments` max 5, attachment `size` max 10 MB, `name` max 255,
+plus a `.refine` requiring text or an attachment (`messages/schemas.ts`).
+
+Server-side checks that cannot be expressed in a schema go in `core.ts`: `messages/core.ts`
+verifies the caller is the owning dealer or back-office, and that every attachment URL is
+a real Storage host whose object path sits under this dossier's message folder — parsed
+properly, not substring-matched.
+
+The B2C endpoint (`index.ts`, `onRequest` + busboy) is the exception: multipart, public,
+so it caps file size (8 MB), file count (12) and field size before buffering.
+
+## Email
+
+`email.ts` owns sending and region routing (NORTH/SOUTH mailboxes; `regions.ts`).
+
+**`DEV_EMAIL_OVERRIDE` is `true`** — every email is redirected to the dev mailbox. It is a
+module constant, not an env var. Flipping it to `false` is a required launch step; until
+then no real recipient receives anything.
+
+## App Check
+
+Not yet enforced on any callable — the open launch-hardening item. Enforcing it means
+`{ enforceAppCheck: true }` on the callables plus client attestation, and it is
+owner-dependent (console setup).
+
+## Emulators and deploy
+
+`callable.ts` points the admin SDK at the local emulators whenever
+`NODE_ENV !== "production"`. Deployed Gen 2 functions always run with
+`NODE_ENV="production"`, so the block is skipped in prod — don't add a manual flag.
+
+```bash
+JAVA_HOME=/usr/local/jdk-26.0.1 npx firebase-tools@latest emulators:start
+npm run test:rules          # rules tests, emulator-backed
+```
+
+Use `firebase-tools@latest`; a JDK error means raising `JAVA_HOME` (system default is 17),
+not pinning an older major.
+
+`setGlobalOptions({ maxInstances: 10 })` bounds autoscaling blast radius. A function
+buffering uploads in memory also sets its own `memory` and `concurrency`.
+
+## Common mistakes
+
+| Mistake | Consequence |
+|---|---|
+| Logic in `index.ts` instead of `core.ts` | Untestable; the house tests live at the core layer |
+| `getFirestore()` instead of `db()` | Targets `(default)`; reads return nothing |
+| Trusting `req.data` for `role` / `companyId` | Privilege escalation — read claims via `callerFrom` |
+| `onCall` without an explicit `req.auth` check | Unauthenticated callers reach the core |
+| Throwing raw errors instead of `toHttps` | Internal details leak; client shows the generic fallback |
+| Sending email without `{ secrets: B2C_EMAIL_SECRETS }` | Runtime failure — credentials unavailable |
+| Shipping with `DEV_EMAIL_OVERRIDE = true` | No real recipient ever gets an email |
+| Substring-matching a URL for validation | Bypassable; parse the URL and check host + path |

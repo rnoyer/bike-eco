@@ -49,33 +49,29 @@ feature. Keep a spec in sync in the same change that alters its feature.
     with `scripts/grant-backoffice.js` (Auth user + custom claims + `users/{uid}` doc).
     No product path creates one.
 
-# Forms conventions
+# Project skills
 
-- **Reuse the shared multi-step engine** — `src/lib/forms/useStepForm.ts` (react-hook-form
-  + `zodResolver`, step cursor, per-step validation) drives every multi-step form. Build
-  fields with the controlled wrappers in `src/components/form/` (`ControlledField`,
-  `ControlledDropdown`, `ControlledCheckboxGroup`, `PhotoPicker`) over the shared
-  `FormLayout`. A form = one `schema.ts` (Zod) + a declarative `steps.tsx`; see
-  `src/features/b2c-submission/` as the reference implementation. Do NOT re-create
-  per-step `useState` or hand-rolled validators.
-- **Build forms with `react-hook-form`** — use it for form state, field registration,
-  and submission. Do NOT hand-roll form state or a custom `useForm`-style hook.
-- **Validation uses Zod (v4) schemas** — see the Zod section above. Do NOT hand-roll a
-  custom validation hook or a parallel rules library; define one Zod schema per form and
-  derive types from it. Wire Zod to react-hook-form via the `zodResolver` from
-  `@hookform/resolvers/zod`.
-- Multi-step forms follow the shared layout in the specs: disabled slider/stepper, H1
-  title (24px bold black), subtitle (14px regular #71727A), fields, then
-  "Précédent"/"Suivant" (and "S'inscrire" on the final step where applicable).
-- Validate on blur and on submit, not on every keystroke.
-- Error messages must be specific and actionable ("Saisissez un email valide", not
-  "Champ invalide"). UI copy is in French — match the wording in the specs.
-- Mandatory fields are marked with `*` and accompanied by the "* Champs obligatoires" note.
+Five skills carry this project's conventions, one per layer. **Activate the matching one
+before working in that layer** — each holds the non-obvious rules and the mistakes that
+break things, and each is kept in sync with the code it describes.
 
-# Data / Firestore
+| Skill | Activate when touching |
+|---|---|
+| `bike-eco-forms` | Any form: funnels, single-step screens, Zod schemas, fields, submit handlers |
+| `bike-eco-auth` | Sign-in/up/out, passwords, claims, route guards, third-party providers |
+| `bike-eco-ui` | Screens, components, info lists, cards, badges, modals, tokens/styling |
+| `bike-eco-data` | Firestore queries, `use*` hooks, the data model, rules, indexes |
+| `bike-eco-functions` | Anything in `functions/` — callables, payload validation, email |
 
-When designing or changing data, activate the `firebase-firestore` skill and follow its
-guides. Conventions in place:
+Also activate the `firebase-firestore` skill when designing or changing data.
+
+# Verification
+
+`docs/tech/verification.md` is the single source for how a change is gated: the
+`tsc` + lint + test command, what is unit-tested and what isn't, the security-rules tests,
+and the typed-routes regeneration step required after adding a route file.
+
+# Data / Firestore facts
 
 - App data lives in the **named `bike-eco-db`** database (Standard edition), not
   `(default)`. The client is initialized in `firebaseConfig.ts` (`db`, `storage`, `app`).

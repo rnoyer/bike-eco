@@ -1,0 +1,118 @@
+---
+name: bike-eco-ui
+description: >-
+  Use when building or restyling any screen, component, list, card, badge, modal
+  or layout in the bike-eco Expo app — an info list of label/value rows, a
+  tappable phone number or email address, text that overflows or needs truncating,
+  a section header, a status badge, a dossier or company card, an error or
+  confirmation modal, a spinner or empty state, or any colour, spacing, radius or
+  font-size decision.
+---
+
+# UI in bike-eco
+
+Two rendering layers, one token set. Read the matching `docs/specs/page-*.md` or
+`component-*.md` before building — they are the source of truth for layout and French
+copy. Gate with `docs/tech/verification.md`.
+
+## The two layers
+
+| Layer | Where | Built from | Use for |
+|---|---|---|---|
+| **Native** | `src/components/native/` | `@expo/ui`: `Host`, `Column`, `Row`, `Text`, `Spacer` | Read-only info lists rendered inside a screen |
+| **RN** | `src/components/ui/`, `src/components/form/` | React Native + `@/theme/tokens` | Everything else: forms, cards, buttons, modals, sections |
+
+Forms are **always** the RN layer — see `bike-eco-forms`. Don't convert an existing
+component from one layer to the other as a side effect of another change.
+
+## Tokens are the only source of style
+
+`src/theme/tokens.ts` holds colours, spacing, radius, button height, title/subtitle text
+styles, and the per-status badge palette. Never hardcode a hex or spacing value a token
+covers.
+
+```ts
+colors: primary #111 · primaryText #fff · muted #71727A · border #E5E7EB
+        divider #F3F4F6 · disabled #C1C1C6 (also placeholder) · surfaceAlt #FAFAFA
+        surface/bg #fff · danger #DC2626 · success #16A34A
+status: a_traiter (amber) · en_cours (blue) · cloture (green)   // keyed by DossierStatus
+radius: sm 8 · md 12 · lg 16        space: xs 4 · sm 8 · md 12 · lg 24 · xl 28
+```
+
+`tokens.status` is keyed by `DossierStatus`, so adding a status means adding its palette
+entry — `StatusBadge` reads it directly.
+
+The one documented exception: `src/components/native/*InfoList.tsx` declare local `LABEL`
+/ `VALUE` text constants because `@expo/ui` `textStyle` takes plain objects, not RN
+styles. Their values still mirror the tokens (`#71727A`, `#111`).
+
+## Info lists
+
+`AccountInfoList`, `CompanyInfoList`, `DossierInfoList`, `UserInfoList` all follow one
+shape: build a `rows: [string, string][]` array, then map it to `Row` +
+`Text(label) · Spacer(flexible) · Text(value)`.
+
+Conventions that must survive any restyle:
+
+- **`dash()`** renders `"—"` for `null` / `undefined` / `""`. Never print "null" or an
+  empty row.
+- **Units live in the value**: `${cylindree} cc`, `${kilometrage} km`, `${prix} €` — and
+  the field is dashed when absent, not rendered as a bare unit.
+- **Optional rows are conditional**, via props (`CompanyInfoList`'s `showName`,
+  `showRegion`) — not by rendering an empty row.
+
+### The Android crash
+
+Use a non-scrolling `Column`, **never** a native `List`. The screen's RN `ScrollView`
+owns scrolling; a native scroller measured with unbounded height crashes on Android. This
+is already commented in `DossierInfoList.tsx` — keep the comment if you rewrite the file.
+
+### Long values
+
+A long `commentaires` value in a `Row` fights the label for width, because `Row` +
+`Spacer(flexible)` is a single-line layout. Free-text fields need their own full-width
+block below the label rather than a right-aligned value in the same row, plus a character
+cap on the input side (`bike-eco-forms`).
+
+### Tappable phone / email
+
+`Linking.openURL` with `tel:` and `mailto:` opens the OS dialer and mail client. Guard
+with `canOpenURL` and fall back to plain text — a simulator or a tablet without a dialer
+returns false. Strip spaces from the phone number for the `tel:` href while leaving the
+displayed value formatted.
+
+## Shared components
+
+| Component | Notes |
+|---|---|
+| `ui/Section` | Title + `loading` spinner + `emptyMessage` + children. Owns all three states — don't reimplement them per screen |
+| `ui/SectionWrapper` | Layout shell around sections |
+| `ui/DossiersSection`, `ui/CompaniesSection` | Per-section fetch + `Section` |
+| `ui/DossierCard`, `ui/CompanyCard` | Thin wide cards; see their component specs |
+| `ui/StatusBadge` | Reads `tokens.status` by `DossierStatus` |
+| `ui/Button` | The only button. Never hand-roll a `Pressable` with its own styling |
+| `ui/ImageViewerModal` | Full-screen modal precedent — wraps content in its own `GestureHandlerRootView` |
+| `ui/ConfirmationView` | Success screen with delayed auto-redirect |
+
+**Modals:** `ImageViewerModal` is the pattern to follow for a new modal (an auth-failure
+dialog, a confirmation prompt). A modal that hosts gesture-driven content needs its own
+`GestureHandlerRootView` inside the modal — the root one doesn't reach across the portal.
+
+## Copy
+
+All UI copy is French, matching the spec verbatim. Errors are specific and actionable
+(`"Email ou mot de passe incorrect."`, not `"Erreur"`). Auth copy comes from
+`mapAuthError`, data copy from `mapDataError` — a screen should render a mapped message,
+never invent its own.
+
+## Common mistakes
+
+| Mistake | Consequence |
+|---|---|
+| Hardcoding `#111` / `12` instead of a token | Drifts from the rest of the app; breaks a future token change |
+| Native `List` inside `components/native/` | Android crash on unbounded-height measurement |
+| Rendering `null`/`""` instead of `dash()` | "null" or blank rows in the UI |
+| Re-implementing loading / empty state per screen | `Section` already owns all three states |
+| A long free-text value in a label/value `Row` | Squeezes the label; text overflows off-screen |
+| `Linking.openURL` without `canOpenURL` | Dead tap on devices with no dialer/mail client |
+| New modal without its own `GestureHandlerRootView` | Gestures silently dead inside the modal |
