@@ -47,19 +47,20 @@ export default function ChatComposer({
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
       quality: 0.8,
+      allowsMultipleSelection: true,
+      selectionLimit: 5 - files.length,
     });
     if (result.canceled) return;
-    const asset = result.assets[0];
-    setFiles((current) => [
-      ...current,
-      {
+    const picked: PickedFile[] = result.assets
+      .slice(0, 5 - files.length)
+      .map((asset) => ({
         uri: asset.uri,
         name: asset.fileName ?? "photo.jpg",
         size: asset.fileSize ?? 0,
         mimeType: asset.mimeType ?? "image/jpeg",
         type: "image",
-      },
-    ]);
+      }));
+    setFiles((current) => [...current, ...picked]);
   }
 
   async function pickPdf() {
@@ -72,19 +73,19 @@ export default function ChatComposer({
     const result = await DocumentPicker.getDocumentAsync({
       type: "application/pdf",
       copyToCacheDirectory: true,
+      multiple: true,
     });
     if (result.canceled) return;
-    const asset = result.assets[0];
-    setFiles((current) => [
-      ...current,
-      {
+    const picked: PickedFile[] = result.assets
+      .slice(0, 5 - files.length)
+      .map((asset) => ({
         uri: asset.uri,
         name: asset.name,
         size: asset.size ?? 0,
         mimeType: asset.mimeType ?? "application/pdf",
         type: "pdf",
-      },
-    ]);
+      }));
+    setFiles((current) => [...current, ...picked]);
   }
 
   return (
