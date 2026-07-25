@@ -5,7 +5,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 interface Props {
   thumbnailUrl: string | null;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   onPress: () => void;
 }
 
@@ -27,9 +27,11 @@ export default function DossierCard({
         <Text style={styles.title} numberOfLines={1}>
           {title}
         </Text>
-        <Text style={styles.subtitle} numberOfLines={1}>
-          {subtitle}
-        </Text>
+        {subtitle ? (
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
     </TouchableOpacity>
   );

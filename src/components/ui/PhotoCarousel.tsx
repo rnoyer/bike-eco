@@ -4,12 +4,14 @@ import {
   Dimensions,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from "react-native";
 import type { DossierStatus } from "@/lib/firestore/schema";
 import { tokens } from "@/theme/tokens";
+import ImageViewerModal from "./ImageViewerModal";
 import StatusBadge from "./StatusBadge";
 
 const W = Dimensions.get("window").width;
@@ -22,6 +24,7 @@ export default function PhotoCarousel({
   status?: DossierStatus;
 }) {
   const [index, setIndex] = useState(0);
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
     setIndex(Math.round(e.nativeEvent.contentOffset.x / W));
 
@@ -34,13 +37,14 @@ export default function PhotoCarousel({
         onMomentumScrollEnd={onScroll}
       >
         {photos.map((uri) => (
-          <Image
-            key={uri}
-            source={{ uri }}
-            style={styles.photo}
-            contentFit="cover"
-            transition={150}
-          />
+          <Pressable key={uri} onPress={() => setViewerUri(uri)}>
+            <Image
+              source={{ uri }}
+              style={styles.photo}
+              contentFit="cover"
+              transition={150}
+            />
+          </Pressable>
         ))}
       </ScrollView>
       {status ? (
@@ -48,14 +52,15 @@ export default function PhotoCarousel({
           <StatusBadge status={status} />
         </View>
       ) : null}
-      <View style={styles.dots}>
+      <View style={styles.dots} pointerEvents="none">
         {photos.map((uri, i) => (
-          <View
-            key={uri}
-            style={[styles.dot, i === index && styles.dotActive]}
-          />
+          <View key={uri} style={[styles.dot, i === index && styles.dotActive]} />
         ))}
       </View>
+
+      {viewerUri !== null ? (
+        <ImageViewerModal uri={viewerUri} onClose={() => setViewerUri(null)} />
+      ) : null}
     </View>
   );
 }

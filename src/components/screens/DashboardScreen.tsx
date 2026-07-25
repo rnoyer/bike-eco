@@ -1,13 +1,13 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
 import DossierCard from "@/components/ui/DossierCard";
 import DossiersSection from "@/components/ui/DossiersSection";
 import PendingCompaniesBanner from "@/components/ui/PendingCompaniesBanner";
 import SectionWrapper from "@/components/ui/SectionWrapper";
-import type { WithId } from "@/lib/firestore/collections";
 import { useDossiers } from "@/lib/data/useDossiers";
 import { useRegionFilter } from "@/lib/data/useRegionFilter";
+import type { WithId } from "@/lib/firestore/collections";
 import type { Dossier, UserRole } from "@/lib/firestore/schema";
 import { tokens } from "@/theme/tokens";
+import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
 
 interface Props {
   role: UserRole;
@@ -16,7 +16,12 @@ interface Props {
   onOpenCompanies?: () => void;
 }
 
-export default function DashboardScreen({ role, onOpenDossier, onSell, onOpenCompanies }: Props) {
+export default function DashboardScreen({
+  role,
+  onOpenDossier,
+  onSell,
+  onOpenCompanies,
+}: Props) {
   const { region } = useRegionFilter();
   const filter = role === "backoffice" ? region : undefined;
   const aTraiter = useDossiers(["a_traiter"], filter);
@@ -36,7 +41,9 @@ export default function DashboardScreen({ role, onOpenDossier, onSell, onOpenCom
     return (
       <ScrollView>
         <SectionWrapper>
-          {onOpenCompanies ? <PendingCompaniesBanner onPress={onOpenCompanies} /> : null}
+          {onOpenCompanies ? (
+            <PendingCompaniesBanner onPress={onOpenCompanies} />
+          ) : null}
           <DossiersSection
             title="Dossiers à traiter"
             dossiers={aTraiter.data}
@@ -64,21 +71,29 @@ export default function DashboardScreen({ role, onOpenDossier, onSell, onOpenCom
   }
 
   const ongoing = [...aTraiter.data, ...enCours.data].sort(
-    (a, b) => a.createdAt.toMillis() - b.createdAt.toMillis()
+    (a, b) => a.createdAt.toMillis() - b.createdAt.toMillis(),
   );
   const card = (d: WithId<Dossier>) => (
     <DossierCard
       key={d.id}
       thumbnailUrl={d.thumbnailUrl}
       title={`${d.vehicle.marque} ${d.vehicle.modele}`}
-      subtitle={`${d.vehicle.cylindree ?? "—"} cc`}
+      subtitle={
+        d.negotiatedPrice !== null
+          ? `Prix négocié : ${d.negotiatedPrice} €`
+          : undefined
+      }
       onPress={() => onOpenDossier(d.id)}
     />
   );
   return (
     <ScrollView>
       <SectionWrapper>
-        <TouchableOpacity style={styles.cta} activeOpacity={0.85} onPress={onSell}>
+        <TouchableOpacity
+          style={styles.cta}
+          activeOpacity={0.85}
+          onPress={onSell}
+        >
           <Text style={styles.ctaText}>Vendre une moto</Text>
         </TouchableOpacity>
         <DossiersSection
@@ -108,5 +123,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  ctaText: { color: tokens.colors.primaryText, fontSize: 16, fontWeight: "700" },
+  ctaText: {
+    color: tokens.colors.primaryText,
+    fontSize: 16,
+    fontWeight: "700",
+  },
 });
