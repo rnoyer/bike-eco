@@ -44,6 +44,11 @@ feature. Keep a spec in sync in the same change that alters its feature.
   - `component-card-dossier.md` — thin wide dossier card (thumbnail, title, subtitle).
   - `component-dossiers-section.md` — titled list of dossiers (per-section fetch, loading + empty states).
 
+- **Runbooks** (`docs/ops/`) — operational procedures against the live project:
+  - `first-backoffice-account.md` — creating a `backoffice` account on `bike-eco-43a84`
+    with `scripts/grant-backoffice.js` (Auth user + custom claims + `users/{uid}` doc).
+    No product path creates one.
+
 # Forms conventions
 
 - **Reuse the shared multi-step engine** — `src/lib/forms/useStepForm.ts` (react-hook-form
