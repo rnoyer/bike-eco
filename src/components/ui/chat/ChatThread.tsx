@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import pdfIcon from "@/assets/images/icons/pdfIcon.svg";
 import ImageGalleryModal from "@/components/ui/ImageGalleryModal";
 import type { Message, MessageAttachment } from "@/lib/firestore/schema";
 import { tokens } from "@/theme/tokens";
@@ -52,8 +53,8 @@ function Attachment({
   }
   return (
     <Pressable style={styles.pdf} onPress={() => openPdf(a.url)}>
-      <Text style={styles.pdfIcon}>📄</Text>
-      <Text style={styles.pdfName} numberOfLines={1}>
+      <Image source={pdfIcon} style={styles.pdfIcon} contentFit="contain" />
+      <Text style={styles.pdfName} numberOfLines={1} ellipsizeMode="tail">
         {a.name}
       </Text>
     </Pressable>
@@ -151,6 +152,9 @@ const styles = StyleSheet.create({
     padding: tokens.space.sm,
     borderRadius: tokens.radius.sm,
   },
-  pdfIcon: { fontSize: 28 },
+  // Matches the asset's aspect ratio (75.3 × 92.6) so `contain` leaves no padding.
+  pdfIcon: { width: 28, height: 34 },
+  // `flex: 1` lets the name shrink inside the bubble so `numberOfLines` can
+  // actually ellipsize it rather than pushing the row wider.
   pdfName: { fontSize: 13, flex: 1, color: tokens.colors.primary },
 });
