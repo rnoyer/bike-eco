@@ -1,17 +1,21 @@
-import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 import DossierInfoList from "@/components/native/DossierInfoList";
+import UserInfoList from "@/components/native/UserInfoList";
 import PhotoCarousel from "@/components/ui/PhotoCarousel";
 import Section from "@/components/ui/Section";
 import SectionWrapper from "@/components/ui/SectionWrapper";
 import { useDossier } from "@/lib/data/useDossier";
 import { tokens } from "@/theme/tokens";
+import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 
 export default function DossierDetailScreen({ id }: { id: string }) {
   const { data, loading } = useDossier(id);
   return (
     <ScrollView>
       {loading || !data ? (
-        <ActivityIndicator style={styles.spinner} color={tokens.colors.primary} />
+        <ActivityIndicator
+          style={styles.spinner}
+          color={tokens.colors.primary}
+        />
       ) : (
         <>
           <PhotoCarousel photos={data.photos} status={data.status} />
@@ -19,8 +23,11 @@ export default function DossierDetailScreen({ id }: { id: string }) {
             <Text style={styles.heading}>
               {data.vehicle.marque} {data.vehicle.modele}
             </Text>
-            <Section title="Informations">
+            <Section title="Informations véhicule">
               <DossierInfoList dossier={data} />
+            </Section>
+            <Section title="Informations vendeur">
+              <UserInfoList dossier={data} />
             </Section>
           </SectionWrapper>
         </>

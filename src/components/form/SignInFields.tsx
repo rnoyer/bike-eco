@@ -44,13 +44,13 @@ export default function SignInFields({ onSubmit, onForgotPassword }: Props) {
           autoCapitalize="none"
         />
         <Button
+          label="Login"
+          onPress={form.handleSubmit((v) => onSubmit(v.email, v.password))}
+        />
+        <Button
           variant="text"
           label="Mot de passe oublié"
           onPress={() => onForgotPassword(form.getValues("email"))}
-        />
-        <Button
-          label="Login"
-          onPress={form.handleSubmit((v) => onSubmit(v.email, v.password))}
         />
       </View>
     </FormProvider>

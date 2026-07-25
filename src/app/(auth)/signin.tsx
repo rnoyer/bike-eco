@@ -4,10 +4,16 @@ import PhotoBackground from "@/components/ui/PhotoBackground";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
 import { mapAuthError } from "@/lib/auth/authErrors";
 import { signInWithGoogle } from "@/lib/auth/googleSignIn";
+import { mapDataError } from "@/lib/data/dataErrors";
 import { userDoc } from "@/lib/firestore/collections";
+import {
+  WRITE_TIMEOUT_MS,
+  writeWithTimeout,
+} from "@/lib/firestore/writeWithTimeout";
 import { tokens } from "@/theme/tokens";
 import { useRouter } from "expo-router";
 import {
+  deleteUser,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
@@ -42,13 +48,43 @@ export default function SignInScreen() {
     setNotice(null);
     setGoogleBusy(true);
     try {
-      await signInWithGoogle();
+      const { isNewUser } = await signInWithGoogle();
       const user = auth.currentUser;
+      if (!user) {
+        setError("La connexion a échoué. Veuillez réessayer.");
+        return;
+      }
       // Sign-in is not registration: a Google identity with no users/{uid}
       // profile has never been through the funnel, and would otherwise sit
       // authenticated-but-sessionless on this screen (see AuthProvider).
-      if (!user || !(await getDoc(userDoc(user.uid))).exists()) {
+      let registered: boolean;
+      try {
+        // Firestore buffers a read it cannot reach the server with instead of
+        // rejecting, which would leave this button disabled with no feedback,
+        // so the read is raced against the shared fail-fast timeout.
+        registered = (
+          await writeWithTimeout(
+            () => getDoc(userDoc(user.uid)),
+            () => {},
+            WRITE_TIMEOUT_MS,
+          )
+        ).exists();
+      } catch (e) {
+        // Firestore codes (`unavailable`, `permission-denied`) are not auth
+        // codes: the outer catch would fall through to the SDK's own English
+        // message, so map them here through the data-error counterpart.
         await signOut(auth);
+        setError(mapDataError((e as { code?: string }).code ?? ""));
+        return;
+      }
+      if (!registered) {
+        // Signing in just to be refused would otherwise leave the Auth record
+        // this very call created behind: no profile, no claims, no password.
+        // Delete it rather than accumulate dormant accounts for everyone who
+        // taps Google without an account. A record that already existed is only
+        // signed out — it may belong to someone mid-registration.
+        if (isNewUser) await deleteUser(user).catch(() => signOut(auth));
+        else await signOut(auth);
         setError(
           "Aucun compte Bike-eco n’est associé à ce compte Google. Créez un compte pour continuer.",
         );
