@@ -8,9 +8,14 @@
 
 ## Main section
 
-Scrollable view with all forms information related to the vehicule only. Below the
-vehicle-name heading, the data sits under an "Informations" section title (the shared
-`Section` component); the body is a compact list of :
+Scrollable view with all forms information related to the vehicule only. At the top,
+a horizontal photo carousel of the dossier's photos (paged, with page dots and — when
+present — the status badge overlaid). The carousel is interactive: tapping a photo
+opens it full-screen in a swipeable, pinch-to-zoom gallery of the dossier's photos,
+starting at the tapped one.
+
+Below the vehicle-name heading, the data sits under an "Informations" section title
+(the shared `Section` component); the body is a compact list of :
 
 - title : field label
 - value : field value
