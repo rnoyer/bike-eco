@@ -1,3 +1,7 @@
+import pdfIcon from "@/assets/images/icons/pdfIcon.svg";
+import ImageViewerModal from "@/components/ui/ImageViewerModal";
+import type { Message, MessageAttachment } from "@/lib/firestore/schema";
+import { tokens } from "@/theme/tokens";
 import { Image } from "expo-image";
 import { useState } from "react";
 import {
@@ -9,11 +13,6 @@ import {
   Text,
   View,
 } from "react-native";
-import pdfIcon from "@/assets/images/icons/pdfIcon.svg";
-import ImageGalleryModal from "@/components/ui/ImageGalleryModal";
-import type { Message, MessageAttachment } from "@/lib/firestore/schema";
-import { tokens } from "@/theme/tokens";
-import { threadImageUrls } from "./threadImages";
 
 function timeLabel(m: Message): string {
   return m.createdAt.toDate().toLocaleString("fr-FR", {
@@ -32,11 +31,15 @@ async function openPdf(url: string) {
   }
 }
 
+/** `mine` bubbles are near-black (`tokens.colors.primary`), so the PDF row has to
+ *  flip to light-on-dark or it renders invisible against its own bubble. */
 function Attachment({
   a,
+  mine,
   onOpenImage,
 }: {
   a: MessageAttachment;
+  mine: boolean;
   onOpenImage: (url: string) => void;
 }) {
   if (a.type === "image") {
@@ -52,9 +55,16 @@ function Attachment({
     );
   }
   return (
-    <Pressable style={styles.pdf} onPress={() => openPdf(a.url)}>
+    <Pressable
+      style={[styles.pdf, mine && styles.pdfMine]}
+      onPress={() => openPdf(a.url)}
+    >
       <Image source={pdfIcon} style={styles.pdfIcon} contentFit="contain" />
-      <Text style={styles.pdfName} numberOfLines={1} ellipsizeMode="tail">
+      <Text
+        style={[styles.pdfName, mine && styles.pdfNameMine]}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
         {a.name}
       </Text>
     </Pressable>
@@ -68,9 +78,7 @@ export default function ChatThread({
   messages: Message[];
   currentUserId: string;
 }) {
-  const images = threadImageUrls(messages);
-  const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
-  const openImage = (url: string) => setGalleryIndex(images.indexOf(url));
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
 
   return (
     <>
@@ -96,7 +104,12 @@ export default function ChatThread({
                   </Text>
                 ) : null}
                 {m.attachments.map((a) => (
-                  <Attachment key={a.url} a={a} onOpenImage={openImage} />
+                  <Attachment
+                    key={a.url}
+                    a={a}
+                    mine={mine}
+                    onOpenImage={setViewerUri}
+                  />
                 ))}
                 <Text style={[styles.time, mine && styles.timeMine]}>
                   {timeLabel(m)}
@@ -107,12 +120,8 @@ export default function ChatThread({
         })}
       </ScrollView>
 
-      {galleryIndex !== null ? (
-        <ImageGalleryModal
-          images={images}
-          initialIndex={galleryIndex}
-          onClose={() => setGalleryIndex(null)}
-        />
+      {viewerUri !== null ? (
+        <ImageViewerModal uri={viewerUri} onClose={() => setViewerUri(null)} />
       ) : null}
     </>
   );
@@ -152,9 +161,11 @@ const styles = StyleSheet.create({
     padding: tokens.space.sm,
     borderRadius: tokens.radius.sm,
   },
+  pdfMine: { backgroundColor: "rgba(255,255,255,0.14)" },
   // Matches the asset's aspect ratio (75.3 × 92.6) so `contain` leaves no padding.
   pdfIcon: { width: 28, height: 34 },
   // `flex: 1` lets the name shrink inside the bubble so `numberOfLines` can
   // actually ellipsize it rather than pushing the row wider.
   pdfName: { fontSize: 13, flex: 1, color: tokens.colors.primary },
+  pdfNameMine: { color: tokens.colors.primaryText },
 });

@@ -2,8 +2,6 @@ import { Image } from "expo-image";
 import { Dimensions, StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
-  runOnJS,
-  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -13,35 +11,20 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const MAX_SCALE = 4;
 
 /**
- * One full-screen page: an image with pinch-, double-tap-, and pan-when-zoomed
- * gestures. Pan is bounded so the image can't be flung off-screen, and the scale
- * is capped. `onZoomChange` reports (once per crossing of scale 1) whether this
- * page is zoomed, so the gallery can suspend its horizontal paging.
+ * A full-screen image with pinch-, double-tap-, and pan-when-zoomed gestures. Pan
+ * is bounded so the image can't be flung off-screen, and the scale is capped.
  *
  * The animated transform is applied to an `Animated.View` wrapping a plain
  * `expo-image` — expo-image is not an Animated component, so the style must sit on
  * the wrapper, not the image.
  */
-export function ZoomableImage({
-  uri,
-  onZoomChange,
-}: {
-  uri: string;
-  onZoomChange?: (zoomed: boolean) => void;
-}) {
+export function ZoomableImage({ uri }: { uri: string }) {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const savedTranslateX = useSharedValue(0);
   const savedTranslateY = useSharedValue(0);
-
-  useAnimatedReaction(
-    () => scale.value > 1,
-    (zoomed, previous) => {
-      if (onZoomChange && zoomed !== previous) runOnJS(onZoomChange)(zoomed);
-    },
-  );
 
   const pinch = Gesture.Pinch()
     .onUpdate((e) => {

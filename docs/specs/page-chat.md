@@ -12,9 +12,9 @@ From top to bottom
 
 - scrollable view with all the messages and their attachments. Attachments are
   interactive:
-  - **photos** render as a tappable thumbnail; tapping opens a full-screen,
-    swipeable, pinch-to-zoom gallery covering **every** photo in the thread (not
-    just the tapped message's), opened at the tapped photo.
+  - **photos** render as a tappable thumbnail; tapping opens **that photo** full
+    screen with pinch / double-tap zoom and a "✕" to close. One photo at a time —
+    there is no swiping between photos.
   - **PDFs** render as a tappable row: the `pdfIcon.svg` asset next to the file's
     name, truncated with an ellipsis ("…") when it is too long for the bubble.
     Tapping opens the file in the device's default PDF reader. If no handler can

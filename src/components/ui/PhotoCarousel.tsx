@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import type { DossierStatus } from "@/lib/firestore/schema";
 import { tokens } from "@/theme/tokens";
-import ImageGalleryModal from "./ImageGalleryModal";
+import ImageViewerModal from "./ImageViewerModal";
 import StatusBadge from "./StatusBadge";
 
 const W = Dimensions.get("window").width;
@@ -24,7 +24,7 @@ export default function PhotoCarousel({
   status?: DossierStatus;
 }) {
   const [index, setIndex] = useState(0);
-  const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
     setIndex(Math.round(e.nativeEvent.contentOffset.x / W));
 
@@ -36,8 +36,8 @@ export default function PhotoCarousel({
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={onScroll}
       >
-        {photos.map((uri, i) => (
-          <Pressable key={uri} onPress={() => setGalleryIndex(i)}>
+        {photos.map((uri) => (
+          <Pressable key={uri} onPress={() => setViewerUri(uri)}>
             <Image
               source={{ uri }}
               style={styles.photo}
@@ -58,12 +58,8 @@ export default function PhotoCarousel({
         ))}
       </View>
 
-      {galleryIndex !== null ? (
-        <ImageGalleryModal
-          images={photos}
-          initialIndex={galleryIndex}
-          onClose={() => setGalleryIndex(null)}
-        />
+      {viewerUri !== null ? (
+        <ImageViewerModal uri={viewerUri} onClose={() => setViewerUri(null)} />
       ) : null}
     </View>
   );
