@@ -1,6 +1,7 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 import { redirectFor, resolveAuthRoute } from "@/lib/auth/routeGuard";
@@ -38,14 +39,16 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <AuthGate>
-          {/* Groups own their headers; the root must not draw one per group screen
-              (that produced the stacked "(b2b)" / "(tabs)" headers). */}
-          <Stack screenOptions={{ headerShown: false }} />
-        </AuthGate>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <AuthGate>
+            {/* Groups own their headers; the root must not draw one per group screen
+                (that produced the stacked "(b2b)" / "(tabs)" headers). */}
+            <Stack screenOptions={{ headerShown: false }} />
+          </AuthGate>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
