@@ -1,10 +1,13 @@
-import { Platform, Pressable, StyleSheet, Text } from "react-native";
 import { tokens } from "@/theme/tokens";
+import { Image } from "expo-image";
+import { Pressable, StyleSheet } from "react-native";
+
+import arrowBack from "@/assets/images/icons/arrow_back_android.svg";
 
 /**
- * A back chevron for a Stack header's `headerLeft`. Used where the target isn't a
+ * A back arrow for a Stack header's `headerLeft`. Used where the target isn't a
  * stack pop (switching between sibling `NativeTabs`), so the native back button
- * can't be reused. Renders the platform-appropriate glyph.
+ * can't be reused.
  */
 export default function HeaderBackButton({ onPress }: { onPress: () => void }) {
   return (
@@ -13,16 +16,24 @@ export default function HeaderBackButton({ onPress }: { onPress: () => void }) {
       hitSlop={12}
       accessibilityRole="button"
       accessibilityLabel="Retour"
+      style={styles.button}
     >
-      <Text style={styles.glyph}>{Platform.OS === "ios" ? "‹" : "←"}</Text>
+      <Image
+        source={arrowBack}
+        style={styles.icon}
+        tintColor={tokens.colors.primary}
+        contentFit="contain"
+      />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  glyph: {
-    fontSize: Platform.OS === "ios" ? 32 : 24,
-    color: tokens.colors.primary,
-    paddingHorizontal: 4,
+  button: {
+    paddingRight: 32,
+  },
+  icon: {
+    width: 24,
+    height: 24,
   },
 });
