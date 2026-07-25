@@ -81,11 +81,14 @@ pan so the image can't be flung entirely off-screen.
 A single-responsibility full-screen viewer. It does not know about chat or
 dossiers — it shows a list of image URLs, swipeable, starting at an index.
 
-- **Props:**
+- **Props:** `{ images, initialIndex, onClose }`
   - `images: string[]` — image URLs to show.
   - `initialIndex: number` — which one to open on (clamped into `[0, images.length)`).
-  - `visible: boolean`
   - `onClose: () => void`
+  - No `visible` prop: the parent mounts the modal only while open and unmounts it
+    via `onClose`. That keeps the initial page a one-shot read of props (no effect,
+    so no sync `setState`-in-effect, which `expo lint`'s React Compiler rejects) and
+    makes reopening at a different index correct by construction.
 - **Behavior:** a full-screen dark `Modal` containing a horizontal `pagingEnabled`
   container of `ZoomableImage` pages, scrolled to `initialIndex` on open; page dots
   when `images.length > 1`; a close “✕”. Horizontal swipe pages between images; the
