@@ -106,7 +106,8 @@ z.object({
 });
 ```
 
-`ControlledField` takes `secureTextEntry` for password inputs. Server-side auth failures
+`ControlledField` takes `secureTextEntry` for password inputs — that one prop also gives
+the field its eye show/hide toggle, which `FormField` renders for any masked input. Server-side auth failures
 (wrong current password, expired reset link) are **not** schema errors — they come back
 from Firebase and are mapped by `mapAuthError`; see `bike-eco-auth`.
 

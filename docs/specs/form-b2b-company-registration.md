@@ -75,6 +75,9 @@ ne passe pas au step suivant.
 
 Button : Google authentication
 
+Note : chaque champ "Input password" porte à droite une icône œil qui affiche /
+masque la saisie. Le mot de passe est masqué par défaut.
+
 Note : via le bouton Google, l'identité est fournie par Auth — les deux champs
 mot de passe ne sont pas saisis et ne bloquent pas le passage au step suivant.
 

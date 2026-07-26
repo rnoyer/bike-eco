@@ -18,6 +18,9 @@ default value : null
 type : Input password
 mandatory : yes
 
+Note : tout champ "Input password" porte à droite une icône œil qui affiche /
+masque la saisie. Le mot de passe est masqué par défaut.
+
 - Link : "Mot de passe oublié"
 
   Envoie l'email de réinitialisation Firebase à l'adresse saisie dans le champ
