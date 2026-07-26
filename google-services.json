@@ -14,11 +14,43 @@
       },
       "oauth_client": [
         {
+          "client_id": "585450098034-6nqpe5adpos2od5b8urmfh4nuvt391k9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bikeeco.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "585450098034-9e04k1kba7734f9utcred5kmb36hn7ml.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bikeeco.app",
+            "certificate_hash": "09f44077962f95e1e58ca6e81a55a82d692d33a7"
+          }
+        },
+        {
+          "client_id": "585450098034-nu2ltssum62soq25hgrmglouk1e31ecp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bikeeco.app",
+            "certificate_hash": "39cea2e469d608eb501ec2197cec9288176aa51c"
+          }
+        },
+        {
           "client_id": "585450098034-uhcdohf3kjihs6tibom3hd4herc7eorq.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.bikeeco.app",
             "certificate_hash": "b0149e4e910ed4d4236d881ee23028e3b51a891a"
+          }
+        },
+        {
+          "client_id": "585450098034-umrcme5gl85k07ogr823al9g4mfk72ec.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bikeeco.app",
+            "certificate_hash": "c99231ba420d59a7b9ff34692f84fe7cadfb4694"
           }
         },
         {
