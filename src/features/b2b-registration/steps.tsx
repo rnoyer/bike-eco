@@ -38,7 +38,7 @@ export const B2B_COMPANY_REGISTRATION_STEPS: CompanyStep[] = [
     progress: 50,
     title: "Votre compte",
     subtitle: "Informations relative à votre compte utilisateur",
-    fields: ["email", "password"],
+    fields: ["email", "password", "confirmPassword"],
     render: () => <AccountFields />,
   },
   {

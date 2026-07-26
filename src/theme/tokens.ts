@@ -3,16 +3,16 @@
 export const tokens = {
   colors: {
     primary: "#111",
-    primaryText: "#fff",
+    primaryText: "#FFFFFF",
     muted: "#71727A",
     border: "#E5E7EB",
     divider: "#F3F4F6",
     disabled: "#C1C1C6", // also the text-input placeholder colour
     surfaceAlt: "#FAFAFA", // input / media-button fill
-    surface: "#fff",
-    bg: "#fff",
+    surface: "#FFFFFF",
+    bg: "#FFFFFF",
     // Semantic feedback colours — single source for errors/success across the app.
-    danger: "#DC2626",
+    danger: "#9F0712",
     success: "#16A34A",
   },
   // Per-status badge palette (background + foreground), keyed by DossierStatus.

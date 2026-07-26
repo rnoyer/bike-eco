@@ -52,8 +52,7 @@ node grant-backoffice.js \
 `--password` est optionnel : sans lui le script génère un mot de passe aléatoire et l'affiche —
 il n'est que temporaire, l'étape 4 le remplace.
 
-Le script affiche l'UID créé. Si `firebase-admin` refuse de s'authentifier, lancer d'abord
-`gcloud auth application-default login` dans Cloud Shell.
+Le script affiche l'UID créé. En cas d'erreur, voir [Dépannage](#dépannage).
 
 ## 4. Passer la main au titulaire du compte
 
@@ -81,9 +80,46 @@ Vérifier aussi que **E-mail/Mot de passe** et **Google** sont activés dans **S
 2. Ouvrir **Réglages → Gérer les entreprises** : cet écran lit `companies`, lecture protégée par
    `isBackoffice()` — s'il s'affiche, les claims sont bien dans l'ID token.
 
-En cas d'écran de connexion en boucle : le document `users/{uid}` manque ou est mal formé —
-relancer le script, puis se déconnecter/reconnecter (les claims ne sont relues qu'au
-rafraîchissement du token).
+## Dépannage
+
+### `403` / `PERMISSION_DENIED` sur `identitytoolkit.googleapis.com`
+
+```
+"The identitytoolkit.googleapis.com API requires a quota project, which is not set by default."
+"reason": "SERVICE_DISABLED", "consumer": "projects/<numéro>"
+```
+
+Les identifiants de Cloud Shell sont ceux d'un **compte utilisateur**, et non d'un compte de
+service : Google exige alors un *quota project* explicite, sinon l'appel est facturé au projet par
+défaut du shell — souvent un autre projet, où l'API Identity Toolkit n'est pas activée (d'où le
+`SERVICE_DISABLED` sur un numéro de consommateur inattendu ; celui de `bike-eco-43a84` est
+**585450098034**, cf. `google-services.json`).
+
+`firebase-admin` lit la variable `GOOGLE_CLOUD_QUOTA_PROJECT` et l'envoie en en-tête
+`x-goog-user-project`. Il suffit donc de la poser avant de lancer le script :
+
+```bash
+gcloud config set project bike-eco-43a84       # aligne le shell sur le bon projet
+export GOOGLE_CLOUD_QUOTA_PROJECT=bike-eco-43a84
+node grant-backoffice.js --email … --prenom … --nom … --tel …
+```
+
+(`gcloud auth application-default set-quota-project bike-eco-43a84` est l'équivalent, mais il
+échoue quand Cloud Shell n'a pas de fichier ADC local — la variable d'environnement est le chemin
+fiable.)
+
+Si le `403` persiste :
+
+- **mauvais compte** — `gcloud auth list` : le compte actif doit avoir un rôle sur
+  `bike-eco-43a84`. Sinon, `gcloud auth login`. Si `firebase-admin` ne s'authentifie pas du tout,
+  `gcloud auth application-default login`.
+- **API réellement désactivée** sur le bon projet (improbable, Auth est utilisée en production) —
+  `gcloud services enable identitytoolkit.googleapis.com --project=bike-eco-43a84`.
+
+### Écran de connexion en boucle après le script
+
+Le document `users/{uid}` manque ou est mal formé — relancer le script, puis se
+déconnecter/reconnecter (les claims ne sont relues qu'au rafraîchissement du token).
 
 ## Gestion courante
 

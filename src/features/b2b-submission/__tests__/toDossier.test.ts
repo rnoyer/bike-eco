@@ -39,10 +39,14 @@ test("a new dossier is unstarted, unpriced, and owned by the submitter", () => {
   expect(d.companyId).toBe("comp_nord");
   expect(d.submittedBy).toBe("user_b2b_nord");
   expect(d.region).toBe("NORTH");
+  // Contact details are denormalized from the session so a B2B teammate — who
+  // cannot read the submitter's `users/{uid}` doc — still sees them.
   expect(d.submitter).toEqual({
     nom: "Durand",
     prenom: "Camille",
     companyName: "Garage du Nord",
+    email: "c@x.fr",
+    telephone: "0600000000",
   });
   expect(d.photos).toEqual(["https://x/0.jpg"]);
   expect(d.thumbnailUrl).toBe("https://x/t.jpg");

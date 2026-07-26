@@ -28,17 +28,17 @@ export default function CompaniesListScreen() {
     <ScrollView>
       <SectionWrapper>
         <CompaniesSection
-          title="Vendeurs à valider"
+          title="Entreprises à vérifier"
           companies={pending.data}
           loading={pending.loading}
-          emptyMessage="Pas de vendeur a valider pour le moment."
+          emptyMessage="Pas d'entreprise a vérifier pour le moment."
           renderCard={card}
         />
         <CompaniesSection
-          title="Vendeurs enregistrées"
+          title="Entreprises enregistrées"
           companies={active.data}
           loading={active.loading}
-          emptyMessage="Pas de vendeur enregistrée pour le moment."
+          emptyMessage="Pas d'entreprise enregistrée pour le moment."
           renderCard={card}
         />
       </SectionWrapper>

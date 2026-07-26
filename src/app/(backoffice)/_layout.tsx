@@ -1,5 +1,5 @@
-import { Stack } from "expo-router";
 import { useGroupHeaders } from "@/lib/navigation/groupHeaders";
+import { Stack } from "expo-router";
 
 export default function BackofficeLayout() {
   const { tabs, dossier } = useGroupHeaders("(backoffice)");
@@ -7,8 +7,11 @@ export default function BackofficeLayout() {
     <Stack screenOptions={{ headerShown: true }}>
       <Stack.Screen name="(tabs)" options={tabs} />
       <Stack.Screen name="dossier/[id]" options={dossier} />
-      <Stack.Screen name="companies/index" options={{ title: "Vendeurs enregistrées" }} />
-      <Stack.Screen name="companies/[id]" options={{ title: "Vendeur" }} />
+      <Stack.Screen
+        name="companies/index"
+        options={{ title: "Gestion des entreprises vendeur" }}
+      />
+      <Stack.Screen name="companies/[id]" options={{ title: "Entreprise" }} />
     </Stack>
   );
 }

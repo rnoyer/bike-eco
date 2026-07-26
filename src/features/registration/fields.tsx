@@ -34,7 +34,10 @@ export function AccountFields({
       // Google flow uses the authenticated identity from Auth, so the account
       // step should not block on a manual password. Seed a non-empty placeholder
       // value so the shared step-validator can advance to the coordinates step.
+      // Both fields get the same value — the schema's equality check runs on
+      // this step, so seeding only `password` would block the Google path.
       form.setValue("password", "google-auth-placeholder");
+      form.setValue("confirmPassword", "google-auth-placeholder");
       await onGoogleProfile(profile);
     } catch (err) {
       Alert.alert(
@@ -60,6 +63,14 @@ export function AccountFields({
         name="password"
         label="Mot de passe *"
         placeholder="Mot de passe"
+        secureTextEntry
+        autoCapitalize="none"
+        returnKeyType="next"
+      />
+      <ControlledField
+        name="confirmPassword"
+        label="Confirmer le mot de passe *"
+        placeholder="Confirmer le mot de passe"
         secureTextEntry
         autoCapitalize="none"
         returnKeyType="done"

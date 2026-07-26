@@ -2,7 +2,7 @@ import SignInFields from "@/components/form/SignInFields";
 import Button from "@/components/ui/Button";
 import PhotoBackground from "@/components/ui/PhotoBackground";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
-import { mapAuthError } from "@/lib/auth/authErrors";
+import { mapAuthError, mapPasswordResetError } from "@/lib/auth/authErrors";
 import { signInWithGoogle } from "@/lib/auth/googleSignIn";
 import { mapDataError } from "@/lib/data/dataErrors";
 import { userDoc } from "@/lib/firestore/collections";
@@ -24,12 +24,17 @@ import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { auth } from "../../../firebaseConfig";
 
+/** Shown whether or not the address has an account — see `handleForgot`. */
+const RESET_SENT =
+  "Si un compte existe pour cet email, un lien de réinitialisation vient d’être envoyé. Vérifiez votre boîte de réception.";
+
 export default function SignInScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [forgotBusy, setForgotBusy] = useState(false);
 
   const handleSignIn = async (email: string, password: string) => {
     setError(null);
@@ -42,7 +47,9 @@ export default function SignInScreen() {
     }
   };
 
-  const handleThirdParty = async (provider: "google" | "apple" | "facebook") => {
+  const handleThirdParty = async (
+    provider: "google" | "apple" | "facebook",
+  ) => {
     if (provider !== "google" || googleBusy) return;
     setError(null);
     setNotice(null);
@@ -106,20 +113,30 @@ export default function SignInScreen() {
   };
 
   const handleForgot = async (email: string) => {
+    if (forgotBusy) return;
     setError(null);
+    setNotice(null);
     if (!email) {
-      setError(
-        "Saisissez d’abord votre email pour réinitialiser le mot de passe.",
-      );
+      setError("Saisissez votre email pour réinitialiser le mot de passe.");
       return;
     }
+    setForgotBusy(true);
     try {
       await sendPasswordResetEmail(auth, email);
-      setNotice(
-        "Email de réinitialisation envoyé. Vérifiez votre boîte de réception.",
-      );
+      setNotice(RESET_SENT);
     } catch (e) {
-      setError(mapAuthError((e as { code?: string }).code ?? ""));
+      const code = (e as { code?: string }).code ?? "";
+      // Never reveal whether an address has an account: an unknown email gets
+      // the same confirmation as a known one. (Firebase's email-enumeration
+      // protection already resolves in that case — this covers a project where
+      // it is off.)
+      if (code === "auth/user-not-found") {
+        setNotice(RESET_SENT);
+        return;
+      }
+      setError(mapPasswordResetError(code));
+    } finally {
+      setForgotBusy(false);
     }
   };
 
@@ -137,6 +154,7 @@ export default function SignInScreen() {
           <SignInFields
             onSubmit={handleSignIn}
             onForgotPassword={handleForgot}
+            forgotDisabled={forgotBusy}
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {notice ? <Text style={styles.notice}>{notice}</Text> : null}

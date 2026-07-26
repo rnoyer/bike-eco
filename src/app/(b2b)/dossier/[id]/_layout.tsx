@@ -1,16 +1,11 @@
-import { NativeTabs } from "expo-router/unstable-native-tabs";
+import { useGlobalSearchParams } from "expo-router";
+
+import GroupTabs from "@/components/navigation/GroupTabs";
+import { b2bDossierTabs } from "@/lib/navigation/tabs";
 
 export default function B2bDossierTabs() {
-  return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Icon sf="bicycle" md="two_wheeler" />
-        <NativeTabs.Trigger.Label>Dossier</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="chat">
-        <NativeTabs.Trigger.Icon sf="envelope.fill" md="mail" />
-        <NativeTabs.Trigger.Label>Messages</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
+  // Global, not local: the `[id]` is shared across the tab screens under this layout.
+  const { id } = useGlobalSearchParams<{ id: string }>();
+
+  return <GroupTabs tabs={b2bDossierTabs(id ?? "")} />;
 }

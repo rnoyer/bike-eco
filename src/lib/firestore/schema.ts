@@ -99,6 +99,11 @@ export interface DossierSubmitter {
   nom: string;
   prenom: string;
   companyName: string;
+  // Contact PII, copied from the submitter's profile at creation. Denormalized
+  // because `users/{uid}` is readable only by its owner and the back-office —
+  // a B2B teammate viewing a colleague's dossier could not read it live.
+  email: string;
+  telephone: string;
 }
 
 export interface DossierVehicle {

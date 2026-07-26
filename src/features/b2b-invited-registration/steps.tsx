@@ -13,7 +13,7 @@ export const B2B_INVITED_REGISTRATION_STEPS: InvitedStep[] = [
     progress: 33,
     title: "Votre compte",
     subtitle: "Informations relative à votre compte utilisateur",
-    fields: ["email", "password"],
+    fields: ["email", "password", "confirmPassword"],
     render: () => <AccountFields emailDisabled />,
   },
   {

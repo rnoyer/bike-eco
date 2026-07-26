@@ -11,6 +11,7 @@ const valid = {
   companyVille: "Bordeaux",
   email: "pro@garage.fr",
   password: "secret12",
+  confirmPassword: "secret12",
   nom: "Doe",
   prenom: "Jane",
   telephone: "0612345678",
@@ -34,7 +35,41 @@ describe("b2bCompanyRegistrationSchema", () => {
   });
 
   test("rejects a password shorter than 8 characters", () => {
-    expect(b2bCompanyRegistrationSchema.safeParse({ ...valid, password: "short" }).success).toBe(false);
+    expect(b2bCompanyRegistrationSchema.safeParse({ ...valid, password: "short", confirmPassword: "short" }).success).toBe(false);
+  });
+
+  test("rejects a confirmation that does not match the password", () => {
+    const result = b2bCompanyRegistrationSchema.safeParse({ ...valid, confirmPassword: "secret13" });
+    expect(result.success).toBe(false);
+  });
+
+  test("reports the mismatch on confirmPassword, not password", () => {
+    const result = b2bCompanyRegistrationSchema.safeParse({ ...valid, confirmPassword: "secret13" });
+    expect(result.success).toBe(false);
+    const paths = result.error!.issues.map((i) => i.path.join("."));
+    expect(paths).toContain("confirmPassword");
+    expect(paths).not.toContain("password");
+  });
+
+  test("catches the mismatch while later-step fields are still empty", () => {
+    // The account step is validated mid-funnel, when nom/prenom/telephone are
+    // still blank. The cross-field check must fire anyway, or "Suivant" would
+    // advance past a mismatch.
+    const result = b2bCompanyRegistrationSchema.safeParse({
+      ...valid,
+      confirmPassword: "secret13",
+      nom: "",
+      prenom: "",
+      telephone: "",
+    });
+    expect(result.success).toBe(false);
+    expect(result.error!.issues.map((i) => i.path.join("."))).toContain("confirmPassword");
+  });
+
+  test("accepts a matching confirmation", () => {
+    expect(
+      b2bCompanyRegistrationSchema.safeParse({ ...valid, password: "hunter2000", confirmPassword: "hunter2000" }).success,
+    ).toBe(true);
   });
 
   test("defaults are all empty strings", () => {
@@ -50,6 +85,7 @@ describe("b2bCompanyRegistrationSchema", () => {
       companyVille: "Paris",
       email: "a@b.fr",
       password: "password123",
+      confirmPassword: "password123",
       nom: "N", prenom: "P", telephone: "0600000000",
     });
     expect(result.success).toBe(false);

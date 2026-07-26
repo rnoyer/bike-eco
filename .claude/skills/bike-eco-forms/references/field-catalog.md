@@ -55,6 +55,8 @@ via `defaultValues` (e.g. `{ ...DEFAULTS, email: email ?? "" }` from `useLocalSe
 ```ts
 password: z.string().min(8, "8 caractères minimum"),
 ```
+`secureTextEntry` alone is enough — `FormField` adds the eye show/hide toggle to every
+masked field on its own. Don't build a per-screen toggle.
 
 ## Numeric inputs
 

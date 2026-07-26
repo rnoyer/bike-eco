@@ -7,7 +7,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
-type Variant = "primary" | "outlined" | "text";
+type Variant = "primary" | "outlined" | "danger" | "text";
 
 interface Props {
   label: string;
@@ -32,6 +32,7 @@ export default function Button({
         styles.base,
         variant === "primary" && styles.primary,
         variant === "outlined" && styles.outlined,
+        variant === "danger" && styles.danger,
         variant === "text" && styles.text,
         disabled && styles.disabled,
         style,
@@ -40,7 +41,11 @@ export default function Button({
       activeOpacity={disabled ? 1 : 0.8}
     >
       <Text
-        style={[styles.label, variant === "primary" && styles.labelPrimary]}
+        style={[
+          styles.label,
+          (variant === "primary" || variant === "danger") &&
+            styles.labelPrimary,
+        ]}
       >
         {label}
       </Text>
@@ -57,6 +62,10 @@ const styles = StyleSheet.create({
   primary: {
     height: tokens.button.height,
     backgroundColor: tokens.colors.primary,
+  },
+  danger: {
+    height: tokens.button.height,
+    backgroundColor: tokens.colors.danger,
   },
   outlined: {
     height: tokens.button.height,

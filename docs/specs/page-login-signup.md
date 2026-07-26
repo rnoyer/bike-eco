@@ -18,7 +18,18 @@ default value : null
 type : Input password
 mandatory : yes
 
+Note : tout champ "Input password" porte à droite une icône œil qui affiche /
+masque la saisie. Le mot de passe est masqué par défaut.
+
 - Link : "Mot de passe oublié"
+
+  Envoie l'email de réinitialisation Firebase à l'adresse saisie dans le champ
+  email. Champ vide → "Saisissez votre email pour réinitialiser le mot de passe."
+  Sinon la même confirmation s'affiche que l'adresse ait un compte ou non (on ne
+  révèle jamais l'existence d'un compte) : "Si un compte existe pour cet email, un
+  lien de réinitialisation vient d'être envoyé. Vérifiez votre boîte de réception."
+  Le lien est désactivé pendant l'envoi.
+
 - Button primary : "Login"
 - Divider
 - Text : "Ou continuez avec"
