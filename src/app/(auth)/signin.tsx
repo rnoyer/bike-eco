@@ -2,7 +2,7 @@ import SignInFields from "@/components/form/SignInFields";
 import Button from "@/components/ui/Button";
 import PhotoBackground from "@/components/ui/PhotoBackground";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
-import { mapAuthError } from "@/lib/auth/authErrors";
+import { mapAuthError, mapPasswordResetError } from "@/lib/auth/authErrors";
 import { signInWithGoogle } from "@/lib/auth/googleSignIn";
 import { mapDataError } from "@/lib/data/dataErrors";
 import { userDoc } from "@/lib/firestore/collections";
@@ -134,7 +134,7 @@ export default function SignInScreen() {
         setNotice(RESET_SENT);
         return;
       }
-      setError(mapAuthError(code));
+      setError(mapPasswordResetError(code));
     } finally {
       setForgotBusy(false);
     }

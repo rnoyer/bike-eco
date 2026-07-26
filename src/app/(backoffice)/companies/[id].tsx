@@ -123,10 +123,9 @@ export default function CompanyDetailScreen() {
             </Section>
             <Section title="Gérer cette entreprise">
               <Button
-                variant="outlined"
+                variant="danger"
                 label="Supprimer cette entreprise"
                 onPress={() => setConfirmDelete(true)}
-                style={styles.danger}
                 disabled={busy}
               />
             </Section>
@@ -154,13 +153,12 @@ export default function CompanyDetailScreen() {
               disabled={busy}
             />
             <Button
-              variant="text"
+              variant="danger"
               label="Supprimer tout"
               onPress={() => {
                 setConfirmDelete(false);
                 void run(() => callDeleteCompany(id));
               }}
-              style={styles.danger}
               disabled={busy}
             />
           </View>
@@ -180,7 +178,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: tokens.space.md },
   flex: { flex: 1 },
   userLine: { fontSize: 14, color: tokens.colors.primary },
-  danger: { alignSelf: "flex-start" },
   backdrop: {
     flex: 1,
     backgroundColor: "#0008",
