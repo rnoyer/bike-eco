@@ -87,9 +87,14 @@ rafraîchissement du token).
 
 ## Gestion courante
 
-Réinitialisation du mot de passe, désactivation et suppression d'un compte : console Firebase →
+Réinitialisation du mot de passe et désactivation : console Firebase →
 **Authentication → Users**. Désactiver un compte suffit à couper l'accès immédiatement ; les
 claims restent posées mais l'authentification échoue.
+
+**Suppression** : `scripts/delete-backoffice.js` (voir `manage-accounts.md`), pas la console —
+elle laisse derrière elle le document `users/{uid}`, inaccessible et devenu des données
+personnelles orphelines. Le script refuse aussi de supprimer le dernier compte back-office
+actif, sans lequel plus aucune entreprise ne peut être validée.
 
 Créer d'autres comptes back-office **depuis l'application** (« Inviter un collègue », aujourd'hui
 un stub) demanderait d'étendre le flux d'invitation au rôle `backoffice` — chantier séparé. En

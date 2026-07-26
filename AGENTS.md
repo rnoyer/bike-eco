@@ -48,6 +48,10 @@ feature. Keep a spec in sync in the same change that alters its feature.
   - `first-backoffice-account.md` — creating a `backoffice` account on `bike-eco-43a84`
     with `scripts/grant-backoffice.js` (Auth user + custom claims + `users/{uid}` doc).
     No product path creates one.
+  - `manage-accounts.md` — creating a b2b account (`scripts/create-b2b.js`, optionally
+    with its company) and fully erasing one, split by role and dry-run by default:
+    `scripts/delete-b2b-user.js` (Auth, profile, dossiers, Storage files, invitations)
+    and `scripts/delete-backoffice.js` (Auth + profile; refuses the last active one).
 
 # Project skills
 
