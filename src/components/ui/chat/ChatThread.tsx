@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     gap: tokens.space.xs,
   },
   mine: { backgroundColor: tokens.colors.primary },
-  theirs: { backgroundColor: tokens.colors.divider },
+  theirs: { backgroundColor: tokens.colors.bg },
   sender: { fontSize: 11, fontWeight: "700", color: tokens.colors.muted },
   senderMine: { color: "rgba(255,255,255,0.7)" },
   text: { fontSize: 15, color: tokens.colors.primary },
