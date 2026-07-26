@@ -9,6 +9,10 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Builds secrets
+my-upload-key.keystore
+credentials.json
+
 # Native
 .kotlin/
 *.orig.*
