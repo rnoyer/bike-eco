@@ -46,7 +46,19 @@ default value : null
 type : Input password
 mandatory : yes
 
+label : "Confirmer le mot de passe\*"
+placeholder : "Confirmer le mot de passe"
+default value : null
+type : Input password
+mandatory : yes
+validation : doit être strictement identique à "Mot de passe" ; sinon le message
+"Les mots de passe ne correspondent pas" s'affiche sous ce champ et "Suivant"
+ne passe pas au step suivant.
+
 Button : Google authentication
+
+Note : via le bouton Google, l'identité est fournie par Auth — les deux champs
+mot de passe ne sont pas saisis et ne bloquent pas le passage au step suivant.
 
 Le compte Google choisi doit être celui de l'invitation. Si l'utilisateur
 sélectionne un autre compte dans le sélecteur Google, une alerte "Connexion
