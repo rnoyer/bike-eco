@@ -65,6 +65,8 @@ export function toDossierPayload(
       nom: session.nom,
       prenom: session.prenom,
       companyName: company.name,
+      email: session.email,
+      telephone: session.telephone,
     },
     vehicle: {
       electrique: toOuiNon(values.electrique) ?? "non",

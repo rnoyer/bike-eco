@@ -15,11 +15,26 @@ opens **that photo** full screen with pinch / double-tap zoom and a "✕" to clo
 The full-screen view shows one photo at a time — swiping between photos happens in
 the inline carousel, not in the full-screen view.
 
-Below the vehicle-name heading, the data sits under an "Informations" section title
-(the shared `Section` component); the body is a compact list of :
+Below the vehicle-name heading, the data sits in two `Section`s, each a compact list of :
 
 - title : field label
 - value : field value
+
+### "Informations véhicule"
+
+The vehicle's form data : marque, modèle, cylindrée, année, kilométrage, électrique,
+accessoires, état, carte grise, contrôle technique, prix souhaité, commentaires.
+
+### "Informations vendeur"
+
+Who filed the dossier, in this order : entreprise, nom, prénom, email, téléphone,
+date de soumission (`JJ MMM AAAA hh:mm`, e.g. "26 juil. 2026 14:30").
+
+Email and téléphone are read from the dossier's denormalized `submitter`, not from the
+submitter's `users/{uid}` doc — that document is readable only by its owner and the
+back-office, so a B2B teammate viewing a colleague's dossier could not fetch it.
+
+Any missing value renders as "—".
 
 ## Tab bar props
 

@@ -89,7 +89,10 @@ async function main() {
     await db.doc(`dossiers/${id}`).set({
       status, region, companyId: "comp_nord", submittedBy: "user_b2b_nord",
       negotiatedPrice: null,
-      submitter: { nom: "Durand", prenom: "Camille", companyName: "Garage du Nord" },
+      submitter: {
+        nom: "Durand", prenom: "Camille", companyName: "Garage du Nord",
+        email: "b2b@garage-nord.fr", telephone: "0601020304",
+      },
       vehicle: {
         electrique: "non", materiel: [], marque, modele,
         cylindree: 689, annee: 2019, kilometrage: 18450, accessoires: "",
@@ -134,7 +137,10 @@ async function main() {
   await db.doc(`dossiers/dos_sud`).set({
     status: "a_traiter", region: "SOUTH", companyId: "comp_sud",
     submittedBy: "user_b2b_sud", negotiatedPrice: null,
-    submitter: { nom: "Blanc", prenom: "Dominique", companyName: "Garage du Sud" },
+    submitter: {
+      nom: "Blanc", prenom: "Dominique", companyName: "Garage du Sud",
+      email: "b2b@garage-sud.fr", telephone: "0621222324",
+    },
     vehicle: {
       electrique: "non", materiel: [], marque: "Ducati", modele: "Monster",
       cylindree: 937, annee: 2021, kilometrage: 9200, accessoires: "",
