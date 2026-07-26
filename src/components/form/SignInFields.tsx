@@ -16,9 +16,15 @@ type FormValues = z.infer<typeof schema>;
 interface Props {
   onSubmit: (email: string, password: string) => void;
   onForgotPassword: (email: string) => void;
+  /** Set while the reset email is in flight, so the link can't be tapped twice. */
+  forgotDisabled?: boolean;
 }
 
-export default function SignInFields({ onSubmit, onForgotPassword }: Props) {
+export default function SignInFields({
+  onSubmit,
+  onForgotPassword,
+  forgotDisabled = false,
+}: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     mode: "onBlur",
@@ -50,6 +56,7 @@ export default function SignInFields({ onSubmit, onForgotPassword }: Props) {
         <Button
           variant="text"
           label="Mot de passe oublié"
+          disabled={forgotDisabled}
           onPress={() => onForgotPassword(form.getValues("email"))}
         />
       </View>
