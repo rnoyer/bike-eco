@@ -1,9 +1,10 @@
 import { BottomSheet, Button, Host } from "@expo/ui";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
+  Keyboard,
   ScrollView,
   StyleSheet,
   Text,
@@ -24,6 +25,22 @@ export default function ChatComposer({
   const [text, setText] = useState("");
   const [files, setFiles] = useState<PickedFile[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // The keyboard covers the home indicator / navigation bar, so keeping the bottom
+  // inset while it is open would leave a dead band between the bar and the keys.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    const shown = Keyboard.addListener("keyboardDidShow", () =>
+      setKeyboardOpen(true),
+    );
+    const hidden = Keyboard.addListener("keyboardDidHide", () =>
+      setKeyboardOpen(false),
+    );
+    return () => {
+      shown.remove();
+      hidden.remove();
+    };
+  }, []);
 
   const send = () => {
     const t = text.trim();
@@ -89,7 +106,15 @@ export default function ChatComposer({
   }
 
   return (
-    <View style={[styles.bar, { paddingBottom: insets.bottom + tokens.space.sm }]}>
+    <View
+      style={[
+        styles.bar,
+        {
+          paddingBottom:
+            (keyboardOpen ? 0 : insets.bottom) + tokens.space.sm,
+        },
+      ]}
+    >
       {files.length > 0 && (
         <ScrollView
           horizontal

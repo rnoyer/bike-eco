@@ -98,6 +98,31 @@ displayed value formatted.
 dialog, a confirmation prompt). A modal that hosts gesture-driven content needs its own
 `GestureHandlerRootView` inside the modal — the root one doesn't reach across the portal.
 
+## Keyboard avoidance
+
+Two rules, both learned from the chat composer being buried under the keyboard:
+
+- **Always pass an explicit `behavior`**, on Android too. Expo enables edge-to-edge, so
+  the manifest's `adjustResize` no longer shrinks the window and a `KeyboardAvoidingView`
+  with `behavior={undefined}` does nothing at all. `padding` for a pinned bottom bar
+  (`DossierChatScreen`), `height` for a scrolling form (`FormLayout`).
+- **Pass `keyboardVerticalOffset` on any screen below a Stack header** — and on Android
+  add `insets.top` to it. The keyboard arrives in screen coordinates measured from the
+  top of the display; the view's frame is laid out inside the screen. Two gaps have to
+  be handed back: the header, and — on Android only — the status bar, because
+  `measureInWindow` there reports `y` from *below* the status bar while the keyboard's
+  `screenY` includes it. Measured on a Pixel: header 56 + status bar 53.3 = 109.3, and
+  omitting either one leaves the composer under the keyboard. iOS measures from the top
+  of the window, which is already the top of the screen, so it needs no correction.
+  Measure the header with `measureInWindow` on a wrapper `View` in `onLayout` rather
+  than hardcoding: there is no `useHeaderHeight` here (expo-router 56 ships no
+  `@react-navigation/elements`) and the header is taller on notched devices.
+  `DossierChatScreen` is the worked example.
+
+A bottom bar that pads itself with `insets.bottom` must drop that inset while the
+keyboard is open (`Keyboard.addListener("keyboardDidShow"/"keyboardDidHide")`) — the
+keyboard already covers the home indicator, so keeping it leaves a dead band.
+
 ## Copy
 
 All UI copy is French, matching the spec verbatim. Errors are specific and actionable
@@ -116,3 +141,4 @@ never invent its own.
 | A long free-text value in a label/value `Row` | Squeezes the label; text overflows off-screen |
 | `Linking.openURL` without `canOpenURL` | Dead tap on devices with no dialer/mail client |
 | New modal without its own `GestureHandlerRootView` | Gestures silently dead inside the modal |
+| `KeyboardAvoidingView` with no `behavior` on Android, or no `keyboardVerticalOffset` under a Stack header | Keyboard covers the input |
