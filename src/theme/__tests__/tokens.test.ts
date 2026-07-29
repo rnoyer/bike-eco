@@ -12,7 +12,7 @@ test("exposes the b2c-derived palette and metrics", () => {
 });
 
 test("exposes semantic feedback and status colours", () => {
-  expect(tokens.colors.danger).toBe("#DC2626");
+  expect(tokens.colors.danger).toBe("#9F0712");
   expect(tokens.colors.success).toBe("#16A34A");
   expect(tokens.colors.surfaceAlt).toBe("#FAFAFA");
   expect(tokens.status.a_traiter).toEqual({ bg: "#FEF3C7", fg: "#92400E" });
