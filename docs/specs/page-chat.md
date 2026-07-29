@@ -20,12 +20,38 @@ From top to bottom
     Tapping opens the file in the device's default PDF reader. If no handler can
     open it, an alert says "Impossible d'ouvrir le PDF."
 - an input section for entering chat message. Left to the input section a "+" icon to add only pdf or photos from phone
+  - "Envoyer" is greyed out and inert while there is neither text nor an attachment.
+  - The "+" icon shows a spinner while a picker is opening — the permission
+    prompt and, for a large PDF, the copy-to-cache pass are both slow enough to
+    look like a dead tap.
+
+While the thread is loading, the page shows a centered spinner — never a blank
+view, which would be indistinguishable from an empty conversation. If the read
+fails, it shows the mapped French error instead.
+
+## Sending
 
 Sends go through the `sendMessage` Cloud callable: the client uploads any
 attachments then calls it with the message text and attachment metadata. The
 sender label ("[prénom nom] - [société]" or "[prénom nom] - Bike-eco") is
 stamped server-side from the caller's own identity — it is never
 client-authored, so it can't be forged.
+
+**Sending is optimistic.** The composer clears the moment the user taps
+"Envoyer", and the message appears immediately at the bottom of the thread as
+its own bubble carrying the text and the attachment previews:
+
+- **While sending** — the bubble is greyed, with a small spinner and "Envoi…"
+  in place of the timestamp. Its attachments are shown but not tappable: they
+  are still local files.
+- **On failure** — the bubble returns to full strength and shows the mapped
+  French error with two actions, **Réessayer** and **Supprimer**. Nothing the
+  user typed or attached is lost; it lives in the bubble until the send
+  succeeds or they explicitly discard it.
+- **On success** — the bubble is replaced by the real message once it arrives in
+  the live thread. Retrying re-sends under the same message id, so a message can
+  never be duplicated by retrying, and a send whose response was lost resolves
+  itself when the document appears.
 
 ## Tab bar props
 

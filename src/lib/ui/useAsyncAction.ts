@@ -70,33 +70,28 @@ export function useAsyncAction<A extends unknown[], R>(
   });
 
   // Most of these actions navigate away on success (`router.replace`), so the
-  // component is often gone by the time the `finally` runs.
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-
+  // component is often gone by the time the `finally` runs. That needs no
+  // guard: since React 18.3 a setState on an unmounted component is a silent
+  // no-op, not a warning. A `mounted` ref here would be strictly worse — it
+  // tracks *effect* liveness, so anything that destroys effects while keeping
+  // state (an Offscreen/`<Activity>` subtree, `freezeOnBlur`) would skip the
+  // `setPending(false)` and strand the button spinning forever.
   const run = useCallback(async (...args: A): Promise<R | undefined> => {
     if (running.current) return undefined;
     running.current = true;
-    if (mounted.current) {
-      setPending(true);
-      setError(null);
-    }
+    setPending(true);
+    setError(null);
     try {
       return await latest.current.action(...args);
     } catch (e) {
       const { mapError = frenchMessage, onError } = latest.current.options;
       const message = mapError(e);
-      if (mounted.current) setError(message);
+      setError(message);
       onError?.(message);
       return undefined;
     } finally {
       running.current = false;
-      if (mounted.current) setPending(false);
+      setPending(false);
     }
   }, []);
 

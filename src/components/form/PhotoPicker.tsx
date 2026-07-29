@@ -51,7 +51,9 @@ export default function PhotoPicker({ value, onChange, error, min = 1 }: Props) 
     if (!result.canceled) {
       onChange([...value, result.assets[0].uri]);
     }
-  });
+    // Without this a picker that throws stops the spinner and does nothing
+    // else — silently, which is the symptom this whole change exists to remove.
+  }, { onError: (message) => alertDialog("Photos", message) });
 
   function confirmDelete(index: number) {
     confirmDialog({

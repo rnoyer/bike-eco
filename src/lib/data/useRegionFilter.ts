@@ -23,10 +23,25 @@ function emit() {
   for (const listener of listeners) listener();
 }
 
+/** kv-store is local, so this only fires if the native side is wedged — but
+ *  `ready` now gates whole screens, so an unsettled read would spin the
+ *  back-office dashboard forever with no error state and no retry. Falling
+ *  through to "Toute la France" is the right failure. */
+const HYDRATION_TIMEOUT_MS = 3000;
+
 function hydrateOnce() {
   if (hydrated) return;
   hydrated = true;
-  loadRegion()
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  Promise.race([
+    loadRegion(),
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error("hydration timed out")),
+        HYDRATION_TIMEOUT_MS,
+      );
+    }),
+  ])
     .then((r) => {
       if (!userSet) region = r;
       ready = true;
@@ -35,6 +50,11 @@ function hydrateOnce() {
     .catch(() => {
       ready = true;
       emit();
+    })
+    // Without this the pending timer keeps the process alive for its full
+    // duration after hydration has already resolved.
+    .finally(() => {
+      if (timer) clearTimeout(timer);
     });
 }
 

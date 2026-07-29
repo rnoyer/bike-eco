@@ -15,7 +15,7 @@ export default function DossierChatScreen({ id }: { id: string }) {
   // The dossier carries the company the thread belongs to: it keys the
   // attachment path for uploads.
   const dossier = useDossier(id);
-  const { user, loading: sessionLoading } = useSession();
+  const { user } = useSession();
 
   // `messages.data` is passed in so the hook can drop an optimistic bubble the
   // moment its document lands — see `useSendMessage`.
@@ -44,7 +44,14 @@ export default function DossierChatScreen({ id }: { id: string }) {
 
   // Never `return null`: the thread rendered blank while it loaded, which is
   // indistinguishable from an empty conversation.
-  if (sessionLoading || dossier.loading || messages.loading) {
+  //
+  // Deliberately *not* gated on the session's `loading`. That flag is re-set on
+  // every token refresh, not just the first resolve (see `AuthProvider`), and
+  // `app/_layout.tsx` goes out of its way not to unmount on later flips for the
+  // same reason: tearing this screen down mid-conversation would destroy the
+  // user's typed draft and staged attachments. Both read hooks already gate on
+  // the session internally, and `!user` below covers a genuinely absent one.
+  if (dossier.loading || messages.loading) {
     return <ScreenLoader />;
   }
   const readError = dossier.error ?? messages.error;

@@ -288,6 +288,17 @@ Two design points worth keeping:
   `ChatThread` is now keyed by document id instead of `${senderId}-${index}`. That was
   latent before and load-bearing now: an optimistic bubble resolving into a delivered one
   shifts every later index.
+
+  **`cleanUpOnFailure` no longer wraps the callable**, only the upload loop. It used to
+  wrap both, which meant the one case this design is built around — document written,
+  response lost — deleted the attachments of a message that had already committed, leaving
+  a delivered bubble with permanently dead URLs and no way to detect or repair it. The
+  trade is orphaned objects when a callable genuinely fails and the user taps Supprimer;
+  a retry re-uploads to the same paths and overwrites them. Deleting on discard was
+  considered and rejected: it reintroduces the same race in a narrower window.
+
+  Scope of "a failure loses nothing": within the screen's lifetime. `pending` is component
+  state, so navigating away from a thread with a failed bubble still discards it.
 - **Dossier update.** Wrapped in `writeWithTimeout`, so A.3 fails in 15 s instead of
   hanging forever offline.
 - **`Section` gained an `error` state** (precedence: loading → error → empty → list),
@@ -305,7 +316,12 @@ Two design points worth keeping:
 - **The silent non-network waits in D got feedback too**: `PhotoPicker`'s two buttons and
   the composer's "+" now spin through the permission prompt, the picker launch and
   `DocumentPicker`'s `copyToCacheDirectory` pass. The composer's "Envoyer" is visibly
-  disabled when there is nothing to send.
+  disabled when there is nothing to send — and carries its own synchronous latch, because
+  `canSend` is a render snapshot and `send` mints a fresh message id per call, so two taps
+  in one JS batch would write two documents that no in-flight guard could dedupe.
+- **`useRegionFilter`'s hydration is bounded** (3 s). `ready` now gates whole screens, so
+  an unsettled kv-store read would spin the back-office dashboard forever with no error
+  state and no retry; the timeout falls through to the existing "Toute la France" branch.
 
 ### Deliberately not done
 
@@ -336,6 +352,24 @@ Three claims in earlier drafts did not survive verification, and are fixed above
   argument was overstated.
 - §5's account of the région hydration race conflated `useDossiers` (région is a query
   constraint) with `useCompanies` (région is a client-side filter). See above.
+
+### Known limitations
+
+- **Orphaned Storage objects.** A message whose callable genuinely fails and is then
+  discarded leaves its uploaded attachments behind (see the chat note above). Unreferenced
+  bytes, no correctness impact; a periodic sweep would clear them.
+- **`useAsyncAction` has no timeout.** §3.8 flagged `callable.ts` as having none, and that
+  is still true — a callable that never settles now leaves a button spinning rather than
+  looking idle. Better, but the underlying hole is open. `writeWithTimeout` covers the
+  Firestore writes that matter.
+- **Optimistic chat state is per-screen.** Leaving a thread with a failed bubble discards
+  it without warning.
+- **`frenchAuthMessage` passes through the message of any code-less `Error`.** Faithful to
+  the ladder it replaced, but an English message from a non-Firebase throw can still reach
+  the user.
+- **Pre-existing, and in the retry path**: `messageAttachmentPath` keys on the file name,
+  and Android often reports no `fileName`, so two such photos in one message collide on a
+  single Storage path — one overwrites the other. Not introduced here, worth its own fix.
 
 One unrelated pre-existing failure was fixed to get the gate green:
 `src/theme/__tests__/tokens.test.ts` asserted `danger === "#DC2626"` while

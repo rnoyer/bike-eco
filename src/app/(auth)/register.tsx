@@ -114,7 +114,9 @@ export default function RegisterScreen() {
             onPrev={handlePrev}
             onNext={next}
             nextLabel={isLast ? "S'inscrire" : "Suivant"}
-            busy={submitting}
+            // "Précédent" on step 1 signs out before it navigates, so the row
+            // has to lock for that round-trip too.
+            busy={submitting || goingHome.pending}
           >
             {B2B_COMPANY_REGISTRATION_STEPS[step].render()}
           </FormLayout>

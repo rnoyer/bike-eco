@@ -34,7 +34,7 @@ covers.
 ```ts
 colors: primary #111 · primaryText #fff · muted #71727A · border #E5E7EB
         divider #F3F4F6 · disabled #C1C1C6 (also placeholder) · surfaceAlt #FAFAFA
-        surface/bg #fff · danger #DC2626 · success #16A34A
+        surface/bg #fff · danger #9F0712 · success #16A34A
 status: a_traiter (amber) · en_cours (blue) · cloture (green)   // keyed by DossierStatus
 radius: sm 8 · md 12 · lg 16        space: xs 4 · sm 8 · md 12 · lg 24 · xl 28
 ```

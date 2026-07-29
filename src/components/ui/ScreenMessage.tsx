@@ -1,12 +1,12 @@
 import { tokens } from "@/theme/tokens";
-import { StyleSheet, Text, type StyleProp, type TextStyle } from "react-native";
+import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 
 interface Props {
   /** Already-French copy — a mapped hook error, or a "…introuvable." line. */
   message: string;
   /** `danger` for a failed read, `muted` for an expected empty/not-found. */
   tone?: "muted" | "danger";
-  style?: StyleProp<TextStyle>;
+  style?: StyleProp<ViewStyle>;
 }
 
 /** Screen-level counterpart to `Section`'s error/empty states: the whole screen
@@ -17,18 +17,27 @@ export default function ScreenMessage({
   style,
 }: Props) {
   return (
-    <Text style={[styles.message, tone === "danger" && styles.danger, style]}>
-      {message}
-    </Text>
+    <View style={[styles.screen, style]}>
+      <Text style={[styles.message, tone === "danger" && styles.danger]}>
+        {message}
+      </Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  message: {
+  // Mirrors `ScreenLoader`: centring has to come from a flex container, because
+  // `flex: 1` does nothing inside a ScrollView's content and `textAlignVertical`
+  // is Android-only — together they left this top-aligned on iOS.
+  screen: {
     flex: 1,
-    textAlign: "center",
-    textAlignVertical: "center",
+    alignItems: "center",
+    justifyContent: "center",
     padding: tokens.space.xl,
+    paddingVertical: 48,
+  },
+  message: {
+    textAlign: "center",
     fontSize: 14,
     color: tokens.colors.muted,
   },

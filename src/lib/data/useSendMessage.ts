@@ -35,7 +35,22 @@ export interface PendingMessage {
   error: string | null;
 }
 
-/** One attempt: upload every attachment, then write the document. */
+/**
+ * One attempt: upload every attachment, then write the document.
+ *
+ * **Only the uploads are compensated.** `callSendMessage` is deliberately
+ * outside the `cleanUpOnFailure` scope: the callable can write the document and
+ * still fail to report it — a dropped response, the callable deadline — and
+ * deleting the attachments then would strand a *delivered* message with dead
+ * URLs for both participants. That is the one failure the reconciliation below
+ * can neither detect nor repair, so it must not be possible.
+ *
+ * The trade is orphaned objects. A callable that genuinely failed leaves its
+ * uploads behind; a retry re-uploads to the same paths (same message id, same
+ * file names) and overwrites them, so only an explicit **Supprimer** orphans
+ * them for good. Unreferenced bytes are the lesser evil against a broken
+ * message, and deleting on discard would reintroduce the same race.
+ */
 async function deliver(
   dossierId: string,
   companyId: string,
@@ -43,8 +58,8 @@ async function deliver(
   text: string,
   files: PickedFile[],
 ): Promise<void> {
-  await cleanUpOnFailure(async (track) => {
-    const attachments: MessageAttachment[] = [];
+  const attachments = await cleanUpOnFailure(async (track) => {
+    const uploaded: MessageAttachment[] = [];
     for (const file of files) {
       const path = messageAttachmentPath(
         companyId,
@@ -59,17 +74,18 @@ async function deliver(
       } catch (error) {
         throw new Error(mapDataError((error as { code?: string }).code ?? ""));
       }
-      attachments.push({
+      uploaded.push({
         type: file.type,
         url,
         name: sanitizeFileName(file.name),
         size: file.size,
       });
     }
-    // The callable throws a ready French Error on failure; cleanUpOnFailure
-    // removes any uploaded attachments before it propagates.
-    await callSendMessage({ dossierId, messageId, text: text.trim(), attachments });
+    return uploaded;
   }, removeStorageObject);
+
+  // The callable throws a ready French Error on failure.
+  await callSendMessage({ dossierId, messageId, text: text.trim(), attachments });
 }
 
 /**

@@ -1,13 +1,16 @@
 # Generic `Section` component
 
-A titled block of content with a shared title / loading / empty look. It is the single
-source of truth for the "section" appearance used across the app (dashboards, back-office
-company list & detail, account, settings, dossier detail).
+A titled block of content with a shared title / loading / error / empty look. It is the
+single source of truth for the "section" appearance used across the app (dashboards,
+back-office company list & detail, account, settings, dossier detail).
 
 ## Props
 
 - `title: string` — the section heading (18px bold, primary color).
 - `loading?: boolean` — when `true`, shows a centered spinner under the title.
+- `error?: string | null` — already-French copy from the read hook (`mapDataError`). Shown
+  in `danger` in place of the list. A section never renders a raw Firebase code, and never
+  invents its own wording.
 - `emptyMessage?: string` — when the section has no children, shows this muted message
   instead of the (empty) list. Omit it for sections whose content is always present.
 - `children?: ReactNode` — the section content, rendered in a vertical `gap` list.
@@ -18,7 +21,14 @@ company list & detail, account, settings, dossier detail).
   `isEmpty` prop. Callers with a possibly-empty list pass the mapped array (`items.map(...)`),
   so `[]` renders `emptyMessage`. Always-present sections pass their content and omit
   `emptyMessage`.
-- Precedence: `loading` → spinner; else empty + `emptyMessage` → the message; else the list.
+- Precedence: `loading` → spinner; else `error` → the error message; else empty +
+  `emptyMessage` → the message; else the list.
+- **`error` outranks `emptyMessage` on purpose.** A denied or offline read returns an empty
+  array, so without this a failure reads as "vous n'avez pas de dossier" — the user is told
+  their data doesn't exist rather than that it couldn't be fetched.
+
+For a whole screen with nothing to show, the equivalents are `ui/Spinner`'s `ScreenLoader`
+and `ui/ScreenMessage`.
 
 ## Callers
 

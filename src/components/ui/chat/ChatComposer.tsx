@@ -1,7 +1,7 @@
 import { BottomSheet, Button, Host } from "@expo/ui";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
   ScrollView,
@@ -87,11 +87,23 @@ export default function ChatComposer({
 
   const canSend = text.trim().length > 0 || files.length > 0;
 
+  // `canSend` is a render snapshot, so it cannot guard re-entry on its own: two
+  // touch-ups delivered in the same JS batch both run before the clear commits,
+  // both read the old text, and `useSendMessage.send` mints a fresh id per call
+  // — so its own in-flight guard cannot dedupe them and the message is sent
+  // twice. The latch is synchronous; the effect below releases it once the
+  // clear has actually rendered.
+  const justSent = useRef(false);
+  useEffect(() => {
+    justSent.current = false;
+  }, [text, files]);
+
   // Clears immediately, as before — but the content is no longer thrown away:
   // it now lives in the thread's optimistic bubble until the send is confirmed,
   // and comes back with Réessayer / Supprimer if it fails.
   const send = () => {
-    if (!canSend) return;
+    if (!canSend || justSent.current) return;
+    justSent.current = true;
     onSend(text.trim(), files);
     setText("");
     setFiles([]);
@@ -100,19 +112,22 @@ export default function ChatComposer({
   // One action for both kinds — only one picker can be open at a time. It also
   // covers the waits nobody sees: the permission prompt, and `DocumentPicker`'s
   // `copyToCacheDirectory` pass, which is slow for a large PDF.
-  const picking = useAsyncAction(async (kind: "photo" | "pdf") => {
-    setSheetOpen(false);
-    const room = 5 - files.length;
-    if (room <= 0) {
-      alertDialog("Limite atteinte", "5 pièces jointes maximum par message.");
-      return;
-    }
-    const picked =
-      kind === "photo"
-        ? await pickPhotos(room)
-        : await pickPdfs(room);
-    if (picked.length > 0) setFiles((current) => [...current, ...picked]);
-  });
+  const picking = useAsyncAction(
+    async (kind: "photo" | "pdf") => {
+      setSheetOpen(false);
+      const room = 5 - files.length;
+      if (room <= 0) {
+        alertDialog("Limite atteinte", "5 pièces jointes maximum par message.");
+        return;
+      }
+      const picked =
+        kind === "photo" ? await pickPhotos(room) : await pickPdfs(room);
+      if (picked.length > 0) setFiles((current) => [...current, ...picked]);
+    },
+    // Without this a picker that throws stops the spinner and does nothing
+    // else — silently, which is the symptom this whole change exists to remove.
+    { onError: (message) => alertDialog("Pièce jointe", message) },
+  );
 
   return (
     <View
