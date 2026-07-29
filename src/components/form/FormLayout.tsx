@@ -5,10 +5,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Button from "@/components/ui/Button";
 import { tokens } from "@/theme/tokens";
 
 interface Props {
@@ -20,6 +20,10 @@ interface Props {
   onNext: () => void;
   canGoBack?: boolean;
   nextLabel?: string;
+  /** The submit is in flight: the primary button spins and both nav buttons
+   *  lock. Feed it `useStepForm`'s `submitting` — without it the funnel's
+   *  longest actions (both photo uploads) leave the button looking idle. */
+  busy?: boolean;
 }
 
 export default function FormLayout({
@@ -31,6 +35,7 @@ export default function FormLayout({
   onNext,
   canGoBack = true,
   nextLabel = "Suivant",
+  busy = false,
 }: Props) {
   const insets = useSafeAreaInsets();
 
@@ -61,28 +66,19 @@ export default function FormLayout({
       </ScrollView>
 
       <View style={[styles.buttons, { paddingBottom: insets.bottom + 16 }]}>
-        <TouchableOpacity
-          style={[
-            styles.btn,
-            styles.btnSecondary,
-            !canGoBack && styles.btnDisabled,
-          ]}
-          onPress={canGoBack ? onPrev : undefined}
-          activeOpacity={canGoBack ? 0.7 : 1}
-        >
-          <Text style={[styles.btnText, !canGoBack && styles.btnTextDisabled]}>
-            Précédent
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.btn, styles.btnPrimary]}
+        <Button
+          variant="outlined"
+          label="Précédent"
+          onPress={onPrev}
+          disabled={!canGoBack || busy}
+          style={styles.btn}
+        />
+        <Button
+          label={nextLabel}
           onPress={onNext}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.btnText, styles.btnTextPrimary]}>
-            {nextLabel}
-          </Text>
-        </TouchableOpacity>
+          loading={busy}
+          style={styles.btn}
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -140,32 +136,6 @@ const styles = StyleSheet.create({
     borderTopColor: tokens.colors.divider,
     backgroundColor: tokens.colors.surface,
   },
-  btn: {
-    flex: 1,
-    height: tokens.button.height,
-    borderRadius: tokens.radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnPrimary: {
-    backgroundColor: tokens.colors.primary,
-  },
-  btnSecondary: {
-    borderWidth: 1.5,
-    borderColor: tokens.colors.border,
-  },
-  btnDisabled: {
-    borderColor: tokens.colors.divider,
-  },
-  btnText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: tokens.colors.primary,
-  },
-  btnTextPrimary: {
-    color: tokens.colors.primaryText,
-  },
-  btnTextDisabled: {
-    color: tokens.colors.disabled,
-  },
+  // `ui/Button` owns height, radius and alignment; the row only shares width.
+  btn: { flex: 1 },
 });

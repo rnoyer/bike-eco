@@ -1,6 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
 import {
-  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -8,6 +7,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Spinner from "@/components/ui/Spinner";
+import { alertDialog, confirmDialog } from "@/lib/ui/dialog";
+import { useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { tokens } from "@/theme/tokens";
 
 interface Props {
@@ -20,43 +22,45 @@ interface Props {
 
 /** Pick photos from the gallery or camera, with a removable thumbnail strip. */
 export default function PhotoPicker({ value, onChange, error, min = 1 }: Props) {
-  async function pickFromGallery() {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission refusée", "L'accès à la galerie est nécessaire.");
+  // One action for both sources: only one picker can be open at a time, and it
+  // covers the permission prompt as well as the launch, which is the part that
+  // used to leave the button silent.
+  const picking = useAsyncAction(async (source: "gallery" | "camera") => {
+    if (source === "gallery") {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        alertDialog("Permission refusée", "L'accès à la galerie est nécessaire.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: "images",
+        allowsMultipleSelection: true,
+        quality: 0.8,
+      });
+      if (!result.canceled) {
+        onChange([...value, ...result.assets.map((a) => a.uri)]);
+      }
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: "images",
-      allowsMultipleSelection: true,
-      quality: 0.8,
-    });
-    if (!result.canceled) {
-      onChange([...value, ...result.assets.map((a) => a.uri)]);
-    }
-  }
-
-  async function pickFromCamera() {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission refusée", "L'accès à la caméra est nécessaire.");
+      alertDialog("Permission refusée", "L'accès à la caméra est nécessaire.");
       return;
     }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
     if (!result.canceled) {
       onChange([...value, result.assets[0].uri]);
     }
-  }
+  });
 
   function confirmDelete(index: number) {
-    Alert.alert("Supprimer la photo", "Voulez-vous supprimer cette photo ?", [
-      { text: "Annuler", style: "cancel" },
-      {
-        text: "Supprimer",
-        style: "destructive",
-        onPress: () => onChange(value.filter((_, i) => i !== index)),
-      },
-    ]);
+    confirmDialog({
+      title: "Supprimer la photo",
+      message: "Voulez-vous supprimer cette photo ?",
+      confirmLabel: "Supprimer",
+      destructive: true,
+      onConfirm: () => onChange(value.filter((_, i) => i !== index)),
+    });
   }
 
   const remaining = Math.max(0, min - value.length);
@@ -65,18 +69,28 @@ export default function PhotoPicker({ value, onChange, error, min = 1 }: Props) 
     <View style={styles.container}>
       <View style={styles.buttonsRow}>
         <TouchableOpacity
-          style={styles.mediaBtn}
-          onPress={pickFromGallery}
+          style={[styles.mediaBtn, picking.pending && styles.mediaBtnBusy]}
+          onPress={() => void picking.run("gallery")}
+          disabled={picking.pending}
           activeOpacity={0.7}
         >
-          <Text style={styles.mediaBtnLabel}>Galerie</Text>
+          {picking.pending ? (
+            <Spinner />
+          ) : (
+            <Text style={styles.mediaBtnLabel}>Galerie</Text>
+          )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.mediaBtn}
-          onPress={pickFromCamera}
+          style={[styles.mediaBtn, picking.pending && styles.mediaBtnBusy]}
+          onPress={() => void picking.run("camera")}
+          disabled={picking.pending}
           activeOpacity={0.7}
         >
-          <Text style={styles.mediaBtnLabel}>Appareil Photo</Text>
+          {picking.pending ? (
+            <Spinner />
+          ) : (
+            <Text style={styles.mediaBtnLabel}>Appareil Photo</Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -132,6 +146,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  mediaBtnBusy: { opacity: 0.7 },
   mediaBtnLabel: {
     fontSize: 15,
     fontWeight: "600",

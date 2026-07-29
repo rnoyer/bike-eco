@@ -85,18 +85,51 @@ displayed value formatted.
 
 | Component | Notes |
 |---|---|
-| `ui/Section` | Title + `loading` spinner + `emptyMessage` + children. Owns all three states — don't reimplement them per screen |
+| `ui/Section` | Title + `loading` + `error` + `emptyMessage` + children. Owns all four states in that precedence — don't reimplement them per screen |
+| `ui/Spinner` | The **only** spinner. Never render a bare `ActivityIndicator`: this owns the token colour. `ScreenLoader` (named export) is the centred whole-screen/region variant |
+| `ui/ScreenMessage` | Screen-level counterpart to `Section`'s error/empty states: `message` + `tone` (`muted` \| `danger`) |
 | `ui/SectionWrapper` | Layout shell around sections |
 | `ui/DossiersSection`, `ui/CompaniesSection` | Per-section fetch + `Section` |
 | `ui/DossierCard`, `ui/CompanyCard` | Thin wide cards; see their component specs |
 | `ui/StatusBadge` | Reads `tokens.status` by `DossierStatus` |
-| `ui/Button` | The only button. Never hand-roll a `Pressable` with its own styling |
+| `ui/Button` | The only button. Never hand-roll a `Pressable` with its own styling. `loading` swaps the label for a spinner and blocks presses; `disabled` only dims. `loading` wins — a spinning button is never also dimmed |
 | `ui/ImageViewerModal` | Full-screen modal precedent — wraps content in its own `GestureHandlerRootView` |
 | `ui/ConfirmationView` | Success screen with delayed auto-redirect |
 
 **Modals:** `ImageViewerModal` is the pattern to follow for a new modal (an auth-failure
 dialog, a confirmation prompt). A modal that hosts gesture-driven content needs its own
 `GestureHandlerRootView` inside the modal — the root one doesn't reach across the portal.
+
+**Dialogs:** use `confirmDialog` / `alertDialog` from `lib/ui/dialog`, never `Alert.alert`
+directly — react-native-web ships `Alert.alert` as an empty function, so a native-only
+prompt silently does nothing in a browser. `confirmDialog` takes `destructive` for the
+platform's red confirm style.
+
+## Loading states
+
+Every user-initiated async action shows that it is working. The primitive is
+**`useAsyncAction`** (`src/lib/ui/useAsyncAction.ts`) — reach for it instead of a local
+`busy` boolean:
+
+```ts
+const inviting = useAsyncAction(callSendInvite, {
+  mapError: frenchAuthMessage,                    // omit for the data layer's French Errors
+  onError: (message) => alertDialog("Erreur", message),
+});
+<Button label="Envoyer" loading={inviting.pending} onPress={() => void inviting.run(email)} />
+```
+
+It owns the re-entry guard, the `pending` flag and the mapped error. The guard is a **ref,
+not `pending`**: state only lands on the next render, so a second tap in the same tick
+sails past a state-only check. `run` resolves to the action's result, or `undefined` if it
+was skipped or threw — so navigate on the result, never unconditionally.
+
+Multi-step forms don't need it: `useStepForm` already returns `submitting` (react-hook-form's
+`isSubmitting`, read during render so the Proxy subscribes) and guards re-entry itself.
+Feed it to `FormLayout`'s `busy`.
+
+Where several buttons share a screen, give each its own `useAsyncAction` and lock the rest
+with a combined `busy` — then the button that is actually working is the one that spins.
 
 ## Keyboard avoidance
 
@@ -137,7 +170,12 @@ never invent its own.
 | Hardcoding `#111` / `12` instead of a token | Drifts from the rest of the app; breaks a future token change |
 | Native `List` inside `components/native/` | Android crash on unbounded-height measurement |
 | Rendering `null`/`""` instead of `dash()` | "null" or blank rows in the UI |
-| Re-implementing loading / empty state per screen | `Section` already owns all three states |
+| Re-implementing loading / empty / error state per screen | `Section` already owns all four states |
+| A bare `ActivityIndicator` | `Spinner` / `ScreenLoader` own the token colour and padding |
+| `return null` while a hook is loading | A blank screen is indistinguishable from a broken one — use `ScreenLoader` |
+| A hand-rolled `busy` boolean, or a `useRef` guard with no re-render | `useAsyncAction` (or `useStepForm`'s `submitting`) gives you both the guard and the flag |
+| Rendering a hook's `loading` but discarding its `error` | An offline or denied read then reads as "aucun dossier" |
+| `Alert.alert` instead of `alertDialog` / `confirmDialog` | Silently does nothing on web |
 | A long free-text value in a label/value `Row` | Squeezes the label; text overflows off-screen |
 | `Linking.openURL` without `canOpenURL` | Dead tap on devices with no dialer/mail client |
 | New modal without its own `GestureHandlerRootView` | Gestures silently dead inside the modal |

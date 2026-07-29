@@ -7,7 +7,8 @@ or a photo upload takes.
 
 **§3 records the state that prompted the work; §5 records what shipped in response.** The
 inventory is kept as the "before" picture — it is why the primitives in §2 look the way
-they do, and it is the checklist to re-run when a new call site is added.
+they do, and it is the checklist to re-run when a new call site is added. Every line in
+§3 was re-verified against the code before the remediation was written.
 
 ---
 
@@ -50,7 +51,7 @@ Reuse these rather than inventing new ones.
 | `writeWithTimeout` (15 s) | `src/lib/firestore/writeWithTimeout.ts:2,33` | The only defence against Firestore buffering an unreachable write forever |
 | `{ data, loading, error }` key-match derivation | `src/lib/data/useDossiers.ts:54-76` | Every read hook already conforms |
 | Design tokens | `src/theme/tokens.ts` | Any new spinner: `color={tokens.colors.primary}`, `tokens.space.*` padding |
-| French error mapping | `mapAuthError`, `mapDataError`, `mapPasswordResetError`, `frenchError` (`src/lib/data/callable.ts:5-20`) | A screen renders a mapped message, never its own |
+| French error mapping | `mapAuthError` / `mapPasswordResetError` (`src/lib/auth/authErrors.ts`), `mapDataError` (`src/lib/data/dataErrors.ts`), `frenchError` (`src/lib/data/callable.ts:5-20`) | A screen renders a mapped message, never its own |
 
 ---
 
@@ -234,16 +235,28 @@ upload begins; `makeThumbnail`'s CPU-bound pass.
 
 | Primitive | Path | Replaces |
 |---|---|---|
-| `Spinner` + `ScreenLoader` | `src/components/ui/Spinner.tsx` | The five duplicated `ActivityIndicator`s and their ad-hoc padding |
+| `Spinner` + `ScreenLoader` | `src/components/ui/Spinner.tsx` | The five duplicated `ActivityIndicator`s and their ad-hoc padding. `ActivityIndicator` now appears in this file and nowhere else in `src/` |
 | `ScreenMessage` | `src/components/ui/ScreenMessage.tsx` | Per-screen "introuvable" `Text` styling; new home for screen-level read errors |
 | `Button` `loading` | `src/components/ui/Button.tsx` | Every hand-rolled `busy` boolean that only dimmed a button |
 | `useAsyncAction` | `src/lib/ui/useAsyncAction.ts` | `companies/[id]`'s `run()`, `googleBusy`/`forgotBusy`/`resetBusy`, and the ungated sites in A |
-| `frenchAuthMessage` | `src/lib/auth/authErrors.ts` | The `code?.startsWith("auth/") ? … : …` ladder duplicated in sign-in and the registration fields |
+| `frenchAuthMessage` | `src/lib/auth/authErrors.ts` | The `code?.startsWith("auth/") ? … : …` ladder in `signin.tsx` |
 
 `useAsyncAction` is the load-bearing one: it owns the re-entry guard, the pending flag and
 the mapped-error surfacing, and `useInvite` / `useDossierManagement` compose it so their
 callers get `pending` without a second mechanism. Its contract is documented in
-`.claude/skills/bike-eco-ui/SKILL.md`.
+`.claude/skills/bike-eco-ui/SKILL.md`, and it is unit-tested
+(`src/lib/ui/__tests__/useAsyncAction.test.ts`) — including the double-tap-in-one-tick
+case, which is the whole reason its guard is a ref rather than the `pending` state.
+
+Two design points worth keeping:
+
+- **The guard is a ref, the flag is state.** They are not redundant. `pending` only lands
+  on the next render, so a second tap in the same tick would sail past a state-only check
+  — which is exactly why the funnels reached for a `useRef` in the first place. The bug
+  was never the ref; it was having *only* the ref.
+- **`loading` beats `disabled` in `Button`.** A button that is both would otherwise dim
+  *and* spin, which reads as broken. On a screen that locks every button while one acts
+  (`companies/[id]`), the acting button spins at full strength and its siblings dim.
 
 ### Behaviour changes
 
@@ -258,13 +271,23 @@ callers get `pending` without a second mechanism. Its contract is documented in
   succeeds or is explicitly discarded.
 
   Retry re-sends under the **original** message id, so it cannot duplicate the message:
-  `sendMessage` writes with `create()`, which rejects an id that already exists. That also
-  means a send whose *response* was lost — message written, client saw an error — could
-  never be retried successfully. So `DossierChatScreen` drops a placeholder whose id shows
-  up in the live thread: `useMessages` now returns `WithId<Message>` and the delivered
-  document is the evidence that the send worked. Without that reconciliation the user
-  would see a "failed" bubble sitting next to the delivered one, with a Réessayer button
-  that always errors.
+  `sendMessage` writes with `create()` (`functions/src/messages/index.ts:31`), which
+  rejects an id that already exists. That also means a send whose *response* was lost —
+  message written, client saw an error — could never be retried successfully. So a
+  placeholder is dropped once its id shows up in the live thread: `useMessages` now
+  returns `WithId<Message>` and the delivered document is the evidence that the send
+  worked. Without that reconciliation the user would see a "failed" bubble sitting next to
+  the delivered one, with a Réessayer button that always errors.
+
+  The reconciliation is a **derivation, not an effect** — `pending` is `entries` filtered
+  by the delivered ids — because writing that state from a `useEffect` is exactly the
+  cascading-render pattern `react-hooks/set-state-in-effect` rejects. For the same family
+  of reasons `retry` takes the message rather than its id: kicking the retry off from
+  inside a `setState` updater would fire it twice under Strict Mode's double invocation.
+
+  `ChatThread` is now keyed by document id instead of `${senderId}-${index}`. That was
+  latent before and load-bearing now: an optimistic bubble resolving into a delivered one
+  shifts every later index.
 - **Dossier update.** Wrapped in `writeWithTimeout`, so A.3 fails in 15 s instead of
   hanging forever offline.
 - **`Section` gained an `error` state** (precedence: loading → error → empty → list),
@@ -274,8 +297,15 @@ callers get `pending` without a second mechanism. Its contract is documented in
   banner hold their loading state until the saved région hydrates. This also surfaced a
   real race — a région picked inside the hydration window was overwritten by the stored
   value landing afterwards. `useRegionFilter` now tracks `userSet` and the store defers.
+  Regression-tested by holding `Storage.getItem` open across a `setRegion` call.
 - **No screen returns `null` while loading** any more (`AccountScreen`, `DossierChatScreen`).
-- The funnels call `alertDialog` instead of `Alert.alert`, which was dead on web.
+- **Dialogs go through `lib/ui/dialog`.** Every `Alert.alert` on a path a back-office user
+  can reach in a browser was dead code there; `confirmDialog` gained a `destructive` flag
+  so the iOS red confirm survived the move.
+- **The silent non-network waits in D got feedback too**: `PhotoPicker`'s two buttons and
+  the composer's "+" now spin through the permission prompt, the picker launch and
+  `DocumentPicker`'s `copyToCacheDirectory` pass. The composer's "Envoyer" is visibly
+  disabled when there is nothing to send.
 
 ### Deliberately not done
 
@@ -287,17 +317,44 @@ callers get `pending` without a second mechanism. Its contract is documented in
   the part that could actually lose a user's choice — is fixed in the store instead.
 - The extra `onSnapshot` fired with `region = null` before hydration is still made; the
   UI just doesn't render its result. Gating the subscribe itself would need a "skip"
-  signal in the read hooks.
+  signal in the read hooks. **This applies to `useDossiers` only** — `useCompanies` keys
+  its effect on `status` alone and filters région client-side
+  (`filterCompaniesByRegion`), so the companies list and the pending banner never fired a
+  second query; for them `ready` is purely a presentation gate.
+
+### Corrections made to this document
+
+Three claims in earlier drafts did not survive verification, and are fixed above:
+
+- §2 cited `mapAuthError` / `mapPasswordResetError` at `src/lib/data/callable.ts:5-20`.
+  They live in `src/lib/auth/authErrors.ts`; only `frenchError` is in `callable.ts`.
+- §5 described the `code?.startsWith("auth/")` ladder as "duplicated in sign-in and the
+  registration fields". It existed once, in `signin.tsx:102-109`;
+  `features/registration/fields.tsx` used a different (`err instanceof Error`) shape.
+  `frenchAuthMessage` is still worth extracting — it is now the one place that knows an
+  `auth/*` code from an already-French error we raised ourselves — but the duplication
+  argument was overstated.
+- §5's account of the région hydration race conflated `useDossiers` (région is a query
+  constraint) with `useCompanies` (région is a client-side filter). See above.
+
+One unrelated pre-existing failure was fixed to get the gate green:
+`src/theme/__tests__/tokens.test.ts` asserted `danger === "#DC2626"` while
+`tokens.ts` has held `#9F0712` since before this branch. The test was corrected to match
+the token, not the other way round.
 
 ---
 
 ## 6. Keeping this in sync
 
-When the remediation lands, update in the same change:
+Updated alongside the remediation:
 
-- `.claude/skills/bike-eco-ui/SKILL.md` — the component table and the "Common mistakes"
-  row about re-implementing loading states.
-- `.claude/skills/bike-eco-data/SKILL.md` — the hook-shape section, if mutation hooks start
-  returning a pending flag.
-- `docs/tech/frontend-architecture.md` — its "Read hooks return `{ data, loading }`"
-  section, which this audit extends to writes.
+- `.claude/skills/bike-eco-ui/SKILL.md` — the component table, a new "Loading states"
+  section documenting `useAsyncAction`, and six new "Common mistakes" rows.
+- `.claude/skills/bike-eco-data/SKILL.md` — the hook-shape contract (all three of
+  `{ data, loading, error }` are meant to be consumed) and a new "Mutation hooks" section.
+- `docs/tech/frontend-architecture.md` — its data-layer section, which this audit extends
+  from reads to writes.
+
+**When you add a new async call site**, re-run §3's legend against it: does the trigger
+show that it is working, does a failure surface French copy, and can it be double-tapped?
+`useAsyncAction` answers all three; anything that doesn't use it needs a reason.

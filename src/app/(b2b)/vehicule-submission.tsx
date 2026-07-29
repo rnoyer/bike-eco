@@ -1,7 +1,6 @@
 import { Stack, useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { FormProvider } from "react-hook-form";
-import { Alert } from "react-native";
 
 import FormConfirmation from "@/components/form/FormConfirmation";
 import FormLayout from "@/components/form/FormLayout";
@@ -14,32 +13,28 @@ import { B2B_SUBMISSION_STEPS } from "@/features/b2b-submission/steps";
 import { submitB2bSubmission } from "@/features/b2b-submission/submit";
 import { useSession } from "@/lib/data/useSession";
 import { useStepForm } from "@/lib/forms/useStepForm";
+import { alertDialog } from "@/lib/ui/dialog";
+import { frenchMessage } from "@/lib/ui/useAsyncAction";
 
 export default function B2bVehiculeSubmission() {
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
-  const submitting = useRef(false);
   const { user } = useSession();
 
-  const { form, step, isFirst, isLast, meta, next, prev } =
+  // The longest wait in the b2b app: a thumbnail render, a forced-server
+  // reachability probe and one upload per photo, all sequential.
+  const { form, step, isFirst, isLast, meta, next, prev, submitting } =
     useStepForm<B2bSubmissionForm>({
       schema: b2bSubmissionSchema,
       steps: B2B_SUBMISSION_STEPS,
       defaultValues: B2B_SUBMISSION_DEFAULTS,
       onSubmit: async (values) => {
-        if (submitting.current) return;
-        submitting.current = true;
         try {
           if (!user) throw new Error("Votre session a expiré. Reconnectez-vous.");
           await submitB2bSubmission(values, user);
           setSubmitted(true);
         } catch (err) {
-          Alert.alert(
-            "Envoi impossible",
-            err instanceof Error ? err.message : "Veuillez réessayer.",
-          );
-        } finally {
-          submitting.current = false;
+          alertDialog("Envoi impossible", frenchMessage(err));
         }
       },
     });
@@ -79,6 +74,7 @@ export default function B2bVehiculeSubmission() {
           onPrev={handlePrev}
           onNext={next}
           nextLabel={isLast ? "Envoyer" : "Suivant"}
+          busy={submitting}
         >
           {B2B_SUBMISSION_STEPS[step].render()}
         </FormLayout>

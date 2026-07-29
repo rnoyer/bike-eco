@@ -3,7 +3,6 @@ import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
-  Alert,
   Keyboard,
   ScrollView,
   StyleSheet,
@@ -13,8 +12,52 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Spinner from "@/components/ui/Spinner";
 import type { PickedFile } from "@/lib/data/useSendMessage";
+import { alertDialog } from "@/lib/ui/dialog";
+import { useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { tokens } from "@/theme/tokens";
+
+/** Pure of component state so the picker flow stays readable: both return the
+ *  files the user actually chose, capped at the room left in the message. */
+async function pickPhotos(room: number): Promise<PickedFile[]> {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== "granted") {
+    alertDialog("Permission refusée", "L'accès à la galerie est nécessaire.");
+    return [];
+  }
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: "images",
+    quality: 0.8,
+    allowsMultipleSelection: true,
+    selectionLimit: room,
+  });
+  if (result.canceled) return [];
+  return result.assets.slice(0, room).map((asset) => ({
+    uri: asset.uri,
+    name: asset.fileName ?? "photo.jpg",
+    size: asset.fileSize ?? 0,
+    mimeType: asset.mimeType ?? "image/jpeg",
+    type: "image",
+  }));
+}
+
+async function pickPdfs(room: number): Promise<PickedFile[]> {
+  // `copyToCacheDirectory` so the file is readable straight away.
+  const result = await DocumentPicker.getDocumentAsync({
+    type: "application/pdf",
+    copyToCacheDirectory: true,
+    multiple: true,
+  });
+  if (result.canceled) return [];
+  return result.assets.slice(0, room).map((asset) => ({
+    uri: asset.uri,
+    name: asset.name,
+    size: asset.size ?? 0,
+    mimeType: asset.mimeType ?? "application/pdf",
+    type: "pdf",
+  }));
+}
 
 export default function ChatComposer({
   onSend,
@@ -42,68 +85,34 @@ export default function ChatComposer({
     };
   }, []);
 
+  const canSend = text.trim().length > 0 || files.length > 0;
+
+  // Clears immediately, as before — but the content is no longer thrown away:
+  // it now lives in the thread's optimistic bubble until the send is confirmed,
+  // and comes back with Réessayer / Supprimer if it fails.
   const send = () => {
-    const t = text.trim();
-    if (!t && files.length === 0) return;
-    onSend(t, files);
+    if (!canSend) return;
+    onSend(text.trim(), files);
     setText("");
     setFiles([]);
   };
 
-  async function pickPhoto() {
+  // One action for both kinds — only one picker can be open at a time. It also
+  // covers the waits nobody sees: the permission prompt, and `DocumentPicker`'s
+  // `copyToCacheDirectory` pass, which is slow for a large PDF.
+  const picking = useAsyncAction(async (kind: "photo" | "pdf") => {
     setSheetOpen(false);
-    if (files.length >= 5) {
-      Alert.alert("Limite atteinte", "5 pièces jointes maximum par message.");
+    const room = 5 - files.length;
+    if (room <= 0) {
+      alertDialog("Limite atteinte", "5 pièces jointes maximum par message.");
       return;
     }
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission refusée", "L'accès à la galerie est nécessaire.");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: "images",
-      quality: 0.8,
-      allowsMultipleSelection: true,
-      selectionLimit: 5 - files.length,
-    });
-    if (result.canceled) return;
-    const picked: PickedFile[] = result.assets
-      .slice(0, 5 - files.length)
-      .map((asset) => ({
-        uri: asset.uri,
-        name: asset.fileName ?? "photo.jpg",
-        size: asset.fileSize ?? 0,
-        mimeType: asset.mimeType ?? "image/jpeg",
-        type: "image",
-      }));
-    setFiles((current) => [...current, ...picked]);
-  }
-
-  async function pickPdf() {
-    setSheetOpen(false);
-    if (files.length >= 5) {
-      Alert.alert("Limite atteinte", "5 pièces jointes maximum par message.");
-      return;
-    }
-    // `copyToCacheDirectory` so the file is readable straight away.
-    const result = await DocumentPicker.getDocumentAsync({
-      type: "application/pdf",
-      copyToCacheDirectory: true,
-      multiple: true,
-    });
-    if (result.canceled) return;
-    const picked: PickedFile[] = result.assets
-      .slice(0, 5 - files.length)
-      .map((asset) => ({
-        uri: asset.uri,
-        name: asset.name,
-        size: asset.size ?? 0,
-        mimeType: asset.mimeType ?? "application/pdf",
-        type: "pdf",
-      }));
-    setFiles((current) => [...current, ...picked]);
-  }
+    const picked =
+      kind === "photo"
+        ? await pickPhotos(room)
+        : await pickPdfs(room);
+    if (picked.length > 0) setFiles((current) => [...current, ...picked]);
+  });
 
   return (
     <View
@@ -142,9 +151,15 @@ export default function ChatComposer({
         <TouchableOpacity
           style={styles.plus}
           onPress={() => setSheetOpen(true)}
+          disabled={picking.pending}
           accessibilityLabel="Ajouter une pièce jointe"
+          accessibilityState={{ busy: picking.pending }}
         >
-          <Text style={styles.plusText}>＋</Text>
+          {picking.pending ? (
+            <Spinner />
+          ) : (
+            <Text style={styles.plusText}>＋</Text>
+          )}
         </TouchableOpacity>
         <TextInput
           style={styles.input}
@@ -155,15 +170,22 @@ export default function ChatComposer({
           maxLength={4096}
           multiline
         />
-        <TouchableOpacity style={styles.send} onPress={send}>
-          <Text style={styles.sendText}>Envoyer</Text>
+        <TouchableOpacity
+          style={styles.send}
+          onPress={send}
+          disabled={!canSend}
+          accessibilityState={{ disabled: !canSend }}
+        >
+          <Text style={[styles.sendText, !canSend && styles.sendTextDisabled]}>
+            Envoyer
+          </Text>
         </TouchableOpacity>
       </View>
 
       <Host style={styles.sheetHost}>
         <BottomSheet isPresented={sheetOpen} onDismiss={() => setSheetOpen(false)}>
-          <Button label="Photo" onPress={pickPhoto} />
-          <Button label="PDF" onPress={pickPdf} />
+          <Button label="Photo" onPress={() => void picking.run("photo")} />
+          <Button label="PDF" onPress={() => void picking.run("pdf")} />
         </BottomSheet>
       </Host>
     </View>
@@ -218,5 +240,6 @@ const styles = StyleSheet.create({
   },
   send: { height: 40, paddingHorizontal: tokens.space.md, justifyContent: "center" },
   sendText: { color: tokens.colors.primary, fontWeight: "700" },
+  sendTextDisabled: { color: tokens.colors.disabled },
   sheetHost: { position: "absolute", width: 0, height: 0 },
 });

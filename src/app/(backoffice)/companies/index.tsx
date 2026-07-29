@@ -11,9 +11,12 @@ import type { Company } from "@/lib/firestore/schema";
 
 export default function CompaniesListScreen() {
   const router = useRouter();
-  const { region } = useRegionFilter();
+  const { region, ready } = useRegionFilter();
   const pending = useCompanies("pending", region);
   const active = useCompanies("active", region);
+  // Both lists are région-filtered, so hold the loading state until the stored
+  // région hydrates rather than showing an unfiltered list that then shrinks.
+  const hydrating = !ready;
 
   const card = (c: WithId<Company>) => (
     <CompanyCard
@@ -30,14 +33,16 @@ export default function CompaniesListScreen() {
         <CompaniesSection
           title="Entreprises à vérifier"
           companies={pending.data}
-          loading={pending.loading}
+          loading={hydrating || pending.loading}
+          error={pending.error}
           emptyMessage="Pas d'entreprise a vérifier pour le moment."
           renderCard={card}
         />
         <CompaniesSection
           title="Entreprises enregistrées"
           companies={active.data}
-          loading={active.loading}
+          loading={hydrating || active.loading}
+          error={active.error}
           emptyMessage="Pas d'entreprise enregistrée pour le moment."
           renderCard={card}
         />

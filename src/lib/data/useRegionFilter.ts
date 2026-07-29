@@ -13,6 +13,10 @@ import { loadRegion, saveRegion } from "./region-store";
 let region: Region | null = null;
 let ready = false;
 let hydrated = false;
+/** Set once the user picks a région themselves. A pick made *inside* the
+ *  hydration window has to win: otherwise the stored value lands a moment later
+ *  and silently overwrites the choice the user just made. */
+let userSet = false;
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -24,7 +28,7 @@ function hydrateOnce() {
   hydrated = true;
   loadRegion()
     .then((r) => {
-      region = r;
+      if (!userSet) region = r;
       ready = true;
       emit();
     })
@@ -50,6 +54,7 @@ export function __resetRegionFilterForTests() {
   region = null;
   ready = false;
   hydrated = false;
+  userSet = false;
   listeners.clear();
 }
 
@@ -58,10 +63,14 @@ export function useRegionFilter() {
   const readyValue = useSyncExternalStore(subscribe, getReady, getReady);
 
   const setRegion = useCallback((r: Region | null) => {
+    userSet = true;
     region = r;
     emit();
     void saveRegion(r).catch(console.error);
   }, []);
 
+  // `ready` is false until the persisted région has hydrated. Consumers whose
+  // query is région-scoped must hold their loading state until then, or their
+  // first render answers a "Toute la France" query and visibly re-queries.
   return { region: regionValue, setRegion, ready: readyValue };
 }

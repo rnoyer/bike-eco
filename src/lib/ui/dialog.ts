@@ -5,6 +5,9 @@ export interface ConfirmOptions {
   message: string;
   /** Label of the confirming action, e.g. "Envoyer". */
   confirmLabel: string;
+  /** Renders the confirming action in the platform's destructive style. Web
+   *  has no equivalent in `window.confirm`, so it is ignored there. */
+  destructive?: boolean;
   onConfirm: () => void;
 }
 
@@ -15,11 +18,16 @@ export function confirmDialog({
   title,
   message,
   confirmLabel,
+  destructive = false,
   onConfirm,
 }: ConfirmOptions): void {
   Alert.alert(title, message, [
     { text: "Annuler", style: "cancel" },
-    { text: confirmLabel, onPress: onConfirm },
+    {
+      text: confirmLabel,
+      style: destructive ? "destructive" : "default",
+      onPress: onConfirm,
+    },
   ]);
 }
 

@@ -22,13 +22,20 @@ export default function DashboardScreen({
   onSell,
   onOpenCompanies,
 }: Props) {
-  const { region } = useRegionFilter();
-  const filter = role === "backoffice" ? region : undefined;
+  const { region, ready } = useRegionFilter();
+  const isBackoffice = role === "backoffice";
+  const filter = isBackoffice ? region : undefined;
   const aTraiter = useDossiers(["a_traiter"], filter);
   const enCours = useDossiers(["en_cours"], filter);
   const closed = useDossiers(["cloture"], filter);
 
-  if (role === "backoffice") {
+  // The back-office lists are région-scoped, so they are not settled until the
+  // stored région has hydrated: rendering the "Toute la France" result first
+  // and re-querying a moment later is a visible flicker. B2B dossiers are
+  // company-scoped and ignore the région entirely.
+  const hydrating = isBackoffice && !ready;
+
+  if (isBackoffice) {
     const card = (d: WithId<Dossier>) => (
       <DossierCard
         key={d.id}
@@ -47,21 +54,24 @@ export default function DashboardScreen({
           <DossiersSection
             title="Dossiers à traiter"
             dossiers={aTraiter.data}
-            loading={aTraiter.loading}
+            loading={hydrating || aTraiter.loading}
+            error={aTraiter.error}
             emptyMessage="Vous n'avez pas de dossier à traiter pour le moment."
             renderCard={card}
           />
           <DossiersSection
             title="Dossiers en cours"
             dossiers={enCours.data}
-            loading={enCours.loading}
+            loading={hydrating || enCours.loading}
+            error={enCours.error}
             emptyMessage="Vous n'avez pas de dossier en cours pour le moment."
             renderCard={card}
           />
           <DossiersSection
             title="Dossiers clos"
             dossiers={closed.data}
-            loading={closed.loading}
+            loading={hydrating || closed.loading}
+            error={closed.error}
             emptyMessage="Vous n'avez pas de dossier clos pour le moment."
             renderCard={card}
           />
@@ -100,6 +110,7 @@ export default function DashboardScreen({
           title="Dossiers en cours"
           dossiers={ongoing}
           loading={aTraiter.loading || enCours.loading}
+          error={aTraiter.error ?? enCours.error}
           emptyMessage="Vous n'avez pas de dossier en cours pour le moment."
           renderCard={card}
         />
@@ -107,6 +118,7 @@ export default function DashboardScreen({
           title="Dossiers clos"
           dossiers={closed.data}
           loading={closed.loading}
+          error={closed.error}
           emptyMessage="Vous n'avez pas de dossier clos pour le moment."
           renderCard={card}
         />

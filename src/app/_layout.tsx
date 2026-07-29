@@ -1,8 +1,8 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ScreenLoader } from "@/components/ui/Spinner";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 import { redirectFor, resolveAuthRoute } from "@/lib/auth/routeGuard";
 
@@ -27,13 +27,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   // unmounting <Stack> resets the router to its initial route (index) and would
   // strand a just-signed-in user there. `initializing` latches false after the
   // first resolution and never flips back.
-  if (initializing) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
+  if (initializing) return <ScreenLoader />;
   return <>{children}</>;
 }
 

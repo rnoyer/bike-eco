@@ -1,21 +1,24 @@
 import DossierInfoList from "@/components/native/DossierInfoList";
 import UserInfoList from "@/components/native/UserInfoList";
 import PhotoCarousel from "@/components/ui/PhotoCarousel";
+import ScreenMessage from "@/components/ui/ScreenMessage";
 import Section from "@/components/ui/Section";
 import SectionWrapper from "@/components/ui/SectionWrapper";
+import { ScreenLoader } from "@/components/ui/Spinner";
 import { useDossier } from "@/lib/data/useDossier";
 import { tokens } from "@/theme/tokens";
-import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
+import { ScrollView, StyleSheet, Text } from "react-native";
 
 export default function DossierDetailScreen({ id }: { id: string }) {
-  const { data, loading } = useDossier(id);
+  const { data, loading, error } = useDossier(id);
   return (
     <ScrollView>
-      {loading || !data ? (
-        <ActivityIndicator
-          style={styles.spinner}
-          color={tokens.colors.primary}
-        />
+      {loading ? (
+        <ScreenLoader />
+      ) : error ? (
+        <ScreenMessage message={error} tone="danger" />
+      ) : !data ? (
+        <ScreenMessage message="Dossier introuvable." />
       ) : (
         <>
           <PhotoCarousel photos={data.photos} status={data.status} />
@@ -37,6 +40,5 @@ export default function DossierDetailScreen({ id }: { id: string }) {
 }
 
 const styles = StyleSheet.create({
-  spinner: { paddingVertical: 48 },
   heading: { ...tokens.text.title },
 });

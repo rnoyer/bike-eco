@@ -1,3 +1,4 @@
+import Spinner from "@/components/ui/Spinner";
 import { tokens } from "@/theme/tokens";
 import {
   StyleSheet,
@@ -14,6 +15,10 @@ interface Props {
   onPress: () => void;
   variant?: Variant;
   disabled?: boolean;
+  /** An action is in flight: swaps the label for a spinner and blocks presses.
+   *  Prefer this over `disabled` for a network round-trip — `disabled` only
+   *  dims, which reads as "unavailable", not as "working". */
+  loading?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -24,8 +29,11 @@ export default function Button({
   onPress,
   variant = "primary",
   disabled = false,
+  loading = false,
   style,
 }: Props) {
+  const onDark = variant === "primary" || variant === "danger";
+  const blocked = disabled || loading;
   return (
     <TouchableOpacity
       style={[
@@ -34,21 +42,28 @@ export default function Button({
         variant === "outlined" && styles.outlined,
         variant === "danger" && styles.danger,
         variant === "text" && styles.text,
-        disabled && styles.disabled,
+        // Dim only when unavailable. A spinning button is working, not
+        // disabled, and dimming it as well reads as broken — which matters
+        // where a screen locks every button while one of them acts: the
+        // acting button spins undimmed, its siblings dim.
+        disabled && !loading && styles.disabled,
         style,
       ]}
-      onPress={disabled ? undefined : onPress}
-      activeOpacity={disabled ? 1 : 0.8}
+      onPress={blocked ? undefined : onPress}
+      activeOpacity={blocked ? 1 : 0.8}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: blocked, busy: loading }}
+      accessibilityLabel={label}
     >
-      <Text
-        style={[
-          styles.label,
-          (variant === "primary" || variant === "danger") &&
-            styles.labelPrimary,
-        ]}
-      >
-        {label}
-      </Text>
+      {loading ? (
+        <Spinner
+          color={onDark ? tokens.colors.primaryText : tokens.colors.primary}
+        />
+      ) : (
+        <Text style={[styles.label, onDark && styles.labelPrimary]}>
+          {label}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 }

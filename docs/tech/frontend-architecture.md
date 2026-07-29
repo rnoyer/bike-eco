@@ -153,15 +153,33 @@ Role differences handled inside the shared screens:
   dev server (`npx expo start`) does, on boot (~2s). After adding/renaming a route, start
   the dev server once (or `expo export`) to refresh the types before typechecking.
 
-## Data layer (mocked)
+## Data layer
 
-Read hooks return `{ data, loading }` and simulate an async fetch with a timer, so the
-later swap to Firestore listeners is invisible to screens. `loading` is derived from a
-resolved-key match (no synchronous `setState` in effects → React Compiler clean).
-`useSession` is a stub whose `setRole` flips identity so both groups are previewable from
-the sign-in DEV chips. Mutations (`invite`, `sendMessage`, `updateStatusAndPrice`) are
-stubs; callers wrap the `await` in `try/catch` and only navigate to the success screen on
-resolve (a rejection shows an Alert, never a false "success").
+**Read hooks return `{ data, loading, error }`.** `loading` is derived from a resolved-key
+match against the query's identity (no synchronous `setState` in effects → React Compiler
+clean), and `error` is already-French copy from `mapDataError` — a screen renders it, it
+never maps a raw Firebase code itself. All three are meant to be consumed: `Section` takes
+`loading` + `error` + `emptyMessage` and owns the precedence between them, and
+`ScreenLoader` / `ScreenMessage` do the same job for a whole screen. **No screen returns
+`null` while a read is in flight** — a blank screen is indistinguishable from a broken one.
+
+**Write hooks return `{ …action, pending, error }`**, built on `useAsyncAction`
+(`src/lib/ui/useAsyncAction.ts`), which owns the three things every user-initiated async
+action needs: a synchronous re-entry guard (a ref, because `pending` only lands on the
+next render), the pending flag the UI renders, and the mapped French error. `useInvite`
+and `useDossierManagement` compose it, so their callers get `pending` without a second
+mechanism. The action resolves to `undefined` on failure, so a caller navigates to the
+success screen only on a real result — never a false "success".
+
+Firestore buffers a write it cannot reach the server with, so a write that must not hang
+forever offline goes through `writeWithTimeout` (15 s).
+
+`useRegionFilter` additionally exposes `ready`, false until the persisted région hydrates.
+Consumers whose query is région-scoped must hold their loading state until then, or their
+first render answers a "Toute la France" query and visibly re-queries.
+
+`docs/tech/loading-states-audit.md` is the full inventory of async call sites and the
+remediation that produced these conventions.
 
 `dossiers` are B2B-only in the real model; the public B2C funnel remains email-only.
 

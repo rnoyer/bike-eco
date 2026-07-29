@@ -1,22 +1,18 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Modal, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import AccountInfoList from "@/components/native/AccountInfoList";
 import CompanyInfoList from "@/components/native/CompanyInfoList";
 import Button from "@/components/ui/Button";
+import ScreenMessage from "@/components/ui/ScreenMessage";
 import Section from "@/components/ui/Section";
 import SectionWrapper from "@/components/ui/SectionWrapper";
+import { ScreenLoader } from "@/components/ui/Spinner";
 import { callApproveCompany, callDeleteCompany } from "@/lib/data/registration";
 import { useCompany, useCompanyUsers } from "@/lib/data/useCompanies";
+import { alertDialog, confirmDialog } from "@/lib/ui/dialog";
+import { useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { tokens } from "@/theme/tokens";
 
 export default function CompanyDetailScreen() {
@@ -24,16 +20,27 @@ export default function CompanyDetailScreen() {
   const router = useRouter();
   const company = useCompany(id);
   const users = useCompanyUsers(id);
-  const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  if (company.loading || users.loading) {
-    return (
-      <ActivityIndicator style={styles.center} color={tokens.colors.primary} />
-    );
-  }
+  // One action per button, so the button that is actually working is the one
+  // that spins; `busy` then locks every other button on the screen, since
+  // approve and decline are alternatives on the same decision.
+  const onError = (message: string) => alertDialog("Action impossible", message);
+  const approving = useAsyncAction(async () => {
+    await callApproveCompany(id);
+    router.back();
+  }, { onError });
+  const deleting = useAsyncAction(async () => {
+    await callDeleteCompany(id);
+    router.back();
+  }, { onError });
+  const busy = approving.pending || deleting.pending;
+
+  if (company.loading || users.loading) return <ScreenLoader />;
+  const readError = company.error ?? users.error;
+  if (readError) return <ScreenMessage message={readError} tone="danger" />;
   if (!company.data) {
-    return <Text style={styles.center}>Entreprise introuvable.</Text>;
+    return <ScreenMessage message="Entreprise introuvable." />;
   }
 
   const owner =
@@ -44,35 +51,17 @@ export default function CompanyDetailScreen() {
     : users.data;
   const isPending = company.data.status === "pending";
 
-  async function run(action: () => Promise<void>) {
-    if (busy) return;
-    setBusy(true);
-    try {
-      await action();
-      router.back();
-    } catch (err) {
-      Alert.alert(
-        "Action impossible",
-        err instanceof Error ? err.message : "Veuillez réessayer.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
   function onDecline() {
-    Alert.alert(
-      "Décliner l'inscription",
-      "Cette entreprise et son compte seront définitivement supprimés.",
-      [
-        { text: "Annuler", style: "cancel" },
-        {
-          text: "Décliner",
-          style: "destructive",
-          onPress: () => run(() => callDeleteCompany(id)),
-        },
-      ],
-    );
+    // `confirmDialog`, not `Alert.alert`: the latter is an empty function on
+    // react-native-web, so this prompt never appeared in a browser.
+    confirmDialog({
+      title: "Décliner l'inscription",
+      message:
+        "Cette entreprise et son compte seront définitivement supprimés.",
+      confirmLabel: "Décliner",
+      destructive: true,
+      onConfirm: () => void deleting.run(),
+    });
   }
 
   return (
@@ -83,8 +72,9 @@ export default function CompanyDetailScreen() {
             <View style={styles.row}>
               <Button
                 label="Autoriser"
-                onPress={() => run(() => callApproveCompany(id))}
+                onPress={() => void approving.run()}
                 style={styles.flex}
+                loading={approving.pending}
                 disabled={busy}
               />
               <Button
@@ -92,6 +82,7 @@ export default function CompanyDetailScreen() {
                 label="Décliner inscription"
                 onPress={onDecline}
                 style={styles.flex}
+                loading={deleting.pending}
                 disabled={busy}
               />
             </View>
@@ -126,6 +117,7 @@ export default function CompanyDetailScreen() {
                 variant="danger"
                 label="Supprimer cette entreprise"
                 onPress={() => setConfirmDelete(true)}
+                loading={deleting.pending}
                 disabled={busy}
               />
             </Section>
@@ -157,7 +149,7 @@ export default function CompanyDetailScreen() {
               label="Supprimer tout"
               onPress={() => {
                 setConfirmDelete(false);
-                void run(() => callDeleteCompany(id));
+                void deleting.run();
               }}
               disabled={busy}
             />
@@ -169,12 +161,6 @@ export default function CompanyDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    textAlignVertical: "center",
-    textAlign: "center",
-    padding: tokens.space.xl,
-  },
   row: { flexDirection: "row", gap: tokens.space.md },
   flex: { flex: 1 },
   userLine: { fontSize: 14, color: tokens.colors.primary },
