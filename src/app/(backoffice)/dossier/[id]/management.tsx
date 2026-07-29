@@ -1,36 +1,38 @@
 import { useGlobalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Alert, ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import DossierManagementForm from "@/components/form/DossierManagementForm";
+import ScreenMessage from "@/components/ui/ScreenMessage";
+import { ScreenLoader } from "@/components/ui/Spinner";
 import { useDossier } from "@/lib/data/useDossier";
 import { useDossierManagement } from "@/lib/data/useDossierManagement";
+import { alertDialog } from "@/lib/ui/dialog";
 import { tokens } from "@/theme/tokens";
 
 export default function BackofficeDossierManagement() {
   const { id } = useGlobalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { data, loading } = useDossier(id);
-  const { updateManagement } = useDossierManagement();
+  const { data, loading, error } = useDossier(id);
+  const { updateManagement, pending } = useDossierManagement({
+    onError: (message) => alertDialog("Mise à jour impossible", message),
+  });
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      {loading || !data ? (
-        <ActivityIndicator style={styles.spinner} color={tokens.colors.primary} />
+      {loading ? (
+        <ScreenLoader />
+      ) : error ? (
+        <ScreenMessage message={error} tone="danger" />
+      ) : !data ? (
+        <ScreenMessage message="Dossier introuvable." />
       ) : (
         <DossierManagementForm
           initialRegion={data.region}
           initialStatus={data.status}
           initialPrice={data.negotiatedPrice}
+          busy={pending}
           onSubmit={async (region, status, price) => {
-            try {
-              await updateManagement(id, region, status, price);
+            if (await updateManagement(id, region, status, price)) {
               router.replace("/(backoffice)/confirmation");
-            } catch (err) {
-              Alert.alert(
-                "Erreur",
-                err instanceof Error
-                  ? err.message
-                  : "La mise à jour n'a pas pu être enregistrée. Veuillez réessayer."
-              );
             }
           }}
         />
@@ -41,5 +43,4 @@ export default function BackofficeDossierManagement() {
 
 const styles = StyleSheet.create({
   content: { padding: tokens.space.lg },
-  spinner: { paddingVertical: 48 },
 });

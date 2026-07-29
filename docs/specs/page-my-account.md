@@ -26,6 +26,14 @@ From top to bottom
   and pushed down to the bottom edge when the content is shorter than the viewport. Not
   available yet.
 
+## Loading and error states
+
+While the account and company reads are in flight the page shows a centered
+spinner — never a blank view. If a read fails it shows the mapped French error;
+if the account itself is absent, "Compte introuvable.". The company block is a
+`Section`, so it carries its own loading / error / "Entreprise introuvable."
+states independently of the personal-information block.
+
 ## Tab bar props
 
 ### B2B

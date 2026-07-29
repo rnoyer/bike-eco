@@ -16,6 +16,9 @@ type FormValues = z.infer<typeof schema>;
 interface Props {
   onSubmit: (email: string, password: string) => void;
   onForgotPassword: (email: string) => void;
+  /** Set while the sign-in round-trip is in flight: the button spins and stops
+   *  accepting taps. Without it "Login" looked idle for the whole call. */
+  submitting?: boolean;
   /** Set while the reset email is in flight, so the link can't be tapped twice. */
   forgotDisabled?: boolean;
 }
@@ -23,6 +26,7 @@ interface Props {
 export default function SignInFields({
   onSubmit,
   onForgotPassword,
+  submitting = false,
   forgotDisabled = false,
 }: Props) {
   const form = useForm<FormValues>({
@@ -51,6 +55,7 @@ export default function SignInFields({
         />
         <Button
           label="Login"
+          loading={submitting}
           onPress={form.handleSubmit((v) => onSubmit(v.email, v.password))}
         />
         <Button

@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   useForm,
   type DefaultValues,
@@ -35,7 +35,11 @@ export interface StepForm<T extends FieldValues> {
   isFirst: boolean;
   isLast: boolean;
   meta: StepConfig<T>;
-  /** Validates the current step, then advances or submits on the last step. */
+  /** True while the last step's `onSubmit` is in flight. Drive `FormLayout`'s
+   *  `busy` with it so "Envoyer" spins instead of sitting there looking idle. */
+  submitting: boolean;
+  /** Validates the current step, then advances or submits on the last step.
+   *  Re-entrant calls are dropped while one is still running. */
   next: () => Promise<void>;
   prev: () => void;
 }
@@ -60,14 +64,33 @@ export function useStepForm<T extends FieldValues>({
   });
   const [step, setStep] = useState(0);
 
+  // Read unconditionally, during render: `formState` is a Proxy and only
+  // tracks the fields actually read before a render, so destructuring here is
+  // what subscribes the caller to submit-state changes. Reading it lazily
+  // inside `next` would never re-render the button.
+  const { isSubmitting } = form.formState;
+
+  // ...and that Proxy value is a render snapshot, which is exactly why it
+  // cannot also serve as the re-entry guard: a second tap in the same tick
+  // still closes over `false`. The ref is synchronous and wraps the whole of
+  // `next`, including the per-step `trigger` await — without it a fast
+  // double-tap on "Suivant" advances two steps.
+  const running = useRef(false);
+
   const next = useCallback(async () => {
-    const valid = await form.trigger(steps[step].fields);
-    if (!valid) return;
-    if (step === steps.length - 1) {
-      await form.handleSubmit(onSubmit)();
-      return;
+    if (running.current) return;
+    running.current = true;
+    try {
+      const valid = await form.trigger(steps[step].fields);
+      if (!valid) return;
+      if (step === steps.length - 1) {
+        await form.handleSubmit(onSubmit)();
+        return;
+      }
+      setStep((s) => s + 1);
+    } finally {
+      running.current = false;
     }
-    setStep((s) => s + 1);
   }, [form, step, steps, onSubmit]);
 
   const prev = useCallback(() => setStep((s) => Math.max(0, s - 1)), []);
@@ -78,6 +101,7 @@ export function useStepForm<T extends FieldValues>({
     isFirst: step === 0,
     isLast: step === steps.length - 1,
     meta: steps[step],
+    submitting: isSubmitting,
     next,
     prev,
   };

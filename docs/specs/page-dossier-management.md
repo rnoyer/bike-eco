@@ -42,6 +42,17 @@ type : dropdown
 
   Primary Button : "Mettre à jour", update dossier region, statut and negociated price
 
+## Loading and error states
+
+While the dossier read is in flight the page shows a centered spinner. If the
+read fails it shows the mapped French error; if the dossier does not exist,
+"Dossier introuvable.".
+
+"Mettre à jour" shows a spinner in place of its label while the write is in
+flight and cannot be tapped twice. The write is bounded by the shared 15s
+timeout, so offline it fails with a network message instead of hanging: the page
+only navigates to the confirmation screen once the update is acknowledged.
+
 ## Tab bar props
 
 ### B2B

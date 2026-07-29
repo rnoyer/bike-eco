@@ -2,7 +2,6 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useEffect, useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
-import { Alert } from "react-native";
 
 import FormConfirmation from "@/components/form/FormConfirmation";
 import FormLayout from "@/components/form/FormLayout";
@@ -14,9 +13,12 @@ import {
 import { B2B_INVITED_REGISTRATION_STEPS } from "@/features/b2b-invited-registration/steps";
 import { submitInvitedRegistration } from "@/features/b2b-invited-registration/submit";
 import { GoogleAuthProvider } from "@/features/registration/googleAuth";
+import { frenchAuthMessage } from "@/lib/auth/authErrors";
 import { callAcceptInvite } from "@/lib/data/registration";
 import { useSession } from "@/lib/data/useSession";
 import { useStepForm } from "@/lib/forms/useStepForm";
+import { alertDialog } from "@/lib/ui/dialog";
+import { frenchMessage, useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { auth } from "../../../firebaseConfig";
 
 type CompletedInvite = {
@@ -32,7 +34,6 @@ export default function RegisterInvitedScreen() {
     code?: string;
   }>();
   const [submitted, setSubmitted] = useState(false);
-  const submitting = useRef(false);
   const usedGoogle = useRef(false);
   const completed = useRef<CompletedInvite | null>(null);
   const { refreshSession } = useSession();
@@ -43,7 +44,7 @@ export default function RegisterInvitedScreen() {
     if (!code) router.replace("/(auth)/invite-code");
   }, [code, router]);
 
-  const { form, step, isFirst, isLast, meta, next, prev } =
+  const { form, step, isFirst, isLast, meta, next, prev, submitting } =
     useStepForm<B2bInvitedRegistrationForm>({
       schema: b2bInvitedRegistrationSchema,
       steps: B2B_INVITED_REGISTRATION_STEPS,
@@ -52,16 +53,14 @@ export default function RegisterInvitedScreen() {
         email: email ?? "",
       },
       onSubmit: async (values) => {
-        if (submitting.current) return;
         if (!code) {
-          Alert.alert(
+          alertDialog(
             "Code d'invitation manquant",
             "Veuillez saisir à nouveau votre code d'invitation.",
           );
           router.replace("/(auth)/invite-code");
           return;
         }
-        submitting.current = true;
         try {
           if (usedGoogle.current) {
             // Google mode: already signed in during step 1 (AccountFields); the
@@ -90,25 +89,29 @@ export default function RegisterInvitedScreen() {
           }
           setSubmitted(true);
         } catch (err) {
-          Alert.alert(
-            "Inscription impossible",
-            err instanceof Error ? err.message : "Veuillez réessayer.",
-          );
-        } finally {
-          submitting.current = false;
+          alertDialog("Inscription impossible", frenchMessage(err));
         }
       },
     });
 
-  const goToDashboard = async () => {
-    const c = completed.current;
-    if (c?.method === "password") {
-      await signInWithEmailAndPassword(auth, c.email, c.password);
-    } else {
-      await refreshSession();
-    }
-    router.replace("/(b2b)/(tabs)/dashboard");
-  };
+  // "Aller à l'accueil" is not a navigation: it signs the user in (password
+  // mode) or force-refreshes the token and re-reads the profile (Google mode)
+  // before it routes. Both are round-trips the button has to show.
+  const goingToDashboard = useAsyncAction(
+    async () => {
+      const c = completed.current;
+      if (c?.method === "password") {
+        await signInWithEmailAndPassword(auth, c.email, c.password);
+      } else {
+        await refreshSession();
+      }
+      router.replace("/(b2b)/(tabs)/dashboard");
+    },
+    {
+      mapError: frenchAuthMessage,
+      onError: (message) => alertDialog("Connexion impossible", message),
+    },
+  );
 
   function handlePrev() {
     if (isFirst) {
@@ -126,7 +129,8 @@ export default function RegisterInvitedScreen() {
         <FormConfirmation
           title="Votre inscription est terminée !"
           buttonLabel="Aller à l'accueil"
-          onDone={goToDashboard}
+          onDone={() => void goingToDashboard.run()}
+          busy={goingToDashboard.pending}
         />
       </>
     );
@@ -151,6 +155,7 @@ export default function RegisterInvitedScreen() {
             onPrev={handlePrev}
             onNext={next}
             nextLabel={isLast ? "S'inscrire" : "Suivant"}
+            busy={submitting}
           >
             {B2B_INVITED_REGISTRATION_STEPS[step].render()}
           </FormLayout>

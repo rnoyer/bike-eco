@@ -87,9 +87,33 @@ shape. Copy it rather than inventing a variant.
 3. Subscribe with `onSnapshot`, returning its unsubscribe from the effect.
 4. Map the error through `mapDataError(err.code)` — hooks return **French copy**, never a
    raw Firebase code.
-5. Return `{ data, loading, error }`.
+5. Return `{ data, loading, error }` — and expect all three to be consumed. A screen that
+   destructures only `{ data }` renders an offline or denied read as an empty list.
+   `Section` takes `loading` + `error`; `ScreenLoader` / `ScreenMessage` do the same for a
+   whole screen. Never `return null` while loading.
 6. Resolve impossible queries to empty rather than leaving them to spin: a b2b user with
    no `companyId` cannot form a legal query, so `useDossiers` reports empty, not loading.
+7. Return `WithId<T>` whenever the id is evidence, not just a React key — `useMessages`
+   does, because `useSendMessage` drops an optimistic bubble when the id it minted appears.
+
+## Mutation hooks
+
+Writes return **`{ …action, pending, error }`**, composing `useAsyncAction`
+(`src/lib/ui/useAsyncAction.ts`) rather than leaving the caller to own a pending flag —
+which is exactly what three of four call sites forgot to do. `useInvite` and
+`useDossierManagement` are the pattern: they take the optional `AsyncActionOptions` through
+so the screen can supply `onError`, and their action resolves to `true` on success and
+`undefined` on failure, so the caller navigates on the result.
+
+A write that must not hang forever offline goes through `writeWithTimeout` (15 s):
+Firestore buffers a write it cannot reach the server with, so `updateDoc`/`setDoc` neither
+resolve nor reject and the screen sits live and silent. Pass a `compensate` callback only
+when there is something to undo (uploaded files); an update has nothing.
+
+`useRegionFilter` also exposes `ready`, false until the persisted région hydrates. A
+région-scoped consumer must hold its loading state until then, and the store keeps a
+`userSet` flag so a choice made inside the hydration window is not overwritten by the
+stored value landing afterwards.
 
 `mapDataError` (`src/lib/data/dataErrors.ts`) is pure and imports no Firebase config, so
 it stays testable under the `jest-expo` config that stubs `firebase/firestore`. Keep new
@@ -120,6 +144,8 @@ leaves the dashboard showing a stale value after the picker changes it. Export a
 | Dropping `serverTimestamps: "estimate"` | `.toMillis()` throws on a just-written doc |
 | Keying a listener effect on an array/object dep | Re-subscribes every render |
 | Returning a raw Firebase error code to the UI | Untranslated copy leaks to the user |
+| A mutation hook that returns only its action | Every caller re-invents (or forgets) the pending flag |
+| A bare `updateDoc`/`setDoc` on a user-initiated write | Buffers forever offline; the promise never settles |
 | New `where` + `orderBy` without an index | Query fails at runtime with a create-index URL |
 | `useState` for a cross-tab preference | Sibling NativeTabs keep stale values |
 | Writing `role` / `companyId` / `status` from the client | Rejected — server-set claims only |

@@ -2,7 +2,10 @@ import SignInFields from "@/components/form/SignInFields";
 import Button from "@/components/ui/Button";
 import PhotoBackground from "@/components/ui/PhotoBackground";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
-import { mapAuthError, mapPasswordResetError } from "@/lib/auth/authErrors";
+import {
+  frenchAuthMessage,
+  mapPasswordResetError,
+} from "@/lib/auth/authErrors";
 import { signInWithGoogle } from "@/lib/auth/googleSignIn";
 import { mapDataError } from "@/lib/data/dataErrors";
 import { userDoc } from "@/lib/firestore/collections";
@@ -10,6 +13,7 @@ import {
   WRITE_TIMEOUT_MS,
   writeWithTimeout,
 } from "@/lib/firestore/writeWithTimeout";
+import { useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { tokens } from "@/theme/tokens";
 import { useRouter } from "expo-router";
 import {
@@ -31,30 +35,28 @@ const RESET_SENT =
 export default function SignInScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // One error line and one notice line are shared by all three actions, so
+  // they stay screen state; each action owns only its own pending flag.
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [googleBusy, setGoogleBusy] = useState(false);
-  const [forgotBusy, setForgotBusy] = useState(false);
 
-  const handleSignIn = async (email: string, password: string) => {
+  const clearMessages = () => {
     setError(null);
     setNotice(null);
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // The root AuthGate redirects on the resulting auth-state change.
-    } catch (e) {
-      setError(mapAuthError((e as { code?: string }).code ?? ""));
-    }
   };
 
-  const handleThirdParty = async (
-    provider: "google" | "apple" | "facebook",
-  ) => {
-    if (provider !== "google" || googleBusy) return;
-    setError(null);
-    setNotice(null);
-    setGoogleBusy(true);
-    try {
+  const signingIn = useAsyncAction(
+    async (email: string, password: string) => {
+      clearMessages();
+      await signInWithEmailAndPassword(auth, email, password);
+      // The root AuthGate redirects on the resulting auth-state change.
+    },
+    { mapError: frenchAuthMessage, onError: setError },
+  );
+
+  const googleSigningIn = useAsyncAction(
+    async () => {
+      clearMessages();
       const { isNewUser } = await signInWithGoogle();
       const user = auth.currentUser;
       if (!user) {
@@ -98,29 +100,19 @@ export default function SignInScreen() {
         return;
       }
       // The root AuthGate redirects on the resulting auth-state change.
-    } catch (e) {
-      const code = (e as { code?: string }).code;
-      setError(
-        code?.startsWith("auth/")
-          ? mapAuthError(code)
-          : e instanceof Error
-            ? e.message
-            : "La connexion a échoué. Veuillez réessayer.",
-      );
-    } finally {
-      setGoogleBusy(false);
-    }
-  };
+    },
+    // `signInWithGoogle` throws either a Firebase `auth/*` error or one of our
+    // own already-French errors ("Connexion Google annulée.", an email
+    // mismatch); `frenchAuthMessage` is what tells the two apart.
+    { mapError: frenchAuthMessage, onError: setError },
+  );
 
-  const handleForgot = async (email: string) => {
-    if (forgotBusy) return;
-    setError(null);
-    setNotice(null);
+  const sendingReset = useAsyncAction(async (email: string) => {
+    clearMessages();
     if (!email) {
       setError("Saisissez votre email pour réinitialiser le mot de passe.");
       return;
     }
-    setForgotBusy(true);
     try {
       await sendPasswordResetEmail(auth, email);
       setNotice(RESET_SENT);
@@ -129,16 +121,15 @@ export default function SignInScreen() {
       // Never reveal whether an address has an account: an unknown email gets
       // the same confirmation as a known one. (Firebase's email-enumeration
       // protection already resolves in that case — this covers a project where
-      // it is off.)
+      // it is off.) Handled here rather than through `mapError` because only
+      // this call site turns a failure into a success message.
       if (code === "auth/user-not-found") {
         setNotice(RESET_SENT);
         return;
       }
       setError(mapPasswordResetError(code));
-    } finally {
-      setForgotBusy(false);
     }
-  };
+  });
 
   return (
     <PhotoBackground>
@@ -152,15 +143,18 @@ export default function SignInScreen() {
         <View style={styles.card}>
           <Text style={styles.title}>Bienvenue !</Text>
           <SignInFields
-            onSubmit={handleSignIn}
-            onForgotPassword={handleForgot}
-            forgotDisabled={forgotBusy}
+            onSubmit={(email, password) => void signingIn.run(email, password)}
+            submitting={signingIn.pending}
+            onForgotPassword={(email) => void sendingReset.run(email)}
+            forgotDisabled={sendingReset.pending}
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {notice ? <Text style={styles.notice}>{notice}</Text> : null}
           <ThirdPartyAuthButtons
-            onPress={handleThirdParty}
-            disabled={googleBusy}
+            onPress={(provider) => {
+              if (provider === "google") void googleSigningIn.run();
+            }}
+            disabled={googleSigningIn.pending}
           />
           <View style={styles.dividerRow}>
             <View style={styles.line} />

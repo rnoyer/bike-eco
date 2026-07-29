@@ -36,6 +36,12 @@ back-office, so a B2B teammate viewing a colleague's dossier could not fetch it.
 
 Any missing value renders as "—".
 
+## Loading and error states
+
+While the dossier read is in flight the page shows a centered spinner. If the
+read fails it shows the mapped French error; if the dossier does not exist,
+"Dossier introuvable.".
+
 ## Tab bar props
 
 ### B2B

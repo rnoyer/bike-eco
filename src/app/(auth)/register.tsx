@@ -2,7 +2,6 @@ import { Stack, useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
 import { useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
-import { Alert } from "react-native";
 
 import FormConfirmation from "@/components/form/FormConfirmation";
 import FormLayout from "@/components/form/FormLayout";
@@ -14,24 +13,24 @@ import {
 import { B2B_COMPANY_REGISTRATION_STEPS } from "@/features/b2b-registration/steps";
 import { submitCompanyRegistration } from "@/features/b2b-registration/submit";
 import { GoogleAuthProvider } from "@/features/registration/googleAuth";
+import { frenchAuthMessage } from "@/lib/auth/authErrors";
 import { callRegisterCompany } from "@/lib/data/registration";
 import { useStepForm } from "@/lib/forms/useStepForm";
+import { alertDialog } from "@/lib/ui/dialog";
+import { frenchMessage, useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { auth } from "../../../firebaseConfig";
 
 export default function RegisterScreen() {
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
-  const submitting = useRef(false);
   const usedGoogle = useRef(false);
 
-  const { form, step, isFirst, isLast, meta, next, prev } =
+  const { form, step, isFirst, isLast, meta, next, prev, submitting } =
     useStepForm<B2bCompanyRegistrationForm>({
       schema: b2bCompanyRegistrationSchema,
       steps: B2B_COMPANY_REGISTRATION_STEPS,
       defaultValues: B2B_COMPANY_REGISTRATION_DEFAULTS,
       onSubmit: async (values) => {
-        if (submitting.current) return;
-        submitting.current = true;
         try {
           if (usedGoogle.current) {
             // Google mode: already signed in during step 2 (AccountFields);
@@ -54,25 +53,28 @@ export default function RegisterScreen() {
           }
           setSubmitted(true);
         } catch (err) {
-          Alert.alert(
-            "Inscription impossible",
-            err instanceof Error ? err.message : "Veuillez réessayer.",
-          );
-        } finally {
-          submitting.current = false;
+          alertDialog("Inscription impossible", frenchMessage(err));
         }
       },
     });
 
-  const goHome = async () => {
-    if (auth.currentUser) await signOut(auth);
-    router.replace("/");
-  };
+  // Signing out is a network round-trip in the Google path, and it is what
+  // "Retour à l'accueil" waits on before navigating.
+  const goingHome = useAsyncAction(
+    async () => {
+      if (auth.currentUser) await signOut(auth);
+      router.replace("/");
+    },
+    {
+      mapError: frenchAuthMessage,
+      onError: (message) => alertDialog("Déconnexion impossible", message),
+    },
+  );
 
   function handlePrev() {
     if (isFirst) {
       if (router.canGoBack()) router.back();
-      else goHome();
+      else void goingHome.run();
       return;
     }
     prev();
@@ -86,7 +88,8 @@ export default function RegisterScreen() {
           title="Demande d'inscription envoyée !"
           message="Votre inscription est prise en compte. Un email de confirmation vous sera envoyé lorsque votre compte sera validé par notre équipe. Vous pourrez ensuite commencer à utiliser l'application pour vendre vos véhicules."
           buttonLabel="Retour à l'accueil"
-          onDone={goHome}
+          onDone={() => void goingHome.run()}
+          busy={goingHome.pending}
         />
       </>
     );
@@ -111,6 +114,9 @@ export default function RegisterScreen() {
             onPrev={handlePrev}
             onNext={next}
             nextLabel={isLast ? "S'inscrire" : "Suivant"}
+            // "Précédent" on step 1 signs out before it navigates, so the row
+            // has to lock for that round-trip too.
+            busy={submitting || goingHome.pending}
           >
             {B2B_COMPANY_REGISTRATION_STEPS[step].render()}
           </FormLayout>

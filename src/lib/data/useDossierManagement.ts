@@ -1,16 +1,26 @@
-import { useCallback } from "react";
 import { serverTimestamp, updateDoc } from "firebase/firestore";
 
 import { dossierDoc } from "@/lib/firestore/collections";
 import type { DossierStatus, Region } from "@/lib/firestore/schema";
+import {
+  WRITE_TIMEOUT_MS,
+  writeWithTimeout,
+} from "@/lib/firestore/writeWithTimeout";
+import { useAsyncAction, type AsyncActionOptions } from "@/lib/ui/useAsyncAction";
 import { mapDataError } from "./dataErrors";
 
 /**
  * Back-office status / région / prix négocié update (page-dossier-management).
  * These four fields are exactly what the update rule allows.
+ *
+ * Raced against the shared write timeout: offline, Firestore buffers the write
+ * and `updateDoc` neither resolves nor rejects, so the screen would sit with a
+ * live button and never navigate or error. There is nothing to compensate — an
+ * update commits no uploads and creates no document — so a late-landing write
+ * is simply the update the user asked for.
  */
-export function useDossierManagement() {
-  const updateManagement = useCallback(
+export function useDossierManagement(options?: AsyncActionOptions) {
+  const { run, pending, error } = useAsyncAction(
     async (
       id: string,
       region: Region,
@@ -18,18 +28,24 @@ export function useDossierManagement() {
       price: number | null,
     ) => {
       try {
-        await updateDoc(dossierDoc(id), {
-          region,
-          status,
-          negotiatedPrice: price,
-          updatedAt: serverTimestamp(),
-        });
-      } catch (error) {
-        throw new Error(mapDataError((error as { code?: string }).code ?? ""));
+        await writeWithTimeout(
+          () =>
+            updateDoc(dossierDoc(id), {
+              region,
+              status,
+              negotiatedPrice: price,
+              updatedAt: serverTimestamp(),
+            }),
+          () => {},
+          WRITE_TIMEOUT_MS,
+        );
+      } catch (err) {
+        throw new Error(mapDataError((err as { code?: string }).code ?? ""));
       }
+      return true as const;
     },
-    [],
+    options,
   );
 
-  return { updateManagement };
+  return { updateManagement: run, pending, error };
 }

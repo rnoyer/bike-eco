@@ -1,11 +1,14 @@
 import { useFormContext } from "react-hook-form";
-import { Alert, StyleSheet, Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
 
 import ControlledField from "@/components/form/ControlledField";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
 import type { B2bCompanyRegistrationForm } from "@/features/b2b-registration/schema";
+import { frenchAuthMessage } from "@/lib/auth/authErrors";
 import { signInWithGoogle } from "@/lib/auth/googleSignIn";
 import { digitsOnly } from "@/lib/forms/transforms";
+import { alertDialog } from "@/lib/ui/dialog";
+import { useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { tokens } from "@/theme/tokens";
 import { useGoogleAuthReporter } from "./googleAuth";
 
@@ -19,9 +22,10 @@ export function AccountFields({
   const form = useFormContext<B2bCompanyRegistrationForm>();
   const { onGoogleProfile } = useGoogleAuthReporter();
 
-  async function handleAuthPress(provider: "google" | "apple" | "facebook") {
-    if (provider !== "google") return;
-    try {
+  // Google sign-in plus a step advance — the same round-trip `signin.tsx`
+  // guards, which this screen used to fire with no feedback and no guard at all.
+  const googleSigningIn = useAsyncAction(
+    async () => {
       // Invited flow only (`emailDisabled` locks the email to the invitation):
       // a mismatch throws, so `onGoogleProfile` below is never reached and the
       // funnel stays on this step instead of failing at the final submit.
@@ -39,13 +43,12 @@ export function AccountFields({
       form.setValue("password", "google-auth-placeholder");
       form.setValue("confirmPassword", "google-auth-placeholder");
       await onGoogleProfile(profile);
-    } catch (err) {
-      Alert.alert(
-        "Connexion Google",
-        err instanceof Error ? err.message : "Veuillez réessayer.",
-      );
-    }
-  }
+    },
+    {
+      mapError: frenchAuthMessage,
+      onError: (message) => alertDialog("Connexion Google", message),
+    },
+  );
 
   return (
     <>
@@ -75,7 +78,12 @@ export function AccountFields({
         autoCapitalize="none"
         returnKeyType="done"
       />
-      <ThirdPartyAuthButtons onPress={handleAuthPress} />
+      <ThirdPartyAuthButtons
+        onPress={(provider) => {
+          if (provider === "google") void googleSigningIn.run();
+        }}
+        disabled={googleSigningIn.pending}
+      />
       <Text style={styles.note}>* Champs obligatoires</Text>
     </>
   );

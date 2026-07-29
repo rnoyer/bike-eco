@@ -1,5 +1,9 @@
 import { expect, test } from "@jest/globals";
-import { mapAuthError, mapPasswordResetError } from "./authErrors";
+import {
+  frenchAuthMessage,
+  mapAuthError,
+  mapPasswordResetError,
+} from "./authErrors";
 
 test("bad credentials map to a specific message", () => {
   expect(mapAuthError("auth/invalid-credential")).toBe(
@@ -37,5 +41,40 @@ test("password reset does not reuse the wrong-password copy", () => {
 test("unknown reset codes fall back to reset-specific copy", () => {
   expect(mapPasswordResetError("auth/internal-error")).toBe(
     "L’envoi du lien de réinitialisation a échoué. Veuillez réessayer.",
+  );
+});
+
+test("frenchAuthMessage maps a Firebase auth code", () => {
+  expect(
+    frenchAuthMessage(
+      Object.assign(new Error("The password is invalid."), {
+        code: "auth/wrong-password",
+      }),
+    ),
+  ).toBe("Email ou mot de passe incorrect.");
+});
+
+test("frenchAuthMessage keeps our own already-French error messages", () => {
+  expect(frenchAuthMessage(new Error("Connexion Google annulée."))).toBe(
+    "Connexion Google annulée.",
+  );
+});
+
+test("frenchAuthMessage never leaks an English message from a non-auth code", () => {
+  expect(
+    frenchAuthMessage(
+      Object.assign(new Error("The service is currently unavailable."), {
+        code: "functions/unavailable",
+      }),
+    ),
+  ).toBe("La connexion a échoué. Veuillez réessayer.");
+});
+
+test("frenchAuthMessage falls back for non-Error throws", () => {
+  expect(frenchAuthMessage("boom")).toBe(
+    "La connexion a échoué. Veuillez réessayer.",
+  );
+  expect(frenchAuthMessage(undefined)).toBe(
+    "La connexion a échoué. Veuillez réessayer.",
   );
 });

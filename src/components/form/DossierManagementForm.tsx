@@ -44,6 +44,8 @@ interface Props {
   initialStatus: DossierStatus;
   initialPrice: number | null;
   onSubmit: (region: Region, status: DossierStatus, price: number | null) => void;
+  /** The update is in flight — the button spins and stops accepting taps. */
+  busy?: boolean;
 }
 
 export default function DossierManagementForm({
@@ -51,6 +53,7 @@ export default function DossierManagementForm({
   initialStatus,
   initialPrice,
   onSubmit,
+  busy = false,
 }: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -90,6 +93,7 @@ export default function DossierManagementForm({
         />
         <Button
           label="Mettre à jour"
+          loading={busy}
           onPress={form.handleSubmit((v) =>
             onSubmit(
               regionValueOf(v.region),

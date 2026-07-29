@@ -1,6 +1,7 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import Button from "@/components/ui/Button";
 import { tokens } from "@/theme/tokens";
 
 interface Props {
@@ -8,6 +9,10 @@ interface Props {
   message?: string;
   buttonLabel: string;
   onDone: () => void;
+  /** Set while `onDone` does async work. "Aller à l'accueil" signs the user in
+   *  and refreshes the session before it navigates — several seconds during
+   *  which the button must not look idle or accept a second tap. */
+  busy?: boolean;
 }
 
 /** Button-driven terminal screen shown at the end of a form funnel. */
@@ -16,6 +21,7 @@ export default function FormConfirmation({
   message,
   buttonLabel,
   onDone,
+  busy = false,
 }: Props) {
   const insets = useSafeAreaInsets();
   return (
@@ -29,9 +35,7 @@ export default function FormConfirmation({
         <Text style={styles.title}>{title}</Text>
         {message ? <Text style={styles.subtitle}>{message}</Text> : null}
       </View>
-      <TouchableOpacity style={styles.btn} onPress={onDone} activeOpacity={0.8}>
-        <Text style={styles.btnText}>{buttonLabel}</Text>
-      </TouchableOpacity>
+      <Button label={buttonLabel} onPress={onDone} loading={busy} />
     </View>
   );
 }
@@ -45,12 +49,4 @@ const styles = StyleSheet.create({
   body: { flex: 1, justifyContent: "center" },
   title: { ...tokens.text.title, marginBottom: tokens.space.md },
   subtitle: { ...tokens.text.subtitle, lineHeight: 20 },
-  btn: {
-    height: tokens.button.height,
-    borderRadius: tokens.radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: tokens.colors.primary,
-  },
-  btnText: { fontSize: 16, fontWeight: "600", color: tokens.colors.primaryText },
 });

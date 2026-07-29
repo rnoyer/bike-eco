@@ -41,6 +41,51 @@ test("kv-store rejection still marks ready and region stays null", async () => {
   expect(result.current.region).toBeNull();
 });
 
+test("a région picked before hydration lands is not overwritten by it", async () => {
+  // The window between first subscribe and kv-store resolving is short but
+  // real, and the dropdown is on screen for all of it.
+  let releaseStorage!: (value: string | null) => void;
+  (Storage.getItem as jest.Mock<any>).mockReturnValue(
+    new Promise((resolve) => {
+      releaseStorage = resolve;
+    }),
+  );
+
+  const { result } = await renderHook(() => useRegionFilter());
+  expect(result.current.ready).toBe(false);
+
+  await act(async () => result.current.setRegion("NORTH"));
+  expect(result.current.region).toBe("NORTH");
+
+  // The stored value arrives afterwards — it must not clobber the user's pick.
+  await act(async () => {
+    releaseStorage("SOUTH");
+  });
+  await waitFor(() => expect(result.current.ready).toBe(true));
+  expect(result.current.region).toBe("NORTH");
+});
+
+test("a wedged kv-store still becomes ready, via the hydration timeout", async () => {
+  // `ready` gates whole back-office screens, so a read that never settles would
+  // spin the dashboard forever with no error state and no retry.
+  jest.useFakeTimers();
+  try {
+    (Storage.getItem as jest.Mock<any>).mockReturnValue(new Promise(() => {}));
+
+    const { result } = await renderHook(() => useRegionFilter());
+    expect(result.current.ready).toBe(false);
+
+    await act(async () => {
+      jest.advanceTimersByTime(3000);
+    });
+
+    expect(result.current.ready).toBe(true);
+    expect(result.current.region).toBeNull();
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
 test("a change in one consumer is observed by another (shared store)", async () => {
   const a = await renderHook(() => useRegionFilter());
   const b = await renderHook(() => useRegionFilter());

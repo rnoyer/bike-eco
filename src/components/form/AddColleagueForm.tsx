@@ -14,8 +14,11 @@ type FormValues = z.infer<typeof schema>;
 
 export default function AddColleagueForm({
   onSubmit,
+  busy = false,
 }: {
   onSubmit: (email: string) => void;
+  /** The invitation is in flight — the button spins and stops accepting taps. */
+  busy?: boolean;
 }) {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -37,6 +40,7 @@ export default function AddColleagueForm({
         <Text style={styles.note}>* Champs obligatoires</Text>
         <Button
           label="Envoyer l'invitation"
+          loading={busy}
           onPress={form.handleSubmit((v) => onSubmit(v.email))}
         />
       </View>
