@@ -39,7 +39,8 @@ export interface Deps {
   companyExistsForSiret(siret: string): Promise<boolean>;
   writeCompany(id: string, data: Record<string, unknown>): Promise<void>;
   writeUser(uid: string, data: Record<string, unknown>): Promise<void>;
-  newCompanyId(): string;
+  newCompanyId(siret: string): string;
+  newDocumentId(): string;
   findInvitationByHash(hash: string): Promise<StoredInvitation | null>;
   writeInvitation(id: string, data: Record<string, unknown>): Promise<void>;
   deleteInvitation(id: string): Promise<void>;
@@ -76,7 +77,7 @@ export async function registerCompanyCore(
     uid = authUid;
     email = authEmail;
   }
-  const companyId = deps.newCompanyId();
+  const companyId = deps.newCompanyId(input.siret);
   await deps.writeCompany(companyId, {
     siret: input.siret,
     name: input.companyName,
@@ -102,7 +103,7 @@ export async function sendInviteCore(
     throw new RegError("permission-denied", "Seul un compte vendeur actif peut inviter.");
   }
   const code = generateInviteCode();
-  const id = deps.newCompanyId(); // reuse the id generator for a random doc id
+  const id = deps.newDocumentId();
   await deps.writeInvitation(id, {
     email: input.email, companyId: caller.companyId, invitedBy: caller.uid,
     tokenHash: hashInviteCode(code), status: "pending", expiresAt: deps.now() + INVITE_TTL_MS,

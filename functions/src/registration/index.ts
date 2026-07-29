@@ -6,6 +6,7 @@ import { HttpsError, onCall } from "firebase-functions/https";
 import { db, callerFrom, toHttps } from "../callable";
 import { B2C_EMAIL_SECRETS } from "../email";
 import { approveCompanyCore, deleteCompanyCore, type BackofficeDeps } from "./backoffice";
+import { generateCompanyId } from "./companyId";
 import {
   acceptInviteCore,
   registerCompanyCore, resolveInviteCore, sendInviteCore,
@@ -27,7 +28,8 @@ function realDeps(): Deps {
       void (await db().collection("companies").doc(id).set({ ...data, createdAt: FieldValue.serverTimestamp() })),
     writeUser: async (uid, data) =>
       void (await db().collection("users").doc(uid).set({ ...data, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() })),
-    newCompanyId: () => db().collection("companies").doc().id,
+    newCompanyId: generateCompanyId,
+    newDocumentId: () => db().collection("invitations").doc().id,
     findInvitationByHash: async (hash) => {
       const snap = await db().collection("invitations").where("tokenHash", "==", hash).limit(1).get();
       if (snap.empty) return null;

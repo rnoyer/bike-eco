@@ -18,7 +18,8 @@ function fakeDeps(over: Partial<Deps> = {}): Deps & { calls: any } {
     companyExistsForSiret: async () => false,
     writeCompany: async (id, data) => { calls.companies[id] = data; },
     writeUser: async (uid, data) => { calls.users[uid] = data; },
-    newCompanyId: () => "comp_new",
+    newCompanyId: (siret) => `${siret}-aaaaaa`,
+    newDocumentId: () => "doc_new",
     findInvitationByHash: async () => null,
     deleteInvitation: async (id) => { calls.invitations[id] = "deleted"; },
     writeInvitation: async (id, data) => { calls.invitations[id] = data; },
@@ -39,7 +40,7 @@ const companyInput = {
 test("registerCompany (password) creates pending company+user, pins claims, emails applicant", async () => {
   const d = fakeDeps();
   await registerCompanyCore(companyInput, null, null, d);
-  expect(d.calls.companies["comp_new"]).toMatchObject({
+  expect(d.calls.companies["12345678901234-aaaaaa"]).toMatchObject({
     siret: "12345678901234",
     status: "pending",
     createdBy: "uid_new",
@@ -49,8 +50,9 @@ test("registerCompany (password) creates pending company+user, pins claims, emai
     createdByName: "Camille Durand",
     validatedAt: null,
   });
-  expect(d.calls.users["uid_new"]).toMatchObject({ role: "b2b", companyId: "comp_new", status: "pending" });
-  expect(d.calls.claims).toEqual({ uid: "uid_new", claims: { role: "b2b", companyId: "comp_new", status: "pending" } });
+  const companyId = "12345678901234-aaaaaa";
+  expect(d.calls.users["uid_new"]).toMatchObject({ role: "b2b", companyId, status: "pending" });
+  expect(d.calls.claims).toEqual({ uid: "uid_new", claims: { role: "b2b", companyId, status: "pending" } });
   expect(d.calls.emails).toEqual([{ kind: "applicant", to: "c@x.fr", name: "Garage X" }]);
 });
 

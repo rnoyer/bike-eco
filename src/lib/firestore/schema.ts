@@ -52,6 +52,11 @@ export type AttachmentType = "image" | "pdf";
 
 // ─── companies ───────────────────────────────────────────────────────────────
 
+/**
+ * Document id: `<siret>-<6 alphanumerics>` (`functions/src/registration/companyId.ts`),
+ * readable in the console. Companies created before that change keep their
+ * auto-generated id — nothing parses the id, so both forms coexist.
+ */
 export interface Company {
   siret: string; // 14 digits, immutable
   name: string;
