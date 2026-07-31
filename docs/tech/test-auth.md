@@ -9,18 +9,23 @@
 > (Console equivalent: Firestore → the `bike-eco-db` database → TTL policies.)
 > The emulator does not enforce TTL, so this has no effect on local testing.
 
+## Launch the Firebase emulators
+
 ```bash
-# Launch the Firebase emulators.
 JAVA_HOME=/usr/local/jdk-26.0.1 PATH=/usr/local/jdk-26.0.1/bin:$PATH npx -y firebase-tools@latest emulators:start --only auth,firestore,storage,functions --project bike-eco-43a84
+```
 
-# app data lives in the named `bike-eco-db` database.
-http://localhost:4000/firestore/bike-eco-db/data
+App data lives in the named `bike-eco-db` database:
 
-# Launch android emulator
+[http://localhost:4000/firestore/bike-eco-db/data](http://localhost:4000/firestore/bike-eco-db/data)
+
+## Launch android emulator
+
+```bash
 EXPO_PUBLIC_USE_EMULATORS=1 npx expo start
 ```
 
-### Tests account (local):
+## Tests account (local):
 
 - Populate with test users
 
