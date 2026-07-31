@@ -172,41 +172,69 @@ const yesNo = (v: string | null) => (v === "oui" ? "Oui" : v === "non" ? "Non" :
 function customerHtml(f: B2cPayload): string {
   const vehicule = [f.marque, f.modele].filter(Boolean).join(" ") || "Votre véhicule";
   const body =
+    section("Votre véhicule", [
+      ["Véhicule", vehicule],
+      ["Électrique", yesNo(f.electrique)],
+      ["Matériel", f.materiel.join(", ")],
+      ["Cylindrée", f.cylindree && `${f.cylindree} cc`],
+      ["Année", f.annee],
+      ["Kilométrage", f.kilometrage && `${f.kilometrage} km`],
+      ["Accessoires", f.accessoires],
+    ]) +
+    section("État", [
+      ["État", f.etat],
+      ["Nature de la panne", f.naturePanne],
+    ]) +
+    section("Demande", [
+      ["Prix souhaité", f.prix && `${f.prix} €`],
+      ["Commentaires", f.commentaires],
+      ["Reprise", f.modalite],
+    ]) +
+    section("Clés et télécommandes", [
+      ["Clés de contact", yesNo(f.aClesContact)],
+      ["Clé noire", f.cleNoire],
+      ["Clé marron", f.cleMarron],
+      ["Clé rouge", f.cleRouge],
+      ["Télécommande / Bip", yesNo(f.aTelecommande)],
+      ["Nb télécommandes", f.telecommande],
+    ]) +
+    section("Papiers", [
+      ["Carte grise", yesNo(f.carteGrise)],
+      ["Carte grise à son nom", yesNo(f.carteGriseAVotreNom)],
+      ["Contrôle technique", yesNo(f.controleTechnique)],
+      ["CT < 6 mois", yesNo(f.ctMoins6Mois)],
+      ["Résultat CT", f.resultatCT],
+      ["Certificat de non-gage", yesNo(f.certificatNonGage)],
+      ["Carnet d'entretien", yesNo(f.carnetEntretien)],
+      ["Facture d'entretien", yesNo(f.factureEntretien)],
+    ]) +
     section("Vos coordonnées", [
       ["Nom", `${f.prenom} ${f.nom}`],
       ["Email", f.email],
       ["Téléphone", f.telephone],
       ["Ville", `${f.ville} (${f.departement})`],
-    ]) +
-    section("Votre véhicule", [
-      ["Véhicule", vehicule],
-      ["Cylindrée", f.cylindree && `${f.cylindree} cc`],
-      ["Année", f.annee],
-      ["Kilométrage", f.kilometrage && `${f.kilometrage} km`],
-      ["État", f.etat],
-    ]) +
-    section("Votre demande", [
-      ["Prix souhaité", f.prix && `${f.prix} €`],
-      ["Reprise", f.modalite],
-      ["Commentaires", f.commentaires],
     ]);
   return shell(
     "Demande bien reçue !",
-    "Voici le récapitulatif de votre demande. Notre équipe vous recontactera très prochainement.",
+    "Voici le récapitulatif complet de votre demande. Notre équipe vous recontactera très prochainement.",
     body
   );
 }
 
 // ─── team notification email (all fields + attachments) ──────────────────────
 
-function teamHtml(f: B2cPayload, region: string, photoCount: number): string {
+function teamHtml(f: B2cPayload, photoCount: number): string {
+  const vehicule = [f.marque, f.modele].filter(Boolean).join(" ") || "Véhicule";
   const body =
-    section("Coordonnées", [
-      ["Nom", `${f.prenom} ${f.nom}`],
-      ["Email", f.email],
-      ["Téléphone", f.telephone],
-      ["Département", f.departement],
-      ["Ville", f.ville],
+    section("État", [
+      ["État", f.etat],
+      ["Nature de la panne", f.naturePanne],
+    ]) +
+    section("Demande", [
+      ["Prix souhaité", f.prix && `${f.prix} €`],
+      ["Commentaires", f.commentaires],
+      ["Reprise", f.modalite],
+      ["Photos jointes", String(photoCount)],
     ]) +
     section("Véhicule", [
       ["Électrique", yesNo(f.electrique)],
@@ -226,10 +254,7 @@ function teamHtml(f: B2cPayload, region: string, photoCount: number): string {
       ["Télécommande / Bip", yesNo(f.aTelecommande)],
       ["Nb télécommandes", f.telecommande],
     ]) +
-    section("État", [
-      ["État", f.etat],
-      ["Nature de la panne", f.naturePanne],
-    ]) +
+
     section("Papiers", [
       ["Carte grise", yesNo(f.carteGrise)],
       ["Carte grise à son nom", yesNo(f.carteGriseAVotreNom)],
@@ -240,14 +265,15 @@ function teamHtml(f: B2cPayload, region: string, photoCount: number): string {
       ["Carnet d'entretien", yesNo(f.carnetEntretien)],
       ["Facture d'entretien", yesNo(f.factureEntretien)],
     ]) +
-    section("Demande", [
-      ["Prix souhaité", f.prix && `${f.prix} €`],
-      ["Commentaires", f.commentaires],
-      ["Reprise", f.modalite],
-      ["Photos jointes", String(photoCount)],
+    section("Coordonnées", [
+      ["Nom", `${f.prenom} ${f.nom}`],
+      ["Email", f.email],
+      ["Téléphone", f.telephone],
+      ["Département", f.departement],
+      ["Ville", f.ville],
     ]);
   return shell(
-    `Nouvelle demande B2C — ${region}`,
+    `Nouvelle demande de rachat — ${f.departement} — ${vehicule}`,
     `${f.prenom} ${f.nom} • ${f.departement} • ${f.telephone}`,
     body
   );
@@ -263,12 +289,12 @@ export async function sendB2cEmails(
   payload: B2cPayload,
   attachments: Attachment[]
 ): Promise<void> {
-  const region = resolveRegion(payload.departement);
+  const vehicule = [payload.marque, payload.modele].filter(Boolean).join(" ") || "Véhicule";
 
   await send(
     teamRecipient(payload.departement),
-    `Nouvelle demande B2C — ${region} — ${payload.prenom} ${payload.nom}`,
-    teamHtml(payload, region, attachments.length),
+    `Nouvelle demande de rachat — ${payload.departement} — ${vehicule}`,
+    teamHtml(payload, attachments.length),
     attachments
   );
 

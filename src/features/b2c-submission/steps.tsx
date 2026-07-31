@@ -356,7 +356,7 @@ function ModaliteFields() {
   });
   const options = ["Enlèvement à domicile"];
   if (departement && isNord(departement)) {
-    options.push("Je dépose la moto au centre de Montargis");
+    options.push("Je dépose la moto au centre de Pressigny-les-Pins");
   }
   if (departement && isSud(departement)) {
     options.push("Je dépose la moto au centre de Vitrolles");
@@ -364,7 +364,7 @@ function ModaliteFields() {
   return (
     <ControlledDropdown
       name="modalite"
-      label="Comment souhaitez-vous faire la reprise du véhicule ?"
+      label="Comment souhaitez-vous faire l'enlèvement du véhicule ?"
       options={options}
     />
   );

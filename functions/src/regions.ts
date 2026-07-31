@@ -7,7 +7,7 @@
  * département → centre mapping changes.
  */
 
-// Departments whose nearest drop-off centre is Montargis (north).
+// Departments whose nearest drop-off centre is Pressigny-les-Pins (north).
 const NORTH_CODES = new Set([
   "02", "08", "10", "14", "18", "21", "22", "25", "27", "28", "29",
   "35", "36", "37", "39", "41", "44", "45", "49", "50", "51", "52",
