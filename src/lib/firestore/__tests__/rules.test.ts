@@ -69,6 +69,12 @@ beforeAll(async () => {
       negotiatedPrice: null,
     });
     await setDoc(doc(db, "users/user_b2b_nord"), { nom: "Durand" });
+    await setDoc(doc(db, "users/user_mate"), {
+      nom: "Petit", prenom: "Sam", role: "b2b", companyId: "comp_1", isAdmin: false,
+    });
+    await setDoc(doc(db, "users/user_other"), {
+      nom: "Roux", prenom: "Alix", role: "b2b", companyId: "comp_2", isAdmin: false,
+    });
   });
 });
 
@@ -96,6 +102,21 @@ test("owner cannot escalate their own claims fields", async () => {
   const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertSucceeds(updateDoc(doc(db, "users/user_b2b_nord"), { telephone: "0699999999" }));
   await assertFails(updateDoc(doc(db, "users/user_b2b_nord"), { role: "backoffice" }));
+});
+
+test("a b2b user reads a colleague of the same company", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertSucceeds(getDoc(doc(db, "users/user_mate")));
+});
+
+test("a b2b user cannot read a user of another company", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertFails(getDoc(doc(db, "users/user_other")));
+});
+
+test("a user cannot make themselves an admin", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertFails(updateDoc(doc(db, "users/user_b2b_nord"), { isAdmin: true }));
 });
 
 // ── dossier create ─────────────────────────────────────────────────────────
