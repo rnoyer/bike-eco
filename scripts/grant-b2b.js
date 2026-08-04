@@ -27,6 +27,10 @@
  * `--status pending` reproduces the real registration gate (account created but
  * blocked until a back-office validation); the default is `active`.
  *
+ * The account is an admin when this run creates the company (same rule as the
+ * registration funnel), or when `--admin true` is passed to admin-ify an
+ * account joining an existing company.
+ *
  * Credentials come from Application Default Credentials (your own Google login
  * in Cloud Shell). Never commit or download a service-account key for this.
  */
@@ -44,7 +48,7 @@ const USAGE =
   "--tel <téléphone>\n" +
   "         (--company <companyId> | --siret <14 chiffres>)\n" +
   "         [--societe <raison sociale> --departement \"75 - Paris\" --ville <ville>]\n" +
-  "         [--status active|pending] [--password <mot de passe>]";
+  "         [--status active|pending] [--password <mot de passe>] [--admin true]";
 
 // Mirrors functions/src/regions.ts — duplicated so the script stays pasteable.
 // Keep in sync when the département → centre mapping changes.
@@ -112,7 +116,7 @@ async function resolveCompany(db, args, uid) {
       process.exit(1);
     }
     console.log(`Using company ${snap.id} (${snap.data().name}).`);
-    return snap.id;
+    return { id: snap.id, created: false };   // existing company by --company
   }
 
   const found = await db
@@ -120,7 +124,7 @@ async function resolveCompany(db, args, uid) {
   if (!found.empty) {
     const doc = found.docs[0];
     console.log(`SIRET ${args.siret} already registered — reusing ${doc.id} (${doc.data().name}).`);
-    return doc.id;
+    return { id: doc.id, created: false };    // existing company found by SIRET
   }
 
   const missing = ["societe", "departement", "ville"].filter((k) => !args[k]);
@@ -148,7 +152,7 @@ async function resolveCompany(db, args, uid) {
     createdAt: FieldValue.serverTimestamp(),
   });
   console.log(`Created company ${id} (${args.societe}, ${resolveRegion(args.departement)}, ${args.status}).`);
-  return id;
+  return { id, created: true };               // company created by this run
 }
 
 async function main() {
@@ -171,7 +175,9 @@ async function main() {
     if (!args.password) console.log(`Temporary password: ${password}`);
   }
 
-  const companyId = await resolveCompany(db, args, user.uid);
+  const { id: companyId, created } = await resolveCompany(db, args, user.uid);
+  // The company's creator is its admin — same rule as the registration funnel.
+  const isAdmin = created || args.admin !== undefined;
 
   // Claims are set as one object: setCustomUserClaims replaces the whole bag,
   // so every field the app reads has to be present on each call.
@@ -191,6 +197,7 @@ async function main() {
     {
       role: "b2b",
       companyId,
+      isAdmin,
       nom: args.nom,
       prenom: args.prenom,
       email: args.email,

@@ -52,7 +52,7 @@ async function main() {
     status: "active",
   });
   await db.doc(`users/user_b2b_nord`).set({
-    role: "b2b", companyId: "comp_nord",
+    role: "b2b", companyId: "comp_nord", isAdmin: true,
     nom: "Durand", prenom: "Camille", email: "b2b@garage-nord.fr",
     telephone: "0601020304",
     status: "active", createdAt: now, updatedAt: now,
@@ -64,7 +64,7 @@ async function main() {
     status: "active",
   });
   await db.doc(`users/user_bo`).set({
-    role: "backoffice", companyId: null,
+    role: "backoffice", companyId: null, isAdmin: true,
     nom: "Martin", prenom: "Alex", email: "bo@bike-eco.fr",
     telephone: "0605060708",
     status: "active", createdAt: now, updatedAt: now,
@@ -76,7 +76,7 @@ async function main() {
     status: "pending",
   });
   await db.doc(`users/user_pending`).set({
-    role: "b2b", companyId: "comp_nord",
+    role: "b2b", companyId: "comp_nord", isAdmin: false,
     nom: "Petit", prenom: "Sam", email: "pending@garage-nord.fr",
     telephone: "0611121314",
     status: "pending", createdAt: now, updatedAt: now,
@@ -129,7 +129,7 @@ async function main() {
     status: "active",
   });
   await db.doc(`users/user_b2b_sud`).set({
-    role: "b2b", companyId: "comp_sud",
+    role: "b2b", companyId: "comp_sud", isAdmin: true,
     nom: "Blanc", prenom: "Dominique", email: "b2b@garage-sud.fr",
     telephone: "0621222324",
     status: "active", createdAt: now, updatedAt: now,
@@ -185,7 +185,7 @@ async function main() {
     status: "pending",
   });
   await db.doc(`users/user_pending_owner`).set({
-    role: "b2b", companyId: "comp_pending",
+    role: "b2b", companyId: "comp_pending", isAdmin: true,
     nom: "Martin", prenom: "Alex", email: "alex@nouveau.fr",
     telephone: "0655667788",
     status: "pending", createdAt: now, updatedAt: now,

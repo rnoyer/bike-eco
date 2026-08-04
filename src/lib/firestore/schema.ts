@@ -76,6 +76,12 @@ export interface Company {
 export interface AppUser {
   role: UserRole;
   companyId: string | null; // b2b only
+  /**
+   * Server-set. `true` for the user who registered the company and for
+   * back-office accounts, `false` for an invited colleague. Admins manage
+   * their team (promote / delete) and cannot be deleted.
+   */
+  isAdmin: boolean;
   nom: string;
   prenom: string;
   email: string; // PII — owner + team read only

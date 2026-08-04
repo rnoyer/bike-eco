@@ -8,6 +8,7 @@ const session: SessionUser = {
   id: "user_b2b_nord",
   role: "b2b",
   companyId: "comp_nord",
+  isAdmin: true,
   nom: "Durand",
   prenom: "Camille",
   email: "c@x.fr",

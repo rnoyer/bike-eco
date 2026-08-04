@@ -4,7 +4,7 @@ import { buildSessionUser } from "./session";
 import type { AppUser } from "@/lib/firestore/schema";
 
 const profile: AppUser = {
-  role: "b2b", companyId: "comp_1",
+  role: "b2b", companyId: "comp_1", isAdmin: false,
   nom: "Durand", prenom: "Camille", email: "c@x.fr",
   telephone: "0600000000",
   status: "active", createdAt: Timestamp.now(), updatedAt: Timestamp.now(),

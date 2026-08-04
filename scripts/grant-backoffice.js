@@ -40,15 +40,23 @@ function parseArgs(argv) {
     console.error(
       `Missing --${missing.join(", --")}\n\n` +
         "Usage: node grant-backoffice.js --email <email> --prenom <prénom> " +
-        "--nom <nom> --tel <téléphone> [--password <mot de passe>]",
+        "--nom <nom> --tel <téléphone> [--password <mot de passe>] [--no-admin true]",
     );
     process.exit(1);
   }
   return args;
 }
 
+// Back-office accounts are admins by default: they are the founding team, and
+// an admin is the only account that can manage (or delete) team members.
+// `--no-admin true` creates a plain member.
+function readIsAdmin(args) {
+  return args["no-admin"] === undefined;
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  const isAdmin = readIsAdmin(args);
   // Generated when not supplied: the holder sets their real password from the
   // reset email, so nobody else ever knows it.
   const password = args.password || randomBytes(24).toString("base64url");
@@ -85,6 +93,7 @@ async function main() {
     {
       role: "backoffice",
       companyId: null,
+      isAdmin,
       nom: args.nom,
       prenom: args.prenom,
       email: args.email,
@@ -99,7 +108,8 @@ async function main() {
   console.log(
     `\nBack-office account ready: ${args.email} (uid ${user.uid}).\n` +
       "Next: send a password-reset email from the Firebase console, then sign " +
-      "in — you should land on the back-office dashboard.",
+      "in — you should land on the back-office dashboard.\n" +
+      `Admin: ${isAdmin}.\n`,
   );
 }
 
