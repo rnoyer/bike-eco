@@ -4,7 +4,7 @@ import {
   type SendMessageDeps,
   type NewMessage,
 } from "./core";
-import type { CallerClaims } from "../registration/core";
+import type { CallerClaims } from "../errors";
 import type { SendMessageInput } from "./schemas";
 
 const input: SendMessageInput = {

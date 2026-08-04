@@ -1,4 +1,4 @@
-import { RegError, type CallerClaims } from "./core";
+import { RegError, type CallerClaims } from "../errors";
 
 export interface BackofficeDeps {
   getCompany(id: string): Promise<{ name: string; status: string } | null>;

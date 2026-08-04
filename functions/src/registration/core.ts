@@ -6,23 +6,7 @@ import type {
   ResolveInviteInput,
   SendInviteInput,
 } from "./schemas";
-
-export type RegErrorCode =
-  | "unauthenticated" | "permission-denied" | "already-exists"
-  | "invalid-argument" | "not-found" | "failed-precondition";
-
-export class RegError extends Error {
-  constructor(public code: RegErrorCode, message: string) {
-    super(message);
-  }
-}
-
-export interface CallerClaims {
-  uid: string;
-  role?: string;
-  status?: string;
-  companyId?: string | null;
-}
+import { RegError, type CallerClaims } from "../errors";
 
 export interface StoredInvitation {
   id: string;
