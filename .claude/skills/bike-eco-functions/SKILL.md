@@ -28,6 +28,10 @@ Firebase runtime.
 `registration/` and `messages/` both follow it. A new callable does too — resist putting
 logic straight in `index.ts`, because nothing there is reachable from a unit test.
 
+`users/` is the third module: `setColleagueAdmin` / `deleteColleague` / `deleteMyAccount`.
+`RegError` and `CallerClaims` now live in the shared `functions/src/errors.ts`, not in
+`registration/core.ts` — import them from there for any new module.
+
 The `Deps` pattern: `core.ts` declares an interface (`Deps`, `BackofficeDeps`) of the
 operations it needs (`createUser`, `setClaims`, `writeCompany`, `sendInviteEmail`, `now`),
 and `index.ts` supplies a `realDeps()` built from the admin SDK. Tests pass fakes.

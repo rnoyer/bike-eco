@@ -23,8 +23,13 @@ From top to bottom
     Success : "Email envoyé — Un lien de réinitialisation vient d'être envoyé à [email]. Vérifiez
     votre boîte de réception." Failure : the message from `mapPasswordResetError`.
 - "Supprimer mon compte" (danger) — pinned to the bottom of the screen, below the sections,
-  and pushed down to the bottom edge when the content is shorter than the viewport. Not
-  available yet.
+  and pushed down to the bottom edge when the content is shorter than the viewport. Tapping
+  it opens a confirmation modal — "Supprimer mon compte ?" / "Cette action supprime
+  définitivement votre compte. Vos dossiers et vos conversations sont conservés." /
+  "Annuler" / "Supprimer mon compte" — then deletes the account and signs the user out.
+  **Disabled for an administrator**, with the line "Un administrateur ne peut pas
+  supprimer son compte. Transférez d'abord le rôle administrateur à un collaborateur."
+  below the button.
 
 ## Loading and error states
 

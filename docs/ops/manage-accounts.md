@@ -8,7 +8,7 @@ créer ni à télécharger.
 
 | Script | Rôle |
 | ------ | ---- |
-| `scripts/create-b2b.js` | crée (ou répare) un compte vendeur b2b, avec ou sans son entreprise |
+| `scripts/grant-b2b.js` | crée (ou répare) un compte vendeur b2b, avec ou sans son entreprise |
 | `scripts/delete-b2b-user.js` | supprime **entièrement** un compte b2b : Auth, profil, dossiers, fichiers, invitations |
 | `scripts/delete-backoffice.js` | supprime **entièrement** un compte back-office : Auth + profil |
 
@@ -35,7 +35,7 @@ trois écritures serveur — utilisateur Auth, custom claims, document `users/{u
 **Rattacher à une entreprise existante** (son id est visible dans l'URL back-office) :
 
 ```bash
-node create-b2b.js \
+node grant-b2b.js \
   --email   jean@garage-nord.fr \
   --prenom  Jean --nom Dupont --tel 0612345678 \
   --company comp_nord
@@ -44,7 +44,7 @@ node create-b2b.js \
 **Créer aussi l'entreprise**, à partir du SIRET :
 
 ```bash
-node create-b2b.js \
+node grant-b2b.js \
   --email       marie@garage-ouest.fr \
   --prenom      Marie --nom Leroy --tel 0698765432 \
   --siret       55555555500011 \
@@ -62,6 +62,13 @@ les dossiers de l'entreprise.
 | ------ | ----- |
 | `--status pending` | reproduit le gate d'inscription (connexion possible, écran d'attente jusqu'à validation). Défaut : `active` |
 | `--password <mdp>` | impose un mot de passe. Sans lui, un mot de passe temporaire aléatoire est généré et affiché |
+| `--admin true` | rend le compte administrateur (`isAdmin: true`) même quand il rejoint une entreprise existante |
+
+Le compte est administrateur (`isAdmin: true`) quand ce lancement **crée** l'entreprise —
+même règle que le parcours d'inscription, où le premier inscrit d'une entreprise en est
+l'administrateur — ou quand `--admin true` est passé en rattachant à une entreprise
+existante. Sans l'option, un compte rattaché à une entreprise existante est un simple
+vendeur (`isAdmin: false`).
 
 Le script est **idempotent** : le relancer répare ce qui manque (compte Auth réutilisé,
 claims reposées, profil complété).
@@ -126,6 +133,18 @@ dans `submitter`).
 - **Messages postés dans les dossiers d'autres comptes** : conservés. Ils portent un
   `senderName` dupliqué, et les supprimer amputerait la conversation de l'autre partie.
 
+### Suppression depuis l'application, une autre voie
+
+Un administrateur peut aussi supprimer un collègue depuis « Mes collaborateurs » (côté
+b2b ou back-office) — le callable `deleteColleague`. Ce chemin est plus étroit que ce
+script : il supprime seulement l'utilisateur Auth et le document `users/{uid}`, et
+**conserve** les dossiers, les conversations et les fichiers Storage (ils portent
+l'identité du déposant/expéditeur en dénormalisé). Il refuse aussi de supprimer un
+administrateur et interdit de se supprimer soi-même par ce chemin (« Supprimer mon
+compte » sur page-my-account fait cela, et refuse également un administrateur). Ce
+script (`--yes`, sans `--keep-dossiers`) est la voie à utiliser pour un vrai effacement
+RGPD des dossiers du compte ; le produit ne les touche jamais.
+
 ---
 
 ## Supprimer entièrement un compte back-office
@@ -179,7 +198,7 @@ npm run seed
 export FIRESTORE_EMULATOR_HOST=localhost:8080 \
        FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 \
        FIREBASE_STORAGE_EMULATOR_HOST=localhost:9199
-node scripts/create-b2b.js --email test@x.fr --prenom A --nom B --tel 0600000000 --company comp_nord
+node scripts/grant-b2b.js --email test@x.fr --prenom A --nom B --tel 0600000000 --company comp_nord
 node scripts/delete-b2b-user.js --email test@x.fr --yes
 node scripts/delete-backoffice.js --email bo@bike-eco.fr        # refus attendu : dernier actif
 ```

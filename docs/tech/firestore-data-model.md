@@ -70,6 +70,7 @@ Contains PII → readable by the owner and the Bike-eco team only.
 |-------|------|-------|
 | `role` | string | `b2b` \| `backoffice` — mirror of the custom claim, server-set |
 | `companyId` | string \| null | b2b only |
+| `isAdmin` | boolean | server-set, never client-writable, **not** mirrored into custom claims. `true` for the user who registered the company and for back-office accounts, `false` for an invited colleague. An admin manages their team (promote/delete a colleague) and cannot be deleted, including from their own "Supprimer mon compte". |
 | `nom`, `prenom` | string | |
 | `email`, `telephone` | string | PII |
 | `status` | string | `pending` until the company is validated → `active` |
@@ -203,6 +204,9 @@ need two composite indexes:
   `region` matches. Create: B2B authed user. Update: team (status transitions +
   `negotiatedPrice`), always combined with field validation — never
   ownership-only.
-- **companies / users** — owner + team; PII locked to the owner.
-  `role` / `companyId` / `status` are server-set only.
+- **companies / users** — a `users/{uid}` document is readable by its owner, the
+  back-office team, and an active teammate sharing the same `companyId` (so "Mes
+  collaborateurs" and the company page's user cards can read colleagues' PII).
+  `role` / `companyId` / `status` / `isAdmin` are server-set only, and all four sit
+  on the client-update denylist.
 - **invitations / messages** — scoped to the company members and team involved.

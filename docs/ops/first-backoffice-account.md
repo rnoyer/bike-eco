@@ -52,6 +52,10 @@ node grant-backoffice.js \
 `--password` est optionnel : sans lui le script génère un mot de passe aléatoire et l'affiche —
 il n'est que temporaire, l'étape 4 le remplace.
 
+Le compte créé est **administrateur** (`isAdmin: true`) par défaut — c'est l'équipe
+fondatrice, et seul un administrateur peut gérer (ou supprimer) les membres de l'équipe
+depuis « Mes collaborateurs ». `--no-admin true` crée à la place un simple membre.
+
 Le script affiche l'UID créé. En cas d'erreur, voir [Dépannage](#dépannage).
 
 ## 4. Passer la main au titulaire du compte

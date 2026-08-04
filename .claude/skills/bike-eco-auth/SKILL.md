@@ -47,6 +47,14 @@ it mounts — and it will look like the link is broken, not like a guard problem
 Change routing policy there, with a test — never by scattering `router.replace` calls in
 screens.
 
+## Admin gating is not a claim
+
+`isAdmin` (promote/delete a colleague, the "Gérer" button) is **not** a custom claim —
+`SessionUser` spreads it straight from the `users/{uid}` profile doc, so `session.isAdmin`
+drives the client gate. Every callable that needs it (`setColleagueAdmin`, `deleteColleague`,
+`deleteMyAccount`) re-reads it from the profile document server-side and never trusts the
+caller's claims for that check.
+
 ## Claims set after sign-in need `refreshSession()`
 
 `onAuthStateChanged` does **not** re-fire when custom claims change. Any flow where the
