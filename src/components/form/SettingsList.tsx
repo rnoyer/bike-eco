@@ -52,7 +52,7 @@ export default function SettingsList({
       <Section title="Gestion des membres">
         <Button
           variant="outlined"
-          label="Inviter un collègue"
+          label="Inviter un collègue de mon entreprise"
           onPress={onInvite}
         />
       </Section>

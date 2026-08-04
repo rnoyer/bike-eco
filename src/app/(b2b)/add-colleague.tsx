@@ -1,10 +1,10 @@
-import { Stack, useRouter } from "expo-router";
-import { ScrollView, StyleSheet } from "react-native";
 import AddColleagueForm from "@/components/form/AddColleagueForm";
 import { useInvite } from "@/lib/data/useInvite";
 import { headerOptions } from "@/lib/navigation/headerOptions";
 import { alertDialog } from "@/lib/ui/dialog";
 import { tokens } from "@/theme/tokens";
+import { Stack, useRouter } from "expo-router";
+import { ScrollView, StyleSheet } from "react-native";
 
 export default function B2bAddColleague() {
   const router = useRouter();
@@ -14,7 +14,11 @@ export default function B2bAddColleague() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Stack.Screen options={headerOptions({ title: "Inviter un collègue" })} />
+      <Stack.Screen
+        options={headerOptions({
+          title: "Inviter un collègue",
+        })}
+      />
       <AddColleagueForm
         busy={pending}
         onSubmit={async (email) => {
