@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import Spinner from "@/components/ui/Spinner";
+import { MAX_PHOTOS } from "@/constants/photos";
 import { alertDialog, confirmDialog } from "@/lib/ui/dialog";
 import { useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { tokens } from "@/theme/tokens";
@@ -18,14 +19,28 @@ interface Props {
   error?: string;
   /** Number of photos still required, for the hint line. */
   min?: number;
+  /** Hard cap on the number of photos; mirrors the schema's `.max()`. */
+  max?: number;
 }
 
 /** Pick photos from the gallery or camera, with a removable thumbnail strip. */
-export default function PhotoPicker({ value, onChange, error, min = 1 }: Props) {
+export default function PhotoPicker({
+  value,
+  onChange,
+  error,
+  min = 1,
+  max = MAX_PHOTOS,
+}: Props) {
+  const room = Math.max(0, max - value.length);
+  const full = room === 0;
+
   // One action for both sources: only one picker can be open at a time, and it
   // covers the permission prompt as well as the launch, which is the part that
   // used to leave the button silent.
   const picking = useAsyncAction(async (source: "gallery" | "camera") => {
+    // The buttons are disabled at the cap; this guards the race where the
+    // action was already queued when the last photo landed.
+    if (full) return;
     if (source === "gallery") {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
@@ -35,10 +50,14 @@ export default function PhotoPicker({ value, onChange, error, min = 1 }: Props) 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: "images",
         allowsMultipleSelection: true,
+        // Caps the selection inside the system sheet, so the user never picks
+        // photos we would silently drop. Android + iOS 14+ only, hence the
+        // `slice` below for the platforms that ignore it.
+        selectionLimit: room,
         quality: 0.8,
       });
       if (!result.canceled) {
-        onChange([...value, ...result.assets.map((a) => a.uri)]);
+        onChange([...value, ...result.assets.slice(0, room).map((a) => a.uri)]);
       }
       return;
     }
@@ -71,9 +90,13 @@ export default function PhotoPicker({ value, onChange, error, min = 1 }: Props) 
     <View style={styles.container}>
       <View style={styles.buttonsRow}>
         <TouchableOpacity
-          style={[styles.mediaBtn, picking.pending && styles.mediaBtnBusy]}
+          style={[
+            styles.mediaBtn,
+            picking.pending && styles.mediaBtnBusy,
+            full && styles.mediaBtnDisabled,
+          ]}
           onPress={() => void picking.run("gallery")}
-          disabled={picking.pending}
+          disabled={picking.pending || full}
           activeOpacity={0.7}
         >
           {picking.pending ? (
@@ -83,9 +106,13 @@ export default function PhotoPicker({ value, onChange, error, min = 1 }: Props) 
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.mediaBtn, picking.pending && styles.mediaBtnBusy]}
+          style={[
+            styles.mediaBtn,
+            picking.pending && styles.mediaBtnBusy,
+            full && styles.mediaBtnDisabled,
+          ]}
           onPress={() => void picking.run("camera")}
-          disabled={picking.pending}
+          disabled={picking.pending || full}
           activeOpacity={0.7}
         >
           {picking.pending ? (
@@ -121,9 +148,11 @@ export default function PhotoPicker({ value, onChange, error, min = 1 }: Props) 
         <Text style={styles.error}>{error}</Text>
       ) : (
         <Text style={[styles.hint, remaining === 0 && styles.hintComplete]}>
-          {remaining === 0
-            ? `${value.length} photo${value.length > 1 ? "s" : ""} ajoutée${value.length > 1 ? "s" : ""}`
-            : `Encore ${remaining} photo${remaining > 1 ? "s" : ""} requise${remaining > 1 ? "s" : ""}`}
+          {remaining > 0
+            ? `Encore ${remaining} photo${remaining > 1 ? "s" : ""} requise${remaining > 1 ? "s" : ""}`
+            : full
+              ? `${max} photos maximum atteint`
+              : `${value.length} photo${value.length > 1 ? "s" : ""} ajoutée${value.length > 1 ? "s" : ""}`}
         </Text>
       )}
     </View>
@@ -149,6 +178,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   mediaBtnBusy: { opacity: 0.7 },
+  mediaBtnDisabled: { opacity: 0.4 },
   mediaBtnLabel: {
     fontSize: 15,
     fontWeight: "600",

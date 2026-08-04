@@ -13,6 +13,7 @@ import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
 import PhotoPicker from "@/components/form/PhotoPicker";
 import { DEPARTMENTS, isNord, isSud } from "@/constants/departments";
+import { MAX_PHOTOS } from "@/constants/photos";
 import {
   COUNT_OPTIONS,
   ETAT_OPTIONS,
@@ -320,6 +321,7 @@ function PhotosFields() {
             onChange={field.onChange}
             error={fieldState.error?.message}
             min={1}
+            max={MAX_PHOTOS}
           />
         )}
       />
