@@ -55,7 +55,7 @@
 
 **Modified**
 
-`src/lib/firestore/schema.ts` · `src/lib/auth/session.test.ts` · `functions/src/registration/core.ts` · `functions/src/registration/core.test.ts` · `functions/src/registration/backoffice.ts` · `functions/src/registration/backoffice.test.ts` · `functions/src/messages/core.ts` · `functions/src/messages/core.test.ts` · `functions/src/callable.ts` · `functions/src/index.ts` · `scripts/grant-b2b.js` · `scripts/grant-backoffice.js` · `scripts/seed.ts` · `firestore.rules` · `src/lib/firestore/__tests__/rules.test.ts` · `src/components/ui/CompanyCard.tsx` · `src/components/native/AccountInfoList.tsx` · `src/components/form/SettingsList.tsx` · `src/components/screens/SettingsScreen.tsx` · `src/components/screens/AccountScreen.tsx` · `src/app/(b2b)/(tabs)/settings.tsx` · `src/app/(backoffice)/(tabs)/settings.tsx` · `src/app/(b2b)/_layout.tsx` · `src/app/(backoffice)/_layout.tsx` · `src/app/(backoffice)/companies/[id].tsx` · docs listed in Task 12
+`src/lib/firestore/schema.ts` · `src/lib/auth/session.test.ts` · `functions/src/registration/core.ts` · `functions/src/registration/core.test.ts` · `functions/src/registration/backoffice.ts` · `functions/src/registration/backoffice.test.ts` · `functions/src/messages/core.ts` · `functions/src/messages/core.test.ts` · `functions/src/callable.ts` · `functions/src/index.ts` · `scripts/grant-b2b.js` · `scripts/grant-backoffice.js` · `scripts/seed.ts` · `firestore.rules` · `src/lib/firestore/__tests__/rules.test.ts` · `src/components/ui/CompanyCard.tsx` · `src/components/native/AccountInfoList.tsx` · `src/components/form/SettingsList.tsx` · `src/components/screens/SettingsScreen.tsx` · `src/components/screens/AccountScreen.tsx` · `src/app/(b2b)/(tabs)/settings.tsx` · `src/app/(backoffice)/(tabs)/settings.tsx` · `src/app/(b2b)/_layout.tsx` · `src/app/(backoffice)/_layout.tsx` · `src/app/(backoffice)/companies/[id].tsx` · docs listed in Task 11
 
 **Left alone**: `assets/images/icons/phone.svg` (committed in `6b6ff43`). The final design
 dropped the phone/email icon buttons, so nothing imports it — leave the asset in place
@@ -1388,15 +1388,19 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 8: "Mes collaborateurs" list + the Paramètres entry point
+### Task 8: "Mes collaborateurs" list, "Collaborateur" page, and the Paramètres entry point
+
+The list and the detail page reference each other's routes (the list pushes to the
+detail, the detail redirects back to the list after a deletion), so they ship together —
+splitting them would leave a commit that cannot type-check on its own.
 
 **Files:**
-- Create: `src/components/screens/ColleaguesScreen.tsx`, `src/app/(b2b)/colleagues/index.tsx`, `src/app/(backoffice)/colleagues/index.tsx`
+- Create: `src/components/screens/ColleaguesScreen.tsx`, `src/components/screens/ColleagueScreen.tsx`, `src/app/(b2b)/colleagues/index.tsx`, `src/app/(b2b)/colleagues/[uid].tsx`, `src/app/(backoffice)/colleagues/index.tsx`, `src/app/(backoffice)/colleagues/[uid].tsx`
 - Modify: `src/components/form/SettingsList.tsx`, `src/components/screens/SettingsScreen.tsx`, `src/app/(b2b)/(tabs)/settings.tsx`, `src/app/(backoffice)/(tabs)/settings.tsx`, `src/app/(b2b)/_layout.tsx`, `src/app/(backoffice)/_layout.tsx`
 
 **Interfaces:**
-- Consumes: `useColleagues` (Task 6), `ColleagueCard` (Task 7), `useAccount`.
-- Produces: `<ColleaguesScreen onManage={(uid: string) => void} />`; routes `/(b2b)/colleagues` and `/(backoffice)/colleagues`; `SettingsList` prop `onManageColleagues: () => void`.
+- Consumes: `useColleagues`, `useUser`, `roleLabel`, `callSetColleagueAdmin`, `callDeleteColleague` (Task 6); `ColleagueCard`, `ConfirmModal`, `AccountInfoList` with `roleLabel` (Task 7); `useAccount`.
+- Produces: `<ColleaguesScreen onManage={(uid: string) => void} />`; `<ColleagueScreen uid canManage onDeleted? />`; routes `/(b2b)/colleagues`, `/(b2b)/colleagues/[uid]`, `/(backoffice)/colleagues`, `/(backoffice)/colleagues/[uid]`; `SettingsList` prop `onManageColleagues: () => void`.
 
 - [ ] **Step 1: Write the screen**
 
@@ -1516,38 +1520,7 @@ In `src/components/form/SettingsList.tsx`, add `onManageColleagues: () => void;`
 
 `src/app/(backoffice)/(tabs)/settings.tsx` — same addition with `onManageColleagues={() => router.push("/(backoffice)/colleagues")}`, keeping the existing `onManageCompanies` and stubbed `onInvite`.
 
-- [ ] **Step 6: Regenerate the typed routes**
-
-New route files mean `.expo/types/router.d.ts` is stale and `tsc` cannot resolve the new `href`s. Start the dev server long enough for it to rewrite them, then stop it:
-
-Run: `npx expo start --clear` — wait until it prints the QR code / "Waiting on…", then press `Ctrl+C`.
-
-- [ ] **Step 7: Run the app gate**
-
-Run: `npx tsc --noEmit && npx expo lint && npm test`
-Expected: green **except** unresolved `href` errors for `/(b2b)/colleagues/${uid}` and `/(backoffice)/colleagues/${uid}` — those routes arrive in Task 9. If any other error appears, fix it before committing.
-
-- [ ] **Step 8: Commit**
-
-```bash
-git add src/components src/app
-git commit -m "feat: Mes collaborateurs list and its Paramètres entry point
-
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-```
-
----
-
-### Task 9: "Collaborateur" management page
-
-**Files:**
-- Create: `src/components/screens/ColleagueScreen.tsx`, `src/app/(b2b)/colleagues/[uid].tsx`, `src/app/(backoffice)/colleagues/[uid].tsx`
-
-**Interfaces:**
-- Consumes: `useUser`, `roleLabel`, `callSetColleagueAdmin`, `callDeleteColleague` (Task 6); `ConfirmModal`, `AccountInfoList` with `roleLabel` (Task 7).
-- Produces: `<ColleagueScreen uid canManage onDeleted? />`; routes `/(b2b)/colleagues/[uid]` and `/(backoffice)/colleagues/[uid]`.
-
-- [ ] **Step 1: Write the screen**
+- [ ] **Step 6: Write the Collaborateur screen**
 
 ```tsx
 // src/components/screens/ColleagueScreen.tsx
@@ -1650,7 +1623,7 @@ export default function ColleagueScreen({ uid, canManage, onDeleted }: Props) {
 }
 ```
 
-- [ ] **Step 2: Add both management routes**
+- [ ] **Step 7: Add both management routes**
 
 ```tsx
 // src/app/(b2b)/colleagues/[uid].tsx
@@ -1690,34 +1663,39 @@ export default function BackofficeColleague() {
 
 `router.replace`, not `back()`: the deleted user's detail page must not stay on the stack.
 
-- [ ] **Step 3: Regenerate the typed routes**
+- [ ] **Step 8: Regenerate the typed routes**
 
-Run: `npx expo start --clear` — wait for it to boot, then `Ctrl+C`.
+New route files mean `.expo/types/router.d.ts` is stale and `tsc` cannot resolve the new
+`href`s. Start the dev server long enough for it to rewrite them, then stop it:
 
-- [ ] **Step 4: Run the app gate**
+Run: `npx expo start --clear` — wait until it prints the QR code / "Waiting on…", then
+press `Ctrl+C`.
+
+- [ ] **Step 9: Run the app gate**
 
 Run: `npx tsc --noEmit && npx expo lint && npm test`
-Expected: all green, including the Task 8 `href`s that were failing.
+Expected: all green. If an `href` is still unresolved, the typed routes did not
+regenerate — repeat Step 8 before touching the code.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git add src/components src/app
-git commit -m "feat: Collaborateur page with admin toggle and user deletion
+git commit -m "feat: Mes collaborateurs list and Collaborateur management page
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 10: Back-office user detail + "Entreprise" page revamp
+### Task 9: Back-office user detail + "Entreprise" page revamp
 
 **Files:**
 - Create: `src/app/(backoffice)/users/[uid].tsx`
 - Modify: `src/app/(backoffice)/companies/[id].tsx:1-16`, `:46-51`, `:92-125`
 
 **Interfaces:**
-- Consumes: `ColleagueScreen` (Task 9), `ColleagueCard` (Task 7), `useCompanyUsers` (existing).
+- Consumes: `ColleagueScreen` (Task 8), `ColleagueCard` (Task 7), `useCompanyUsers` (existing).
 - Produces: route `/(backoffice)/users/[uid]` (read-only detail).
 
 - [ ] **Step 1: Add the read-only route**
@@ -1795,7 +1773,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 11: Self-deletion on "Mon compte"
+### Task 10: Self-deletion on "Mon compte"
 
 **Files:**
 - Modify: `src/components/screens/AccountScreen.tsx`
@@ -1859,14 +1837,14 @@ Replace the existing bottom-pinned `<Button … label="Supprimer mon compte" …
         </View>
 ```
 
-Add `View` to the `react-native` import, and these styles:
+Add `View` to the `react-native` import, add `import { tokens } from "@/theme/tokens";`
+(the file does not import it yet), replace the existing `toBottom` style and add the
+note style:
 
 ```tsx
   toBottom: { marginTop: "auto", gap: tokens.space.sm },
   adminNote: { fontSize: 13, color: tokens.colors.muted },
 ```
-
-(`tokens` is already imported? If not, add `import { tokens } from "@/theme/tokens";`.)
 
 - [ ] **Step 3: Add the confirmation modal**
 
@@ -1903,7 +1881,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 12: Documentation, skills, and the full gate
+### Task 11: Documentation, skills, and the full gate
 
 Specs are the source of truth for this codebase and must land with the feature.
 
@@ -2089,7 +2067,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ---
 
-## Manual verification (after Task 12)
+## Manual verification (after Task 11)
 
 Not automated — the house style does not render-test screens. Run against the emulators
 (`npm run seed` after starting them) or a scratch project:
