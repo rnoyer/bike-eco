@@ -1,10 +1,10 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 
-import AccountInfoList from "@/components/native/AccountInfoList";
 import CompanyInfoList from "@/components/native/CompanyInfoList";
 import Button from "@/components/ui/Button";
+import ColleagueCard from "@/components/ui/ColleagueCard";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import ScreenMessage from "@/components/ui/ScreenMessage";
 import Section from "@/components/ui/Section";
@@ -44,12 +44,6 @@ export default function CompanyDetailScreen() {
     return <ScreenMessage message="Entreprise introuvable." />;
   }
 
-  const owner =
-    users.data.find((u) => u.id === company.data!.createdBy) ?? users.data[0];
-  // "Autres utilisateurs" = everyone except the owner already shown above.
-  const otherUsers = owner
-    ? users.data.filter((u) => u.id !== owner.id)
-    : users.data;
   const isPending = company.data.status === "pending";
 
   function onDecline() {
@@ -90,39 +84,34 @@ export default function CompanyDetailScreen() {
           </Section>
         ) : null}
 
-        <Section title="Information vendeur">
+        <Section title="Information Entreprise">
           <CompanyInfoList company={company.data} />
         </Section>
 
-        {owner ? (
-          <Section title="Information vendeur admin">
-            <AccountInfoList user={owner} />
-          </Section>
-        ) : null}
+        <Section
+          title="Vendeurs de cette entreprise"
+          emptyMessage="Aucun utilisateur."
+        >
+          {users.data.map((u) => (
+            <ColleagueCard
+              key={u.id}
+              user={u}
+              actionLabel="Voir détails"
+              onAction={() => router.push(`/(backoffice)/users/${u.id}`)}
+            />
+          ))}
+        </Section>
 
         {!isPending ? (
-          <>
-            <Section
-              title="Autres utilisateurs de cette entreprise"
-              emptyMessage="Aucun autre utilisateur."
-            >
-              {otherUsers.map((u) => (
-                <Text
-                  key={u.id}
-                  style={styles.userLine}
-                >{`${u.prenom} ${u.nom} — ${u.email}`}</Text>
-              ))}
-            </Section>
-            <Section title="Gérer cette entreprise">
-              <Button
-                variant="danger"
-                label="Supprimer cette entreprise"
-                onPress={() => setConfirmDelete(true)}
-                loading={deleting.pending}
-                disabled={busy}
-              />
-            </Section>
-          </>
+          <Section title="Gérer cette entreprise">
+            <Button
+              variant="danger"
+              label="Supprimer cette entreprise"
+              onPress={() => setConfirmDelete(true)}
+              loading={deleting.pending}
+              disabled={busy}
+            />
+          </Section>
         ) : null}
       </SectionWrapper>
 
@@ -145,5 +134,4 @@ export default function CompanyDetailScreen() {
 const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: tokens.space.md },
   flex: { flex: 1 },
-  userLine: { fontSize: 14, color: tokens.colors.primary },
 });
