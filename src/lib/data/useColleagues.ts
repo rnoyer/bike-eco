@@ -27,6 +27,11 @@ export function useColleagues() {
   } | null>(null);
 
   useEffect(() => {
+    // No scope — no session yet, or a b2b account without a company — can't
+    // drive a legal query; don't subscribe. Leave `resolved` unset so the
+    // hook reports empty/not-loading below instead of spinning forever: a
+    // scopeless session is a durable state (e.g. an orphaned b2b account),
+    // not a transient one like `useDossier`'s not-yet-resolved route param.
     if (!key || !uid) return;
     const q =
       key === "backoffice"
@@ -47,10 +52,11 @@ export function useColleagues() {
     );
   }, [key, uid]);
 
-  const loading = !key || resolved?.key !== key;
+  const noScope = !key || !uid;
+  const loading = !noScope && resolved?.key !== key;
   return {
-    data: loading ? [] : resolved!.data,
+    data: loading || noScope ? [] : resolved!.data,
     loading,
-    error: loading ? null : resolved!.error,
+    error: loading || noScope ? null : resolved!.error,
   };
 }
