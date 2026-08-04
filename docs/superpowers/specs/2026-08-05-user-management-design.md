@@ -91,7 +91,9 @@ Every callable requires `status === "active"`.
 
 ### `deleteMyAccount({})`
 
-- caller must be active and **not** an admin;
+- caller must be authenticated and **not** an admin. Unlike the other two, it does
+  *not* require `status === "active"`: a colleague still waiting on the company's
+  validation must be able to cancel their account;
 - deletes the caller's Auth user and profile document, same "keep everything else"
   cascade;
 - the client signs out afterwards; the route guard sends it to sign-in.
@@ -116,8 +118,9 @@ Every callable requires `status === "active"`.
   visual (title, subtitle, right-hand button) with a configurable button label.
   `CompanyCard` becomes a thin wrapper over it (`actionLabel="Gérer"`), so the
   companies list and page are unchanged.
-- **`ColleagueCard`** — `EntityCard` with title `"[Prénom] [Nom]"`, subtitle
-  `"Rôle: [Administrateur|Vendeur|Membre]"`, and a caller-supplied button.
+- **`ColleagueCard`** — `EntityCard` with title `"[Nom] [Prénom]"`, subtitle
+  `"Rôle: [Administrateur|Vendeur|Membre]"`, and an optional caller-supplied button
+  (no button at all when the viewer may not act).
 - **`ConfirmModal`** (`src/components/ui/ConfirmModal.tsx`) — the confirmation modal
   currently inlined in `companies/[id].tsx` (title, body, cancel primary, danger
   action), extracted and reused by that page and by the two new deletion flows.
@@ -147,11 +150,13 @@ Routes `src/app/(b2b)/colleagues/[uid].tsx` and
 `ColleagueScreen` with `canManage: true`. Header title "Collaborateur".
 
 - Section "Information collaborateur" — nom, prénom, email, téléphone, rôle.
+- Section "Gérer ce collaborateur" (`Section` requires a title; this mirrors
+  "Gérer cette entreprise" on the company page) holding the two action buttons:
 - Primary button "Ajouter rôle Administrateur" / "Retirer rôle Administrateur"
   depending on the target's current flag.
 - Danger button "Supprimer utilisateur", **disabled when the target is an admin**.
   It opens `ConfirmModal`: "Supprimer cet utilisateur ?" /
-  "Êtes-vous sûr de vouloir supprimer l'utilisateur [Prénom] [Nom] ?" /
+  "Êtes-vous sûr de vouloir supprimer l'utilisateur [Nom] [Prénom] ?" /
   "Annuler" (primary) / "Supprimer utilisateur" (danger). On success the page pops
   back to the list.
 
