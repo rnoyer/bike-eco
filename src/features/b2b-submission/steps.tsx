@@ -6,6 +6,7 @@ import ControlledCheckboxGroup from "@/components/form/ControlledCheckboxGroup";
 import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
 import PhotoPicker from "@/components/form/PhotoPicker";
+import { MAX_PHOTOS } from "@/constants/photos";
 import {
   COUNT_OPTIONS,
   ETAT_OPTIONS,
@@ -111,7 +112,7 @@ function PhotosFields() {
         control={control}
         name="photos"
         render={({ field, fieldState }) => (
-          <PhotoPicker value={field.value} onChange={field.onChange} error={fieldState.error?.message} min={1} />
+          <PhotoPicker value={field.value} onChange={field.onChange} error={fieldState.error?.message} min={1} max={MAX_PHOTOS} />
         )}
       />
     </>

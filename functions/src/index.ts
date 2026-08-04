@@ -6,18 +6,18 @@ import * as logger from "firebase-functions/logger";
 import { B2C_EMAIL_SECRETS, sendB2cEmails, type Attachment } from "./email";
 import { b2cPayloadSchema } from "./payload";
 
-export {
-  registerCompany, sendInvite, resolveInvite, acceptInvite,
-  approveCompany, deleteCompany,
-} from "./registration";
 export { sendMessage } from "./messages";
+export {
+  acceptInvite,
+  approveCompany, deleteCompany, registerCompany, resolveInvite, sendInvite
+} from "./registration";
 
 // Per-function caps still apply; this bounds the blast radius of autoscaling.
 setGlobalOptions({ maxInstances: 10 });
 
 // Upload guard rails — reject oversized payloads instead of buffering them.
 const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8 MB per photo
-const MAX_FILES = 12;
+const MAX_FILES = 10;
 const MAX_FIELD_BYTES = 100 * 1024; // JSON payload is a few KB
 
 /**

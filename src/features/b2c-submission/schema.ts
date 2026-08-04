@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { MAX_PHOTOS } from "@/constants/photos";
+
 const requiredText = (message = "Ce champ est obligatoire") =>
   z.string().trim().min(1, message);
 
@@ -58,7 +60,10 @@ export const b2cSubmissionSchema = z.object({
   factureEntretien: optionalChoice,
 
   // Step 7 — photos
-  photos: z.array(z.string()).min(1, "Ajoutez au moins 1 photo du véhicule"),
+  photos: z
+    .array(z.string())
+    .min(1, "Ajoutez au moins 1 photo du véhicule")
+    .max(MAX_PHOTOS, `Ajoutez ${MAX_PHOTOS} photos maximum`),
 
   // Step 8 — prix
   prix: optionalText,

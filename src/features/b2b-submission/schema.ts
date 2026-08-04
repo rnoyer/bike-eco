@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { MAX_PHOTOS } from "@/constants/photos";
+
 const optionalText = z.string().optional().default("");
 const optionalChoice = z.string().nullable().default(null);
 
@@ -35,7 +37,10 @@ export const b2bSubmissionSchema = z
     certificatNonGage: optionalChoice,
     carnetEntretien: optionalChoice,
     factureEntretien: optionalChoice,
-    photos: z.array(z.string()).min(1, "Ajoutez au moins 1 photo du véhicule"),
+    photos: z
+      .array(z.string())
+      .min(1, "Ajoutez au moins 1 photo du véhicule")
+      .max(MAX_PHOTOS, `Ajoutez ${MAX_PHOTOS} photos maximum`),
     prix: optionalText,
     commentaires: optionalText,
   })

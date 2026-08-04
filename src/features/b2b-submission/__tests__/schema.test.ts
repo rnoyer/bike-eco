@@ -1,4 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
+import { MAX_PHOTOS } from "@/constants/photos";
 import {
   B2B_SUBMISSION_DEFAULTS,
   b2bSubmissionSchema,
@@ -18,6 +19,25 @@ describe("b2bSubmissionSchema", () => {
   test("rejects when there are no photos", () => {
     const r = b2bSubmissionSchema.safeParse({ ...valid, photos: [] });
     expect(r.success).toBe(false);
+  });
+
+  test("rejects more than MAX_PHOTOS photos", () => {
+    const photos = Array.from(
+      { length: MAX_PHOTOS + 1 },
+      (_, i) => `file://${i}.jpg`,
+    );
+    const r = b2bSubmissionSchema.safeParse({ ...valid, photos });
+    expect(r.success).toBe(false);
+  });
+
+  test("accepts exactly MAX_PHOTOS photos", () => {
+    const photos = Array.from(
+      { length: MAX_PHOTOS },
+      (_, i) => `file://${i}.jpg`,
+    );
+    expect(b2bSubmissionSchema.safeParse({ ...valid, photos }).success).toBe(
+      true,
+    );
   });
 
   test("rejects when both marque and modele are empty", () => {

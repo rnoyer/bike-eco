@@ -30,7 +30,8 @@ export default function B2bVehiculeSubmission() {
       defaultValues: B2B_SUBMISSION_DEFAULTS,
       onSubmit: async (values) => {
         try {
-          if (!user) throw new Error("Votre session a expiré. Reconnectez-vous.");
+          if (!user)
+            throw new Error("Votre session a expiré. Reconnectez-vous.");
           await submitB2bSubmission(values, user);
           setSubmitted(true);
         } catch (err) {
@@ -55,7 +56,7 @@ export default function B2bVehiculeSubmission() {
         <Stack.Screen options={{ headerShown: false }} />
         <FormConfirmation
           title="Demande envoyée !"
-          message="Un email récapitulatif va vous parvenir. Vous pouvez suivre l'avancement du dossier et contacter notre équipe, depuis le tableau de bord."
+          message="Retournez sur le tableau de bord pour consulter l'avancement de ce dossier."
           buttonLabel="Retour au tableau de bord"
           onDone={goToDashboard}
         />

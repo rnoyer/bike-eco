@@ -337,6 +337,8 @@ subtitle : "Ajoutez au moins 1 photo récente"
   - horizontal slider
   - croix sur chaque photo pour la supprimer (avec popup de confirmation "voulez-vous supprimer cette photo?")
     mandatory : 1 photo
+    maximum : 10 photos — les deux boutons sont désactivés une fois la limite atteinte,
+    et la sélection multiple de la galerie est plafonnée au nombre de places restantes.
 
 ---
 
