@@ -7,6 +7,10 @@ export default function B2bLayout() {
     <Stack screenOptions={{ headerShown: true }}>
       <Stack.Screen name="(tabs)" options={tabs} />
       <Stack.Screen name="dossier/[id]" options={dossier} />
+      <Stack.Screen
+        name="colleagues/index"
+        options={{ title: "Mes collaborateurs" }}
+      />
     </Stack>
   );
 }

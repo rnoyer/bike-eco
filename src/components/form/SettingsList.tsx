@@ -16,12 +16,14 @@ interface Props {
   role: UserRole;
   onInvite: () => void;
   onManageCompanies?: () => void;
+  onManageColleagues: () => void;
 }
 
 export default function SettingsList({
   role,
   onInvite,
   onManageCompanies,
+  onManageColleagues,
 }: Props) {
   const { region, setRegion } = useRegionFilter();
   const currentLabel =
@@ -51,6 +53,13 @@ export default function SettingsList({
       ) : null}
       <Section title="Inviter un collaborateur de mon entreprise">
         <Button variant="outlined" label="Inviter" onPress={onInvite} />
+      </Section>
+      <Section title="Mes collaborateurs">
+        <Button
+          variant="outlined"
+          label="Voir mes collaborateurs"
+          onPress={onManageColleagues}
+        />
       </Section>
     </SectionWrapper>
   );

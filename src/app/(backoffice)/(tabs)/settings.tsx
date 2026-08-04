@@ -12,6 +12,7 @@ export default function BackofficeSettings() {
       onInvite={() =>
         alertDialog("Inviter un collègue", "Action non disponible pour le moment.")
       }
+      onManageColleagues={() => router.push("/(backoffice)/colleagues")}
     />
   );
 }

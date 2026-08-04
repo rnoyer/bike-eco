@@ -7,6 +7,7 @@ export default function B2bSettings() {
     <SettingsScreen
       role="b2b"
       onInvite={() => router.push("/(b2b)/add-colleague")}
+      onManageColleagues={() => router.push("/(b2b)/colleagues")}
     />
   );
 }
