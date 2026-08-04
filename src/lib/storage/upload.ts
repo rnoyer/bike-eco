@@ -50,10 +50,16 @@ export async function removeStorageObject(path: string): Promise<void> {
 /**
  * Downscale a photo for `Dossier.thumbnailUrl` ("low-res first photo").
  * SDK 56 API: `manipulateAsync` is deprecated in favour of this context form.
+ *
+ * `height` is *omitted*, not `null`. Both typecheck (`resize` takes
+ * `number | null`) and both mean "derive it from the ratio" on native, but the
+ * web implementation branches on `height !== undefined`: an explicit `null`
+ * passes that check and becomes the height, so the resample asks for a
+ * zero-height ImageData and the browser throws before any upload starts.
  */
 export async function makeThumbnail(uri: string): Promise<string> {
   const context = ImageManipulator.manipulate(uri);
-  context.resize({ width: THUMBNAIL_WIDTH, height: null });
+  context.resize({ width: THUMBNAIL_WIDTH });
   const image = await context.renderAsync();
   const result = await image.saveAsync({
     compress: 0.6,
