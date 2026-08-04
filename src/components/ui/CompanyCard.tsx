@@ -1,5 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { tokens } from "@/theme/tokens";
+import EntityCard from "@/components/ui/EntityCard";
 
 interface Props {
   title: string;
@@ -7,39 +6,9 @@ interface Props {
   onManage: () => void;
 }
 
+/** A company in a back-office list. Same visual as every other entity card. */
 export default function CompanyCard({ title, subtitle, onManage }: Props) {
   return (
-    <View style={styles.card}>
-      <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={1}>{title}</Text>
-        <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
-      </View>
-      <TouchableOpacity style={styles.manage} onPress={onManage} activeOpacity={0.7}>
-        <Text style={styles.manageText}>Gérer</Text>
-      </TouchableOpacity>
-    </View>
+    <EntityCard title={title} subtitle={subtitle} actionLabel="Gérer" onAction={onManage} />
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: tokens.space.md,
-    padding: tokens.space.md,
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.md,
-  },
-  body: { flex: 1, gap: tokens.space.xs },
-  title: { fontSize: 15, fontWeight: "600", color: tokens.colors.primary },
-  subtitle: { fontSize: 13, color: tokens.colors.muted },
-  manage: {
-    paddingHorizontal: tokens.space.md,
-    paddingVertical: tokens.space.sm,
-    borderRadius: tokens.radius.sm,
-    backgroundColor: tokens.colors.primary,
-  },
-  manageText: { color: tokens.colors.primaryText, fontSize: 14, fontWeight: "600" },
-});

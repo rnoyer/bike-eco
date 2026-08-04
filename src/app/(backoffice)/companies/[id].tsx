@@ -1,10 +1,11 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Modal, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import AccountInfoList from "@/components/native/AccountInfoList";
 import CompanyInfoList from "@/components/native/CompanyInfoList";
 import Button from "@/components/ui/Button";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import ScreenMessage from "@/components/ui/ScreenMessage";
 import Section from "@/components/ui/Section";
 import SectionWrapper from "@/components/ui/SectionWrapper";
@@ -125,37 +126,18 @@ export default function CompanyDetailScreen() {
         ) : null}
       </SectionWrapper>
 
-      <Modal
+      <ConfirmModal
         visible={confirmDelete}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setConfirmDelete(false)}
-      >
-        <View style={styles.backdrop}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Supprimer cette entreprise ?</Text>
-            <Text style={styles.modalBody}>
-              Cette action supprime définitivement l&apos;entreprise, ses
-              utilisateurs, tous ses dossiers, les conversations et les
-              documents stockés.
-            </Text>
-            <Button
-              label="Annuler"
-              onPress={() => setConfirmDelete(false)}
-              disabled={busy}
-            />
-            <Button
-              variant="danger"
-              label="Supprimer tout"
-              onPress={() => {
-                setConfirmDelete(false);
-                void deleting.run();
-              }}
-              disabled={busy}
-            />
-          </View>
-        </View>
-      </Modal>
+        title="Supprimer cette entreprise ?"
+        message="Cette action supprime définitivement l'entreprise, ses utilisateurs, tous ses dossiers, les conversations et les documents stockés."
+        confirmLabel="Supprimer tout"
+        disabled={busy}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => {
+          setConfirmDelete(false);
+          void deleting.run();
+        }}
+      />
     </ScrollView>
   );
 }
@@ -164,18 +146,4 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: tokens.space.md },
   flex: { flex: 1 },
   userLine: { fontSize: 14, color: tokens.colors.primary },
-  backdrop: {
-    flex: 1,
-    backgroundColor: "#0008",
-    justifyContent: "center",
-    padding: tokens.space.lg,
-  },
-  modal: {
-    backgroundColor: tokens.colors.surface,
-    borderRadius: tokens.radius.md,
-    padding: tokens.space.lg,
-    gap: tokens.space.md,
-  },
-  modalTitle: { fontSize: 18, fontWeight: "700", color: tokens.colors.primary },
-  modalBody: { fontSize: 14, color: tokens.colors.muted },
 });
