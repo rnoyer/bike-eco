@@ -57,7 +57,9 @@
 
 `src/lib/firestore/schema.ts` · `src/lib/auth/session.test.ts` · `functions/src/registration/core.ts` · `functions/src/registration/core.test.ts` · `functions/src/registration/backoffice.ts` · `functions/src/registration/backoffice.test.ts` · `functions/src/messages/core.ts` · `functions/src/messages/core.test.ts` · `functions/src/callable.ts` · `functions/src/index.ts` · `scripts/grant-b2b.js` · `scripts/grant-backoffice.js` · `scripts/seed.ts` · `firestore.rules` · `src/lib/firestore/__tests__/rules.test.ts` · `src/components/ui/CompanyCard.tsx` · `src/components/native/AccountInfoList.tsx` · `src/components/form/SettingsList.tsx` · `src/components/screens/SettingsScreen.tsx` · `src/components/screens/AccountScreen.tsx` · `src/app/(b2b)/(tabs)/settings.tsx` · `src/app/(backoffice)/(tabs)/settings.tsx` · `src/app/(b2b)/_layout.tsx` · `src/app/(backoffice)/_layout.tsx` · `src/app/(backoffice)/companies/[id].tsx` · docs listed in Task 12
 
-**Deleted**: `assets/images/icons/phone.svg` (untracked; not needed by the final design).
+**Left alone**: `assets/images/icons/phone.svg` (committed in `6b6ff43`). The final design
+dropped the phone/email icon buttons, so nothing imports it — leave the asset in place
+rather than deleting a file the repo owner just added.
 
 ---
 
@@ -1713,7 +1715,6 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 **Files:**
 - Create: `src/app/(backoffice)/users/[uid].tsx`
 - Modify: `src/app/(backoffice)/companies/[id].tsx:1-16`, `:46-51`, `:92-125`
-- Delete: `assets/images/icons/phone.svg`
 
 **Interfaces:**
 - Consumes: `ColleagueScreen` (Task 9), `ColleagueCard` (Task 7), `useCompanyUsers` (existing).
@@ -1774,23 +1775,19 @@ The `!isPending` branch now holds only the "Gérer cette entreprise" section, so
 
 Add `import ColleagueCard from "@/components/ui/ColleagueCard";`. Remove the now-unused `AccountInfoList` import and, if nothing else uses them, `Text` and the `userLine` style.
 
-- [ ] **Step 4: Delete the unused icon**
-
-Run: `rm assets/images/icons/phone.svg`
-
-- [ ] **Step 5: Regenerate the typed routes**
+- [ ] **Step 4: Regenerate the typed routes**
 
 Run: `npx expo start --clear` — wait for it to boot, then `Ctrl+C`.
 
-- [ ] **Step 6: Run the app gate**
+- [ ] **Step 5: Run the app gate**
 
 Run: `npx tsc --noEmit && npx expo lint && npm test`
 Expected: all green. Lint catches any import left unused by Step 3.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/app assets
+git add src/app
 git commit -m "feat: rebuild the back-office Entreprise page around colleague cards
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
