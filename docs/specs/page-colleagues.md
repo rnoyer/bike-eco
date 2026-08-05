@@ -25,4 +25,4 @@ The section owns its own spinner, mapped French error, and empty message
 
 ## Tab bar props
 
-Same as page-settings.
+none

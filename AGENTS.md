@@ -88,4 +88,5 @@ and the typed-routes regeneration step required after adding a route file.
 - `dossiers` are **B2B only** — the public B2C funnel is email-only (a Cloud Function
   sends the NORTH/SOUTH summary emails; nothing is persisted).
 - `role` / `companyId` / account `status` are server-set (Auth custom claims), never
-  client-writable. Security rules are default-deny and require auth.
+  client-writable. `isAdmin` is also server-set (but lives only on the `users/{uid}`
+  document, not in claims). Security rules are default-deny and require auth.

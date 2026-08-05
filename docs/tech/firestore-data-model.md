@@ -64,7 +64,8 @@ Dates are `timestamp`; numeric vehicle values (`prix`, `annee`, `kilometrage`,
 
 ### `users/{uid}`
 
-Contains PII → readable by the owner and the Bike-eco team only.
+Contains PII → readable by the owner, the Bike-eco team, and an active teammate sharing
+the same `companyId`.
 
 | field | type | notes |
 |-------|------|-------|
