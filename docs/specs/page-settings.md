@@ -12,7 +12,8 @@ From top to bottom
 
 ### B2B
 
-- Button secondary : Inviter un collègue
+- Section "Inviter un collaborateur de mon entreprise" :
+  - Button secondary : "Inviter"
 - Section "Mes collaborateurs" :
   - Button secondary : "Voir mes collaborateurs" (link to page-colleagues)
 - "Supprimer son compte" lives on page-my-account, not here.
@@ -20,6 +21,8 @@ From top to bottom
 ### Bike-eco Backoffice
 
 - Button secondary : "Gérer les entreprises" (link to page-list-companies)
+- Section "Inviter un collaborateur de mon entreprise" :
+  - Button secondary : "Inviter"
 - Section "Mes collaborateurs" :
   - Button secondary : "Voir mes collaborateurs" (link to page-colleagues)
 

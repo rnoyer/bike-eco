@@ -51,7 +51,7 @@ function parseArgs(argv) {
 // an admin is the only account that can manage (or delete) team members.
 // `--no-admin true` creates a plain member.
 function readIsAdmin(args) {
-  return args["no-admin"] === undefined;
+  return args["no-admin"] !== "true";
 }
 
 async function main() {

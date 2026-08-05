@@ -22,7 +22,7 @@ service cloud.firestore {
       allow read: if isSignedIn() && (
         request.auth.uid == uid
         || isBackoffice()
-        || (isActive() && resource.data.companyId == myCompany())
+        || (isActive() && myCompany() != null && resource.data.companyId == myCompany())
       );
       // Owner edits profile fields only; role/companyId/status/isAdmin/createdAt
       // are server-set and must never be client-writable.

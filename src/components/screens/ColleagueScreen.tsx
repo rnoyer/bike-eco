@@ -41,57 +41,69 @@ export default function ColleagueScreen({ uid, canManage, onDeleted }: Props) {
   }, { onError });
   const busy = toggling.pending || deleting.pending;
 
-  if (loading) return <ScreenLoader />;
-  if (error) return <ScreenMessage message={error} tone="danger" />;
-  if (!data) return <ScreenMessage message="Utilisateur introuvable." />;
+  // Rendered unconditionally, above the loading/error/not-found states: the
+  // route isn't registered in its group `_layout.tsx`, so until this resolves
+  // the native stack header would otherwise show the raw route name — and on
+  // "Utilisateur introuvable." it would never recover at all. The name-bearing
+  // title only exists once the read-only view's document has resolved; the
+  // manage-mode title never depends on it.
+  const fullName = data ? `${data.nom} ${data.prenom}` : null;
+  const title = canManage ? "Collaborateur" : fullName ? `Détails ${fullName}` : "Détails";
 
-  const fullName = `${data.nom} ${data.prenom}`;
   return (
     <ScrollView>
-      <Stack.Screen
-        options={headerOptions({
-          title: canManage ? "Collaborateur" : `Détails ${fullName}`,
-        })}
-      />
-      <SectionWrapper>
-        <Section title="Information collaborateur">
-          <AccountInfoList user={data} roleLabel={roleLabel(data)} />
-        </Section>
+      <Stack.Screen options={headerOptions({ title })} />
+      {loading ? (
+        <ScreenLoader />
+      ) : error ? (
+        <ScreenMessage message={error} tone="danger" />
+      ) : !data ? (
+        <ScreenMessage message="Utilisateur introuvable." />
+      ) : (
+        <>
+          <SectionWrapper>
+            <Section title="Information collaborateur">
+              <AccountInfoList user={data} roleLabel={roleLabel(data)} />
+            </Section>
 
-        {canManage ? (
-          <Section title="Gérer ce collaborateur">
-            <Button
-              label={
-                data.isAdmin ? "Retirer rôle Administrateur" : "Ajouter rôle Administrateur"
-              }
-              onPress={() => void toggling.run(!data.isAdmin)}
-              loading={toggling.pending}
-              disabled={busy}
-            />
-            <Button
-              variant="danger"
-              label="Supprimer utilisateur"
-              onPress={() => setConfirming(true)}
-              loading={deleting.pending}
-              // An admin account cannot be deleted — remove the role first.
-              disabled={busy || data.isAdmin}
-            />
-          </Section>
-        ) : null}
-      </SectionWrapper>
+            {canManage ? (
+              <Section title="Gérer ce collaborateur">
+                <Button
+                  label={
+                    data.isAdmin
+                      ? "Retirer rôle Administrateur"
+                      : "Ajouter rôle Administrateur"
+                  }
+                  onPress={() => void toggling.run(!data.isAdmin)}
+                  loading={toggling.pending}
+                  disabled={busy}
+                />
+                <Button
+                  variant="danger"
+                  label="Supprimer utilisateur"
+                  onPress={() => setConfirming(true)}
+                  loading={deleting.pending}
+                  // An admin account cannot be deleted — remove the role first.
+                  disabled={busy || data.isAdmin}
+                />
+              </Section>
+            ) : null}
+          </SectionWrapper>
 
-      <ConfirmModal
-        visible={confirming}
-        title="Supprimer cet utilisateur ?"
-        message={`Êtes-vous sûr de vouloir supprimer l'utilisateur ${fullName} ?`}
-        confirmLabel="Supprimer utilisateur"
-        disabled={busy}
-        onCancel={() => setConfirming(false)}
-        onConfirm={() => {
-          setConfirming(false);
-          void deleting.run();
-        }}
-      />
+          <ConfirmModal
+            visible={confirming}
+            title="Supprimer cet utilisateur ?"
+            message={`Êtes-vous sûr de vouloir supprimer l'utilisateur ${fullName} ?`}
+            confirmLabel="Supprimer utilisateur"
+            disabled={busy}
+            onCancel={() => setConfirming(false)}
+            onConfirm={() => {
+              setConfirming(false);
+              void deleting.run();
+            }}
+          />
+        </>
+      )}
     </ScrollView>
   );
 }

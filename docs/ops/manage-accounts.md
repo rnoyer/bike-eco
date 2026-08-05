@@ -132,6 +132,16 @@ dans `submitter`).
   Sans effet — la carte affiche `createdByName`.
 - **Messages postés dans les dossiers d'autres comptes** : conservés. Ils portent un
   `senderName` dupliqué, et les supprimer amputerait la conversation de l'autre partie.
+- **⚠️ Le script n'est pas conscient de `isAdmin`** : contrairement à `deleteColleague`
+  (voir ci-dessous), il ne vérifie pas si le compte ciblé est l'administrateur de son
+  entreprise et ne refuse rien. Supprimer le seul administrateur laisse l'entreprise sans
+  personne pour gérer son équipe (promouvoir/supprimer un collaborateur) — et le produit
+  ne peut pas réparer ça lui-même. Avant de supprimer un administrateur, vérifier qu'il en
+  reste un autre, ou en promouvoir un juste après :
+  ```bash
+  node grant-b2b.js --company <companyId> --email <email-restant> --prenom <p> --nom <n> \
+    --tel <tel> --admin true
+  ```
 
 ### Suppression depuis l'application, une autre voie
 
@@ -175,6 +185,13 @@ node delete-backoffice.js --email alex@bike-eco.fr --yes    # supprime réelleme
   réutilise un utilisateur Auth existant : un compte b2b promu back-office garde les
   dossiers déposés du temps où il était vendeur. Le script renvoie alors vers
   `delete-b2b-user.js`, seul à nettoyer les fichiers Storage et les messages.
+
+**⚠️ Ces deux refus ne couvrent pas le dernier administrateur** : comme
+`delete-b2b-user.js`, ce script n'est pas conscient de `isAdmin` et ne refuse que le
+dernier compte back-office *actif* — pas le dernier *administrateur*. Supprimer le seul
+administrateur back-office laisse l'équipe sans personne pour promouvoir ou supprimer un
+collaborateur. Vérifier qu'il en reste un autre avant de supprimer, ou en promouvoir un
+juste après avec `grant-backoffice.js` (compte existant, sans `--no-admin`).
 
 Les messages postés dans les conversations sont conservés : ils portent un `senderName`
 dupliqué, et les supprimer amputerait la conversation côté vendeur.

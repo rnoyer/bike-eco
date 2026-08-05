@@ -3,6 +3,7 @@ import Section from "@/components/ui/Section";
 import SectionWrapper from "@/components/ui/SectionWrapper";
 import { useAccount } from "@/lib/data/useAccount";
 import { useColleagues } from "@/lib/data/useColleagues";
+import { useUser } from "@/lib/data/useUser";
 import { ScrollView } from "react-native";
 
 interface Props {
@@ -15,7 +16,14 @@ interface Props {
 export default function ColleaguesScreen({ onManage }: Props) {
   const { data: session } = useAccount();
   const { data, loading, error } = useColleagues();
-  const canManage = session?.isAdmin === true;
+  // Live rather than the AuthProvider snapshot taken at sign-in, so a
+  // promotion/demotion reaches this gate without an app restart. Falls back
+  // to the session's value while the live read is loading, so nothing
+  // flickers into a more-permissive state.
+  const { data: viewer, loading: viewerLoading } = useUser(session?.id ?? "");
+  const canManage = viewerLoading
+    ? session?.isAdmin === true
+    : viewer?.isAdmin === true;
 
   return (
     <ScrollView>

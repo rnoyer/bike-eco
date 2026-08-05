@@ -26,8 +26,15 @@ Code treats a missing field as `false`.
 **Stored in the Firestore document only — not in Auth custom claims.** Server callables
 read the caller's `users/{uid}` document, which is always fresh; a custom claim would
 stay stale until the user's ID token refreshed, and no security rule needs the flag.
-The client reads it from the session: `buildSessionUser` spreads the profile document,
-so `session.isAdmin` is available wherever `useAccount()`/`useAuth()` is.
+`buildSessionUser` spreads the profile document, so `session.isAdmin` is available
+wherever `useAccount()`/`useAuth()` is — but that copy is a **snapshot taken at
+sign-in**: `AuthProvider` reads it with a one-shot `getDoc`, so a promotion or demotion
+never reaches it until the app restarts. The client gates that matter (the "Gérer" button
+in `ColleaguesScreen`/the colleague-detail routes, and "Supprimer mon compte" in
+`AccountScreen`) instead read the viewer's own document **live**, via `useUser(session.id)`
+(`onSnapshot`), falling back to the session snapshot only while that read is loading so
+nothing flickers into a more-permissive state. The server is always authoritative either
+way — this only affects how fast the UI reflects a change.
 
 Deleting a user does **not** touch dossiers, chat messages or Storage:
 

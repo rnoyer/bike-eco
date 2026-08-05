@@ -177,7 +177,7 @@ async function main() {
 
   const { id: companyId, created } = await resolveCompany(db, args, user.uid);
   // The company's creator is its admin — same rule as the registration funnel.
-  const isAdmin = created || args.admin !== undefined;
+  const isAdmin = created || args.admin === "true";
 
   // Claims are set as one object: setCustomUserClaims replaces the whole bag,
   // so every field the app reads has to be present on each call.
