@@ -22,8 +22,11 @@ Below the vehicle-name heading, the data sits in two `Section`s, each a compact 
 
 ### "Informations véhicule"
 
-The vehicle's form data : marque, modèle, cylindrée, année, kilométrage, électrique,
+The vehicle's form data : marque, modèle et cylindrée, année, kilométrage, électrique,
 accessoires, état, carte grise, contrôle technique, prix souhaité, commentaires.
+
+"Modèle et Cylindrée" is a single row, mirroring the B2B submission form — which is the
+only source of dossiers — where both are one field (`vehicle.modele`).
 
 ### "Informations vendeur"
 
