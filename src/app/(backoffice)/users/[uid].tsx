@@ -5,5 +5,7 @@ import { useLocalSearchParams } from "expo-router";
  *  company's users is that company's admin's job, not Bike-eco's. */
 export default function BackofficeUserDetail() {
   const { uid } = useLocalSearchParams<{ uid: string }>();
-  return <ColleagueScreen uid={uid} canManage={false} />;
+  return (
+    <ColleagueScreen uid={uid} canManage={false} infoTitle="Information vendeur" />
+  );
 }

@@ -12,7 +12,9 @@ from the "Vendeurs de cette entreprise" section of page-company ("Voir détails"
 
 ## Main section
 
-- Section "Information collaborateur" props :
+- Section "Information collaborateur" props — titled "Information vendeur" in the
+  back-office read-only mode, where the user being read belongs to a company, not to
+  the Bike-eco team :
   - A compact list of label/value rows : Nom / Prénom / Email / Téléphone / Rôle
     ("Administrateur", "Vendeur" for a b2b account, "Membre" for a back-office one).
 

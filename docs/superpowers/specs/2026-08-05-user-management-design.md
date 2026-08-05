@@ -175,7 +175,8 @@ as `companies/[id].tsx`. A user that cannot be read renders
 ### Back-office read-only user detail
 
 Route `src/app/(backoffice)/users/[uid].tsx`, rendering `ColleagueScreen` with
-`canManage: false`: the "Information collaborateur" section only, no buttons. Header
+`canManage: false`: the information section only (titled "Information vendeur" here —
+the user belongs to a company, not to the Bike-eco team), no buttons. Header
 title "Détails [Prénom] [Nom]", set per-screen via `<Stack.Screen options={…}>` once
 the user document resolves (the pattern used by `add-colleague.tsx`). A flat route, so
 `companies/[id]` needs no restructuring.

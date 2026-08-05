@@ -19,13 +19,21 @@ interface Props {
   uid: string;
   /** `false` renders the read-only back-office view: info only, no buttons. */
   canManage: boolean;
+  /** Title of the information section. The back-office reads a *company's*
+   *  user here, who is a vendeur to them, not a collaborateur. */
+  infoTitle?: string;
   /** Called after a successful deletion — the route pops back to the list. */
   onDeleted?: () => void;
 }
 
 /** One colleague: their information, and (for an admin) the two actions on
  *  them. Owns its header title, because only this screen has read the name. */
-export default function ColleagueScreen({ uid, canManage, onDeleted }: Props) {
+export default function ColleagueScreen({
+  uid,
+  canManage,
+  infoTitle = "Information collaborateur",
+  onDeleted,
+}: Props) {
   const { data, loading, error } = useUser(uid);
   const [confirming, setConfirming] = useState(false);
 
@@ -62,7 +70,7 @@ export default function ColleagueScreen({ uid, canManage, onDeleted }: Props) {
       ) : (
         <>
           <SectionWrapper>
-            <Section title="Information collaborateur">
+            <Section title={infoTitle}>
               <AccountInfoList user={data} roleLabel={roleLabel(data)} />
             </Section>
 
