@@ -1,5 +1,4 @@
 import SettingsScreen from "@/components/screens/SettingsScreen";
-import { alertDialog } from "@/lib/ui/dialog";
 import { useRouter } from "expo-router";
 
 export default function BackofficeSettings() {
@@ -8,10 +7,7 @@ export default function BackofficeSettings() {
     <SettingsScreen
       role="backoffice"
       onManageCompanies={() => router.push("/(backoffice)/companies")}
-      // Still a stub; it will need a pending state when it is wired.
-      onInvite={() =>
-        alertDialog("Inviter un collègue", "Action non disponible pour le moment.")
-      }
+      onInvite={() => router.push("/(backoffice)/add-colleague")}
       onManageColleagues={() => router.push("/(backoffice)/colleagues")}
     />
   );
