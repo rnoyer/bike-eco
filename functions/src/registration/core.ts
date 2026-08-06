@@ -8,11 +8,18 @@ import type {
 } from "./schemas";
 import { RegError, type CallerClaims } from "../errors";
 
+/** The organisation an invitee joins when the invitation grants back-office access. */
+export const BIKE_ECO_ORGANISATION = "Bike-eco";
+
+/** The role an invitation grants. A back-office invitation carries no company. */
+export type InviteRole = "b2b" | "backoffice";
+
 export interface StoredInvitation {
   id: string;
   email: string;
-  companyId: string;
-  companyName: string;
+  role: InviteRole;
+  companyId: string | null; // null for a back-office invitation
+  companyName: string | null; // null for a back-office invitation
   tokenHash: string;
   expiresAt: number; // epoch ms
 }
@@ -30,7 +37,10 @@ export interface Deps {
   deleteInvitation(id: string): Promise<void>;
   now(): number;
   sendApplicantEmail(to: string, companyName: string): Promise<void>;
-  sendInviteEmail(to: string, code: string): Promise<void>;
+  /** `isAdmin` lives on `users/{uid}`, never in the claims — hence a read. */
+  getUserIsAdmin(uid: string): Promise<boolean>;
+  getCompanyName(companyId: string): Promise<string>;
+  sendInviteEmail(to: string, code: string, organisationName: string): Promise<void>;
 }
 
 function profileDoc(
@@ -89,16 +99,29 @@ export async function sendInviteCore(
   caller: CallerClaims,
   deps: Deps,
 ): Promise<void> {
-  if (caller.role !== "b2b" || caller.status !== "active" || !caller.companyId) {
+  const role = caller.role;
+  if ((role !== "b2b" && role !== "backoffice") || caller.status !== "active") {
+    throw new RegError("permission-denied", "Seul un compte actif peut inviter.");
+  }
+  if (role === "b2b" && !caller.companyId) {
     throw new RegError("permission-denied", "Seul un compte vendeur actif peut inviter.");
   }
+  // `isAdmin` is not a claim, so this is a document read — done before any
+  // write or email so a refused caller leaves no trace at all.
+  if (!(await deps.getUserIsAdmin(caller.uid))) {
+    throw new RegError("permission-denied", "Seul un administrateur peut inviter.");
+  }
+  const companyId = role === "b2b" ? caller.companyId! : null;
+  const organisationName = companyId
+    ? await deps.getCompanyName(companyId)
+    : BIKE_ECO_ORGANISATION;
   const code = generateInviteCode();
   const id = deps.newDocumentId();
   await deps.writeInvitation(id, {
-    email: input.email, companyId: caller.companyId, invitedBy: caller.uid,
+    email: input.email, role, companyId, invitedBy: caller.uid,
     tokenHash: hashInviteCode(code), status: "pending", expiresAt: deps.now() + INVITE_TTL_MS,
   });
-  await deps.sendInviteEmail(input.email, code);
+  await deps.sendInviteEmail(input.email, code, organisationName);
 }
 
 export async function resolveInviteCore(

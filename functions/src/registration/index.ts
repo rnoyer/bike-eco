@@ -50,6 +50,10 @@ function realDeps(): Deps {
     deleteInvitation: async (id) => void (await db().collection("invitations").doc(id).delete()),
     now: () => Date.now(),
     sendApplicantEmail,
+    getUserIsAdmin: async (uid) =>
+      (await db().collection("users").doc(uid).get()).data()?.isAdmin === true,
+    getCompanyName: async (companyId) =>
+      ((await db().collection("companies").doc(companyId).get()).data()?.name as string) ?? "",
     sendInviteEmail,
   };
 }

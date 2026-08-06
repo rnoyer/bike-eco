@@ -95,7 +95,9 @@ export interface AppUser {
 
 export interface Invitation {
   email: string;
-  companyId: string;
+  /** The role the invitee will be given. A back-office invitation has no company. */
+  role: UserRole;
+  companyId: string | null;
   invitedBy: string; // uid
   tokenHash: string; // store a hash, never the raw token
   status: InvitationStatus;
