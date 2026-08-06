@@ -4,6 +4,7 @@ import Spinner from "@/components/ui/Spinner";
 import type { PendingMessage } from "@/lib/data/useSendMessage";
 import type { WithId } from "@/lib/firestore/collections";
 import type { Message, MessageAttachment } from "@/lib/firestore/schema";
+import { storageUrl } from "@/lib/storage/displayUrl";
 import { alertDialog } from "@/lib/ui/dialog";
 import { tokens } from "@/theme/tokens";
 import { Image } from "expo-image";
@@ -50,19 +51,20 @@ function Attachment({
   interactive?: boolean;
   onOpenImage?: (url: string) => void;
 }) {
+  // A pending attachment's `file://` uri passes through untouched.
+  const url = storageUrl(a.url);
+
   if (a.type === "image") {
     const thumb = (
       <Image
-        source={{ uri: a.url }}
+        source={{ uri: url }}
         style={styles.thumb}
         contentFit="cover"
         transition={100}
       />
     );
     if (!interactive) return thumb;
-    return (
-      <Pressable onPress={() => onOpenImage?.(a.url)}>{thumb}</Pressable>
-    );
+    return <Pressable onPress={() => onOpenImage?.(url)}>{thumb}</Pressable>;
   }
   const row = (
     <>
@@ -82,7 +84,7 @@ function Attachment({
   return (
     <Pressable
       style={[styles.pdf, mine && styles.pdfMine]}
-      onPress={() => openPdf(a.url)}
+      onPress={() => openPdf(url)}
     >
       {row}
     </Pressable>

@@ -38,6 +38,33 @@ export function sanitizeFileName(name: string): string {
   return cleaned.length > 0 ? cleaned : "fichier";
 }
 
+/**
+ * Hosts the Storage emulator can be reached at, all meaning "this machine" from
+ * a different vantage point: `10.0.2.2` from the Android emulator, `localhost` /
+ * `127.0.0.1` from everywhere else (see `emulatorHost` in `firebase.core.ts`).
+ */
+const EMULATOR_ORIGIN = /^http:\/\/(?:localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?/i;
+
+/**
+ * Re-point an emulator download URL at `host`.
+ *
+ * `getDownloadURL()` against the Storage emulator bakes in whichever host
+ * `connectStorageEmulator` was given — and that host is necessarily
+ * per-platform. The URL is then persisted verbatim on the dossier (or message),
+ * so a dossier filed from the web stores `http://localhost:9199/…`, which on an
+ * Android device resolves to the device itself and renders nothing; one filed
+ * from Android stores `http://10.0.2.2:9199/…`, which no browser can route.
+ *
+ * Production URLs point at `firebasestorage.googleapis.com` and are returned
+ * untouched, as are the local `file://` uris of a not-yet-sent attachment.
+ */
+export function rewriteEmulatorHost(url: string, host: string): string {
+  return url.replace(
+    EMULATOR_ORIGIN,
+    (_match, port = "") => `http://${host}${port}`,
+  );
+}
+
 export function dossierPhotoPath(
   companyId: string,
   dossierId: string,

@@ -1,3 +1,4 @@
+import { storageUrl } from "@/lib/storage/displayUrl";
 import { tokens } from "@/theme/tokens";
 import { Image } from "expo-image";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -18,7 +19,7 @@ export default function DossierCard({
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <Image
-        source={thumbnailUrl ? { uri: thumbnailUrl } : undefined}
+        source={thumbnailUrl ? { uri: storageUrl(thumbnailUrl) } : undefined}
         style={styles.thumb}
         contentFit="cover"
         transition={150}

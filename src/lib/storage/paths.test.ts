@@ -5,6 +5,7 @@ import {
   extensionForUri,
   messageAttachmentPath,
   mimeForExtension,
+  rewriteEmulatorHost,
   sanitizeFileName,
 } from "./paths";
 
@@ -44,4 +45,36 @@ test("extensions map back to the content type Storage rules match on", () => {
   expect(mimeForExtension("jpg")).toBe("image/jpeg");
   expect(mimeForExtension("png")).toBe("image/png");
   expect(mimeForExtension("nope")).toBe("image/jpeg");
+});
+
+// The bug this guards: a download URL minted against the Storage emulator on one
+// platform is persisted verbatim and then unreachable from the other.
+test("emulator download URLs are re-pointed at the local host", () => {
+  const web =
+    "http://localhost:9199/v0/b/bike-eco-43a84.firebasestorage.app/o/dossiers%2Fc%2Fd%2Fphotos%2F0.jpg?alt=media&token=abc";
+
+  expect(rewriteEmulatorHost(web, "10.0.2.2")).toBe(
+    "http://10.0.2.2:9199/v0/b/bike-eco-43a84.firebasestorage.app/o/dossiers%2Fc%2Fd%2Fphotos%2F0.jpg?alt=media&token=abc",
+  );
+  // …and the other direction, for a dossier filed from Android.
+  expect(
+    rewriteEmulatorHost("http://10.0.2.2:9199/v0/b/x/o/y?alt=media", "localhost"),
+  ).toBe("http://localhost:9199/v0/b/x/o/y?alt=media");
+  expect(rewriteEmulatorHost("http://127.0.0.1:9199/a", "10.0.2.2")).toBe(
+    "http://10.0.2.2:9199/a",
+  );
+});
+
+test("production and local uris are left alone", () => {
+  const prod =
+    "https://firebasestorage.googleapis.com/v0/b/bike-eco-43a84.firebasestorage.app/o/dossiers%2Fc%2Fd%2Fphotos%2F0.jpg?alt=media&token=abc";
+  expect(rewriteEmulatorHost(prod, "10.0.2.2")).toBe(prod);
+  // A staged, not-yet-sent attachment.
+  expect(rewriteEmulatorHost("file:///tmp/photo.jpg", "10.0.2.2")).toBe(
+    "file:///tmp/photo.jpg",
+  );
+  // Only the origin is rewritten — a matching host later in the URL is not.
+  expect(
+    rewriteEmulatorHost("https://example.com/r?to=http://localhost:9199/a", "10.0.2.2"),
+  ).toBe("https://example.com/r?to=http://localhost:9199/a");
 });

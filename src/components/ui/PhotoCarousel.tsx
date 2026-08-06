@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import type { DossierStatus } from "@/lib/firestore/schema";
+import { storageUrl } from "@/lib/storage/displayUrl";
 import { tokens } from "@/theme/tokens";
 import ImageViewerModal from "./ImageViewerModal";
 import StatusBadge from "./StatusBadge";
@@ -25,6 +26,9 @@ export default function PhotoCarousel({
 }) {
   const [index, setIndex] = useState(0);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
+  // Normalized once, so the carousel, the dots' keys and the full-screen viewer
+  // all agree on the same uri.
+  const uris = photos.map((uri) => storageUrl(uri));
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
     setIndex(Math.round(e.nativeEvent.contentOffset.x / W));
 
@@ -36,7 +40,7 @@ export default function PhotoCarousel({
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={onScroll}
       >
-        {photos.map((uri) => (
+        {uris.map((uri) => (
           <Pressable key={uri} onPress={() => setViewerUri(uri)}>
             <Image
               source={{ uri }}
@@ -53,7 +57,7 @@ export default function PhotoCarousel({
         </View>
       ) : null}
       <View style={styles.dots} pointerEvents="none">
-        {photos.map((uri, i) => (
+        {uris.map((uri, i) => (
           <View key={uri} style={[styles.dot, i === index && styles.dotActive]} />
         ))}
       </View>
