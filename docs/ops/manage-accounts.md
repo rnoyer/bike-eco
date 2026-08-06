@@ -142,6 +142,13 @@ dans `submitter`).
   node grant-b2b.js --company <companyId> --email <email-restant> --prenom <p> --nom <n> \
     --tel <tel> --admin true
   ```
+  **⚠️ Depuis les invitations admin-only, c'est aussi un verrou sur le recrutement** :
+  `sendInvite` exige lui aussi un appelant administrateur, donc une entreprise sans
+  administrateur ne peut plus inviter personne — en plus de ne pouvoir ni promouvoir ni
+  supprimer un collaborateur. Rien côté produit ne répare ça (`setColleagueAdmin` demande
+  toujours un administrateur en poste) : seule une écriture manuelle hors application le
+  peut, la commande `grant-b2b.js … --admin true` ci-dessus posant `isAdmin: true` par le
+  SDK admin, hors des règles de sécurité.
 
 ### Suppression depuis l'application, une autre voie
 
@@ -159,10 +166,16 @@ RGPD des dossiers du compte ; le produit ne les touche jamais.
 
 ## Supprimer entièrement un compte back-office
 
-Beaucoup plus simple : un compte back-office n'a pas d'entreprise et **ne peut pas déposer
-de dossier** (le funnel est réservé au b2b). Il ne reste donc à supprimer que l'utilisateur
-Auth et le document `users/{uid}` — ce dernier étant précisément ce que la console laisse
-derrière elle.
+Plus simple qu'un compte b2b : un compte back-office n'a pas d'entreprise et **ne peut pas
+déposer de dossier** (le funnel est réservé au b2b), donc pas de fichiers Storage à nettoyer.
+Il peut en revanche avoir envoyé une invitation, ou en avoir une en attente sur sa propre
+adresse, depuis que `sendInvite` crée aussi des comptes `backoffice` — et une invitation
+laissée derrière reste utilisable via `acceptInvite` jusqu'à une heure après coup. Le script
+supprime donc, dans cet ordre :
+
+1. les invitations envoyées par ce compte, et toute invitation en attente adressée à son email,
+2. l'utilisateur Auth,
+3. le document `users/{uid}` — ce que la console laisse derrière elle.
 
 ```bash
 node delete-backoffice.js --email alex@bike-eco.fr          # simulation : affiche le plan
@@ -176,11 +189,13 @@ node delete-backoffice.js --email alex@bike-eco.fr --yes    # supprime réelleme
 
 ### Les deux refus du script
 
-- **Dernier compte back-office actif.** Aucun parcours produit ne crée d'identité
-  `backoffice` : sans lui, plus personne ne peut valider une entreprise, chaque
+- **Dernier compte back-office actif.** `sendInvite` peut créer un remplaçant, mais seul un
+  administrateur actif peut l'appeler : sans aucun compte back-office restant, plus personne
+  ne peut en inviter un non plus. Plus personne ne peut valider une entreprise, chaque
   inscription reste `pending` et chaque nouveau vendeur attend indéfiniment sans que
-  l'application ne l'explique. Créer le remplaçant d'abord (`grant-backoffice.js`), ou
-  passer `--force` en connaissance de cause.
+  l'application ne l'explique. Créer le remplaçant d'abord (`grant-backoffice.js`, seul chemin
+  qui ne dépend pas d'un administrateur déjà en place), ou passer `--force` en connaissance de
+  cause.
 - **Compte qui a déposé des dossiers.** Impossible en théorie, mais `grant-backoffice.js`
   réutilise un utilisateur Auth existant : un compte b2b promu back-office garde les
   dossiers déposés du temps où il était vendeur. Le script renvoie alors vers

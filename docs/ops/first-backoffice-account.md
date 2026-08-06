@@ -1,9 +1,9 @@
 # Créer un compte back-office sur le projet live
 
 Procédure à faire soi-même, ~5 minutes, sur `bike-eco-43a84`. Nécessaire au moins une fois :
-aucun parcours produit ne crée de compte back-office (`registerCompany` et `sendInvite` sont
-réservés au rôle `b2b`), donc le premier admin est amorcé hors application. La même procédure
-sert pour les suivants.
+`sendInvite` peut créer un compte back-office, mais seul un administrateur actif peut l'appeler,
+donc le tout premier admin est amorcé hors application. Les suivants s'invitent depuis
+l'application — voir [Comptes back-office suivants](#comptes-back-office-suivants) plus bas.
 
 Tout se passe dans le navigateur, via **Cloud Shell** : les identifiants utilisés sont ceux de
 votre propre compte Google, il n'y a rien à installer et **aucune clé de compte de service** à
