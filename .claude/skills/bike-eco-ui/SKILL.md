@@ -20,11 +20,14 @@ copy. Gate with `docs/tech/verification.md`.
 Everything in `src/components/ui/` and `src/components/form/` is React Native styled from
 `@/theme/tokens`. There is no second component layer.
 
-`@expo/ui` is used **only** by `NativeTabs` in the tab-bar layouts. It is not a layer you
-build screens or components in — the info lists that used to live in
-`src/components/native/` were replaced by `InfoCard` (see below) precisely because
-`@expo/ui`'s `Row` + `Spacer(flexible)` can't do dividers, icon buttons, or a value that
-wraps instead of squeezing its label.
+`@expo/ui` is **not a layer you build screens or components in**. Its one remaining use is
+`ChatComposer`'s attachment `BottomSheet` — leave that alone; it is not a convention
+violation. (The tab bars are `NativeTabs` from `expo-router/unstable-native-tabs`, which is
+unrelated to `@expo/ui`.)
+
+The info lists that used to live in `src/components/native/` were replaced by `InfoCard`
+(see below) precisely because `@expo/ui`'s `Row` + `Spacer(flexible)` can't do dividers,
+icon buttons, or a value that wraps instead of squeezing its label.
 
 ## Tokens are the only source of style
 
@@ -97,8 +100,10 @@ shipped as a bug once.
 
 Package visibility restricts *querying*, not `startActivity` — so `openURL` works
 regardless. Render the affordance and handle the real failure in the promise rejection
-(`alertDialog` with French copy). The same reasoning applies to any future `tel:`,
-`mailto:`, `sms:` or third-party-app deep link.
+(`alertDialog` with French copy). That rejection fires on Android and on a real iOS
+device; react-native-web always resolves and the iOS simulator resolves `NO` for `tel:`,
+so those two tap silently — acceptable, since both are dev/browser-only. The same
+reasoning applies to any future `tel:`, `mailto:`, `sms:` or third-party-app deep link.
 
 Use it for a contact you can **reach**. "Mon compte" shows the viewer's own number and
 address as plain `InfoRows`.
@@ -191,7 +196,7 @@ never invent its own.
 | Mistake | Consequence |
 |---|---|
 | Hardcoding `#111` / `12` instead of a token | Drifts from the rest of the app; breaks a future token change |
-| Building a label/value block out of `@expo/ui`, or by hand | `InfoCard` + its three parts is the only shape; `@expo/ui` is `NativeTabs`-only |
+| Building a label/value block out of `@expo/ui`, or by hand | `InfoCard` + its three parts is the only shape |
 | An `InfoCard` nested inside a `Section` of the same name | The title is rendered twice |
 | A part that draws its own divider | Doubled lines — the card owns the separators |
 | Rendering `null`/`""` instead of `dash()` | "null" or blank rows in the UI |

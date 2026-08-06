@@ -7,7 +7,7 @@ import ScreenMessage from "@/components/ui/ScreenMessage";
 import SectionWrapper from "@/components/ui/SectionWrapper";
 import { ScreenLoader } from "@/components/ui/Spinner";
 import { useDossier } from "@/lib/data/useDossier";
-import type { Dossier } from "@/lib/firestore/schema";
+import type { Dossier, UserRole } from "@/lib/firestore/schema";
 import {
   dash,
   euros,
@@ -18,10 +18,6 @@ import {
 } from "@/lib/ui/format";
 import { tokens } from "@/theme/tokens";
 import { ScrollView, StyleSheet, Text } from "react-native";
-
-/** Where the dossier's own metadata sits: the back office reads the vehicle
- *  first, a b2b user follows up on their own submission's status first. */
-type Role = "b2b" | "backoffice";
 
 function DossierCard({ dossier }: { dossier: Dossier }) {
   // Straight off the live `useDossier` snapshot, so a back-office update to
@@ -46,12 +42,12 @@ function VehicleCard({ dossier }: { dossier: Dossier }) {
     <InfoCard title="Informations véhicule">
       <InfoRows
         rows={[
-          // `InfoRows` dashes empty values itself; `dash()` here is what turns a
-          // non-string field into the `[label, value]` pair's string.
           ["Marque", vehicle.marque],
           // The B2B funnel — the only source of dossiers — collects model and
           // displacement in one "Modèle et Cylindrée" field, so they are one row.
           ["Modèle et Cylindrée", vehicle.modele],
+          // `InfoRows` dashes empty values itself; `dash()` here is what turns a
+          // non-string field into the `[label, value]` pair's string.
           ["Année", dash(vehicle.annee)],
           ["Kilométrage", kilometres(vehicle.kilometrage)],
           ["Électrique", vehicle.electrique],
@@ -96,7 +92,9 @@ export default function DossierDetailScreen({
   role,
 }: {
   id: string;
-  role: Role;
+  /** Drives card order only: the back office reads the vehicle first, a b2b
+   *  user follows up on their own submission's status first. */
+  role: UserRole;
 }) {
   const { data, loading, error } = useDossier(id);
   return (

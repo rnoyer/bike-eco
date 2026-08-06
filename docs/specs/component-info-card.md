@@ -29,10 +29,12 @@ button groups ("Actions sur mon compte", "Gérer ce collaborateur") and lists of
 - Precedence, identical to `Section`: `loading` → `error` → empty + `emptyMessage` →
   parts. **`error` outranks `emptyMessage` on purpose** — a denied or offline read must not
   read as "there is nothing here".
-- The **card** draws the dividers, between consecutive parts. Parts never draw their own,
+- The **card** draws the dividers, between consecutive parts, in `tokens.colors.border` —
+  not `divider`, which is ~1.07:1 on white and would make the separating lines, the whole
+  point of the card, invisible. Parts never draw their own,
   so any part can be first, last or only without a conditional.
-- `null` children are dropped before the dividers are computed, so a conditionally-absent
-  part never leaves a doubled line behind.
+- `null` children are dropped (by `Children.toArray`) before the dividers are computed, so
+  a conditionally-absent part never leaves a doubled line behind.
 - The body is clipped (`overflow: hidden`) to the card radius, so the square title bar
   takes the card's rounded top corners.
 
@@ -79,8 +81,11 @@ be reachable by a screen reader at all.
   `Linking.canOpenURL`: on Android that check is filtered by package visibility from API 30
   up, so it answers `false` for `tel:` / `mailto:` and the button disappears on device
   while still showing on web. Package visibility does not restrict `startActivity`, so
-  `openURL` works; a genuine "no app can open this" surfaces as a French dialog
-  ("Aucune application de téléphone n'est disponible sur cet appareil.").
+  `openURL` works. On Android and on a real iOS device a genuine "no app can open this"
+  rejects and surfaces a French dialog ("Aucune application de téléphone n'est disponible
+  sur cet appareil."). Two platforms can't reach it and tap silently: react-native-web
+  resolves `openURL` unconditionally (`window.open` never throws), and the iOS simulator
+  resolves `NO` for `tel:` rather than rejecting. Both are dev/browser-only degradations.
 - An empty value renders `"—"` and no button.
 - The button is 22px icon inside `space.sm` padding, a `border` hairline and a `radius.sm`
   corner, and tints its background `surfaceAlt` while pressed.

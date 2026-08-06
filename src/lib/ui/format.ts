@@ -29,8 +29,14 @@ export const euros = (n: number | null | undefined): string =>
 export const kilometres = (n: number | null | undefined): string =>
   n === null || n === undefined ? "—" : `${n} km`;
 
-export const regionLabel = (region: Region): string =>
-  region === "NORTH" ? "Nord" : "Sud";
+/** A `Record`, not a ternary: adding a region then fails to compile here
+ *  instead of silently rendering "Sud". */
+export const REGION_LABELS: Record<Region, string> = {
+  NORTH: "Nord",
+  SOUTH: "Sud",
+};
+
+export const regionLabel = (region: Region): string => REGION_LABELS[region];
 
 /** The three dossier statuses in French. `StatusBadge` reads these too, so the
  *  badge and the "Statut" info row cannot drift apart. */

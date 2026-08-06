@@ -16,13 +16,14 @@ contracts), `docs/tech/firestore-data-model.md` (data model).
   - Bottom tabs: `expo-router/unstable-native-tabs` (`NativeTabs`) → real UITabBar /
     BottomNavigation.
   - Top header: the native expo-router Stack header, configured via `headerOptions`.
-  - Read-only list-shaped screens (account info, dossier info): **`@expo/ui`** universal
-    components (`Host`, `Column`/`Row`, `Text`, …) which render real SwiftUI / Jetpack
-    Compose. These native islands use a **non-scrolling** layout (`<Host matchContents>` +
-    `Column`), never the scrollable `List`/`FieldGroup`: those compile to a Compose
-    `LazyColumn`, which crashes on Android when measured with unbounded height
-    (`matchContents`, or nested inside the screen's RN `ScrollView`). The enclosing RN
-    `ScrollView` owns scrolling for the whole screen.
+  - Read-only label/value blocks (account info, dossier info, company info, colleague
+    info): the plain-RN **`ui/InfoCard`** plus its three part components — see
+    `docs/specs/component-info-card.md`. These were `@expo/ui` islands until the card
+    refonte; `Row` + `Spacer(flexible)` is a single-line layout that cannot draw dividers
+    or icon buttons, and it let a long `commentaires` squeeze its label off-screen.
+  - **`@expo/ui` is not a layer we build in.** Its one remaining use is `ChatComposer`'s
+    attachment `BottomSheet`. Note `NativeTabs` above comes from
+    `expo-router/unstable-native-tabs` and is unrelated.
   - **All inputs go through the shared RN `form/` layer** — every text field, dropdown,
     and checkbox (in the b2c funnel *and* the b2b/back-office forms: sign-in, add-colleague,
     settings, dossier management) uses `ControlledField`/`ControlledDropdown`/… over
@@ -61,10 +62,8 @@ src/
       DashboardScreen.tsx           # role + onOpenDossier + onSell?
       SettingsScreen.tsx            # role + onInvite + onDelete
       AccountScreen.tsx             # role-agnostic
-      DossierDetailScreen.tsx       # id
+      DossierDetailScreen.tsx       # id + role (role drives card order only)
       DossierChatScreen.tsx         # id
-    native/                         # @expo/ui read-only list screens (native styling)
-      AccountInfoList, DossierInfoList
     form/                           # shared RN inputs + composite forms (react-hook-form + Zod)
       FormLayout, FormField, Dropdown, CheckboxGroup,
       Controlled{Field,Dropdown,CheckboxGroup}, PhotoPicker,
@@ -218,7 +217,8 @@ later milestone. Only the Zod schemas are unit-tested; step/route UI is gated by
 
 ## Conventions
 
-- Reuse `theme/tokens.ts` for the RN components; `@expo/ui` screens use native styling.
+- Reuse `theme/tokens.ts` — it is the only source of style. Never hardcode a hex or a
+  spacing value a token covers.
 - UI copy is French and must match the page/component specs in `docs/specs/`.
 - No unit tests for presentational components — they are gated by `tsc --noEmit` +
   `expo lint`. Only pure logic/hooks are unit-tested (`npm test`: tokens, filter,

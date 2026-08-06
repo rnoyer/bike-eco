@@ -224,7 +224,9 @@ Both modes use the same card. The back-office read-only mode keeps its
 caller now passes the rows it wants. `AccountScreen` omits Entreprise and
 Région; the company page includes both.
 
-This removes the last `@expo/ui` usage in the app outside `NativeTabs`.
+This leaves `ChatComposer`'s attachment `BottomSheet` as the app's only remaining
+`@expo/ui` usage. (`NativeTabs` comes from `expo-router/unstable-native-tabs` and is
+unrelated to `@expo/ui`.)
 
 ## Docs kept in sync, same change
 

@@ -1,5 +1,5 @@
 /** Design tokens extracted from the b2c StyleSheets — the one source of truth
- *  for the RN-fallback components. @expo/ui screens use native styling. */
+ *  for every component's style. */
 export const tokens = {
   colors: {
     primary: "#111",

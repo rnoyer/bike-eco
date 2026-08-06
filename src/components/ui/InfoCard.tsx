@@ -31,9 +31,9 @@ export default function InfoCard({
   emptyMessage,
   children,
 }: Props) {
-  // Drop conditionally-absent parts before the dividers are computed, so a
-  // `{x ? <Part/> : null}` child never leaves a doubled line behind.
-  const parts = Children.toArray(children).filter(Boolean);
+  // `Children.toArray` drops `null` children (and flattens arrays), so a
+  // `{x ? <Part/> : null}` never leaves a doubled divider behind.
+  const parts = Children.toArray(children);
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: tokens.colors.primary,
     paddingHorizontal: tokens.space.md,
-    paddingVertical: tokens.space.sm + tokens.space.xs,
+    paddingVertical: tokens.space.md,
   },
   headerText: {
     color: tokens.colors.primaryText,
@@ -83,7 +83,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   part: { padding: tokens.space.md },
-  divider: { height: 1, backgroundColor: tokens.colors.divider },
+  // `border`, not `divider`: `divider` (#F3F4F6) is ~1.07:1 on white and the
+  // separating lines are the point of the card. Matches the mockup's line.
+  divider: { height: 1, backgroundColor: tokens.colors.border },
   state: { padding: tokens.space.md },
   error: { fontSize: 14, color: tokens.colors.danger },
   empty: { fontSize: 14, color: tokens.colors.muted },
