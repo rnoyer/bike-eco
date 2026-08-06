@@ -139,3 +139,12 @@ actif, sans lequel plus aucune entreprise ne peut être validée.
 Créer d'autres comptes back-office **depuis l'application** (« Inviter un collègue », aujourd'hui
 un stub) demanderait d'étendre le flux d'invitation au rôle `backoffice` — chantier séparé. En
 attendant, rejouer cette procédure.
+
+## Comptes back-office suivants
+
+Ce script ne sert qu'au **premier** compte back-office. Une fois qu'il existe et
+qu'il est administrateur, les membres suivants s'invitent depuis l'application :
+Paramètres → "Inviter un membre de l'équipe Bike-eco". L'invité reçoit un code à
+usage unique valable 1 heure, suit le parcours d'inscription invité, et obtient un
+compte back-office **actif** et **non administrateur** — à promouvoir ensuite depuis
+la page Collaborateur si besoin.
