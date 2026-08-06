@@ -1,4 +1,5 @@
 import { call } from "./callable";
+import type { UserRole } from "@/lib/firestore/schema";
 
 export interface RegisterCompanyPayload {
   method: "password" | "google";
@@ -26,7 +27,10 @@ export const callRegisterCompany = (p: RegisterCompanyPayload) =>
 export const callSendInvite = (email: string) =>
   call<{ email: string }, { ok: true }>("sendInvite", { email }).then(() => undefined);
 export const callResolveInvite = (code: string) =>
-  call<{ code: string }, { email: string; companyName: string }>("resolveInvite", { code });
+  call<{ code: string }, { email: string; role: UserRole; organisationName: string }>(
+    "resolveInvite",
+    { code },
+  );
 export const callAcceptInvite = (p: AcceptInvitePayload) =>
   call<AcceptInvitePayload, { ok: true }>("acceptInvite", p).then(() => undefined);
 export const callApproveCompany = (companyId: string) =>

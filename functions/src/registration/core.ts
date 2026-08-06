@@ -8,11 +8,18 @@ import type {
 } from "./schemas";
 import { RegError, type CallerClaims } from "../errors";
 
+/** The organisation an invitee joins when the invitation grants back-office access. */
+export const BIKE_ECO_ORGANISATION = "Bike-eco";
+
+/** The role an invitation grants. A back-office invitation carries no company. */
+export type InviteRole = "b2b" | "backoffice";
+
 export interface StoredInvitation {
   id: string;
   email: string;
-  companyId: string;
-  companyName: string;
+  role: InviteRole;
+  companyId: string | null; // null for a back-office invitation
+  companyName: string | null; // null for a back-office invitation
   tokenHash: string;
   expiresAt: number; // epoch ms
 }
@@ -30,18 +37,22 @@ export interface Deps {
   deleteInvitation(id: string): Promise<void>;
   now(): number;
   sendApplicantEmail(to: string, companyName: string): Promise<void>;
-  sendInviteEmail(to: string, code: string): Promise<void>;
+  /** `isAdmin` lives on `users/{uid}`, never in the claims — hence a read. */
+  getUserIsAdmin(uid: string): Promise<boolean>;
+  getCompanyName(companyId: string): Promise<string>;
+  sendInviteEmail(to: string, code: string, organisationName: string): Promise<void>;
 }
 
 function profileDoc(
   input: { nom: string; prenom: string; telephone: string },
   email: string,
-  companyId: string,
+  role: InviteRole,
+  companyId: string | null,
   status: "pending" | "active",
   isAdmin: boolean,
 ) {
   return {
-    role: "b2b", companyId, isAdmin,
+    role, companyId, isAdmin,
     nom: input.nom, prenom: input.prenom, email,
     telephone: input.telephone,
     status,
@@ -79,7 +90,7 @@ export async function registerCompanyCore(
     createdByName: `${input.prenom} ${input.nom}`,
     validatedAt: null,
   });
-  await deps.writeUser(uid, profileDoc(input, email, companyId, "pending", true));
+  await deps.writeUser(uid, profileDoc(input, email, "b2b", companyId, "pending", true));
   await deps.setClaims(uid, { role: "b2b", companyId, status: "pending" });
   await deps.sendApplicantEmail(email, input.companyName);
 }
@@ -89,29 +100,47 @@ export async function sendInviteCore(
   caller: CallerClaims,
   deps: Deps,
 ): Promise<void> {
-  if (caller.role !== "b2b" || caller.status !== "active" || !caller.companyId) {
+  const role = caller.role;
+  if ((role !== "b2b" && role !== "backoffice") || caller.status !== "active") {
+    throw new RegError("permission-denied", "Seul un compte actif peut inviter.");
+  }
+  if (role === "b2b" && !caller.companyId) {
     throw new RegError("permission-denied", "Seul un compte vendeur actif peut inviter.");
   }
+  // `isAdmin` is not a claim, so this is a document read — done before any
+  // write or email so a refused caller leaves no trace at all.
+  if (!(await deps.getUserIsAdmin(caller.uid))) {
+    throw new RegError("permission-denied", "Seul un administrateur peut inviter.");
+  }
+  const companyId = role === "b2b" ? caller.companyId! : null;
+  const organisationName = companyId
+    ? await deps.getCompanyName(companyId)
+    : BIKE_ECO_ORGANISATION;
   const code = generateInviteCode();
   const id = deps.newDocumentId();
   await deps.writeInvitation(id, {
-    email: input.email, companyId: caller.companyId, invitedBy: caller.uid,
+    email: input.email, role, companyId, invitedBy: caller.uid,
     tokenHash: hashInviteCode(code), status: "pending", expiresAt: deps.now() + INVITE_TTL_MS,
   });
-  await deps.sendInviteEmail(input.email, code);
+  await deps.sendInviteEmail(input.email, code, organisationName);
+}
+
+/** The name shown to an invitee: their future company, or Bike-eco itself. */
+export function organisationNameOf(inv: StoredInvitation): string {
+  return inv.role === "backoffice" ? BIKE_ECO_ORGANISATION : (inv.companyName ?? "");
 }
 
 export async function resolveInviteCore(
   input: ResolveInviteInput,
   deps: Deps,
-): Promise<{ email: string; companyName: string }> {
+): Promise<{ email: string; role: InviteRole; organisationName: string }> {
   const inv = await deps.findInvitationByHash(hashInviteCode(input.code));
   if (!inv) throw new RegError("not-found", "Code d'invitation invalide ou expiré.");
   if (inv.expiresAt <= deps.now()) {
     await deps.deleteInvitation(inv.id);
     throw new RegError("not-found", "Code d'invitation invalide ou expiré.");
   }
-  return { email: inv.email, companyName: inv.companyName };
+  return { email: inv.email, role: inv.role, organisationName: organisationNameOf(inv) };
 }
 
 export async function acceptInviteCore(
@@ -135,7 +164,7 @@ export async function acceptInviteCore(
     }
     uid = authUid;
   }
-  await deps.writeUser(uid, profileDoc(input, inv.email, inv.companyId, "active", false));
-  await deps.setClaims(uid, { role: "b2b", companyId: inv.companyId, status: "active" });
+  await deps.writeUser(uid, profileDoc(input, inv.email, inv.role, inv.companyId, "active", false));
+  await deps.setClaims(uid, { role: inv.role, companyId: inv.companyId, status: "active" });
   await deps.deleteInvitation(inv.id);
 }

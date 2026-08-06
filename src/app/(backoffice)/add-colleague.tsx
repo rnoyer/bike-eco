@@ -1,9 +1,11 @@
 import AddColleagueScreen from "@/components/screens/AddColleagueScreen";
 import { useRouter } from "expo-router";
 
-export default function B2bAddColleague() {
+export default function BackofficeAddColleague() {
   const router = useRouter();
   return (
-    <AddColleagueScreen onSent={() => router.replace("/(b2b)/confirmation")} />
+    <AddColleagueScreen
+      onSent={() => router.replace("/(backoffice)/invite-sent")}
+    />
   );
 }

@@ -4,22 +4,28 @@
  *
  * A back-office account owns far less than a b2b one: it has no company, and it
  * cannot submit a dossier (the submission funnel is b2b-only), so there is no
- * Firestore subtree and no Storage prefix hanging off it. What is left behind by
- * a console-only deletion is the `users/{uid}` profile — dead PII no product
- * path can reach again, since a new account on the same address gets a new uid.
+ * dossier Storage prefix hanging off it. It can, though, own invitations — ones
+ * it sent as an admin, and a pending one addressed to its own email — and a
+ * console-only deletion leaves both those and the `users/{uid}` profile behind.
+ * The profile is dead PII no product path can reach again (a new account on the
+ * same address gets a new uid); a leftover invitation is worse than dead, since
+ * it stays redeemable through `acceptInvite` for up to an hour and mints a
+ * fresh back-office member after the admin who invited them is gone.
  *
  * Removed:
- *   1. the Auth user
- *   2. the `users/{uid}` document
+ *   1. invitations this account sent, and any pending one addressed to it
+ *   2. the Auth user
+ *   3. the `users/{uid}` document
  *
  * Two things it refuses to do, because they are silent, hard-to-diagnose damage:
  *
- *   · **Deleting the last active back-office account.** No product path mints a
- *     `backoffice` identity — `registerCompany` and `sendInvite` are b2b-only.
- *     With none left, no company can ever be validated again: every registration
- *     piles up `pending` and every new dealer sits on the waiting screen, with
- *     nothing in the app to explain why. `--force` overrides, and the recovery is
- *     grant-backoffice.js.
+ *   · **Deleting the last active back-office account.** `sendInvite` can mint a
+ *     replacement — but only an active admin caller may invoke it, so with none
+ *     left, nobody can invite one either. No company can ever be validated
+ *     again: every registration piles up `pending` and every new dealer sits on
+ *     the waiting screen, with nothing in the app to explain why. `--force`
+ *     overrides, and the recovery is grant-backoffice.js, the one path that
+ *     never depends on an admin already existing.
  *   · **Deleting an account that owns dossiers.** It should be impossible, but
  *     grant-backoffice.js reuses an existing Auth user, so a b2b account promoted
  *     to back-office keeps the dossiers it submitted as a dealer. Those need the
@@ -148,6 +154,15 @@ async function main() {
     await db.collection("dossiers").where("submittedBy", "==", uid).get()
   ).docs;
   const messages = await countMessages(db, uid);
+  const sentInvites = (
+    await db.collection("invitations").where("invitedBy", "==", uid).get()
+  ).docs;
+  // A pending invitation to this account's own email — e.g. it never accepted
+  // one sent before it existed by another route — stays redeemable otherwise.
+  const receivedInvites = authUser?.email || data.email
+    ? (await db.collection("invitations")
+        .where("email", "==", authUser?.email ?? data.email).get()).docs
+    : [];
 
   // ── plan ───────────────────────────────────────────────────────────────────
   console.log(`\nTarget: ${email}`);
@@ -157,6 +172,7 @@ async function main() {
   console.log(`  role           ${role}`);
   console.log(`  status         ${data.status ?? authUser?.customClaims?.status ?? "?"}`);
   console.log(`  messages       ${messages ?? "non comptés (index absent)"} — conservés`);
+  console.log(`  invitations    ${sentInvites.length} envoyée(s), ${receivedInvites.length} reçue(s) — supprimées`);
   console.log(`  other active back-office accounts: ${others.length}`);
   for (const d of others) console.log(`    · ${d.data().email} (${d.id})`);
 
@@ -188,14 +204,22 @@ async function main() {
   }
 
   // ── apply ──────────────────────────────────────────────────────────────────
-  // Auth first, then the profile: while either exists the account is findable,
-  // so an interrupted run is always re-runnable.
+  // Invitations first — a pending one stays redeemable through acceptInvite
+  // for up to an hour, so it must not survive the account that could still
+  // vouch for it. Auth and the profile go last: while either exists the
+  // account is findable, so an interrupted run is always re-runnable.
+  await Promise.all(
+    [...sentInvites, ...receivedInvites].map((d) => d.ref.delete()),
+  );
   await auth.deleteUser(uid).catch((err) => {
     if (err?.code !== "auth/user-not-found") throw err;
   });
   if (profile) await db.collection("users").doc(uid).delete();
 
-  console.log(`\nBack-office account ${email} (uid ${uid}) fully deleted.`);
+  console.log(
+    `\nBack-office account ${email} (uid ${uid}) fully deleted, along with ` +
+      `${sentInvites.length + receivedInvites.length} invitation(s).`,
+  );
   if (others.length === 0) {
     console.log(
       "No active back-office account remains — run grant-backoffice.js before " +

@@ -14,6 +14,7 @@ const REGION_LABELS = REGION_OPTIONS.map((o) => o.label);
 
 interface Props {
   role: UserRole;
+  canInvite: boolean;
   onInvite: () => void;
   onManageCompanies?: () => void;
   onManageColleagues: () => void;
@@ -21,6 +22,7 @@ interface Props {
 
 export default function SettingsList({
   role,
+  canInvite,
   onInvite,
   onManageCompanies,
   onManageColleagues,
@@ -51,9 +53,17 @@ export default function SettingsList({
           />
         </Section>
       ) : null}
-      <Section title="Inviter un collaborateur de mon entreprise">
-        <Button variant="outlined" label="Inviter" onPress={onInvite} />
-      </Section>
+      {canInvite ? (
+        <Section
+          title={
+            role === "backoffice"
+              ? "Inviter un membre de l'équipe Bike-eco"
+              : "Inviter un collaborateur de mon entreprise"
+          }
+        >
+          <Button variant="outlined" label="Inviter" onPress={onInvite} />
+        </Section>
+      ) : null}
       <Section title="Mes collaborateurs">
         <Button
           variant="outlined"

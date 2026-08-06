@@ -10,12 +10,10 @@ test("generateInviteCode is 6 uppercase alphanumerics", () => {
   }
 });
 
-test("generateInviteCode maps the RNG deterministically", () => {
-  // random() = 0 -> first symbol 'A'; a hair under 1 -> last symbol '9'.
+test("generateInviteCode maps the picked index deterministically", () => {
+  // pickIndex always returning 0 -> first symbol 'A'; always the last index -> '9'.
   expect(generateInviteCode(() => 0)).toBe("AAAAAA");
-  expect(generateInviteCode(() => 0.999999)).toBe("999999");
-  // random() can return exactly 1; the Math.min clamp must keep the index in range.
-  expect(generateInviteCode(() => 1)).toBe("999999");
+  expect(generateInviteCode(() => 35)).toBe("999999");
 });
 
 test("normalizeInviteCode trims and uppercases", () => {

@@ -11,12 +11,16 @@ export async function sendApplicantEmail(to: string, companyName: string): Promi
   });
 }
 
-export async function sendInviteEmail(to: string, code: string): Promise<void> {
+export async function sendInviteEmail(
+  to: string,
+  code: string,
+  organisationName: string,
+): Promise<void> {
   await sendMail({
     to,
     subject: "Bike-eco — Vous êtes invité",
     text:
-      `Bonjour,\n\nVous avez été invité à rejoindre une entreprise sur Bike-eco. ` +
+      `Bonjour,\n\nVous avez été invité à rejoindre ${organisationName} sur Bike-eco. ` +
       `Ouvrez l'application, choisissez "J'ai un code d'invitation" et saisissez ce code :\n\n` +
       `    ${code}\n\nCe code est valable 1 heure.\n\nL'équipe Bike-eco`,
   });

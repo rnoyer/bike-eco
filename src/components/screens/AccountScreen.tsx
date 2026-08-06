@@ -37,7 +37,9 @@ export default function AccountScreen() {
   // while the live read is loading, so nothing flickers into a
   // more-permissive state.
   const { data: viewer, loading: viewerLoading } = useUser(data?.id ?? "");
-  const isAdmin = viewerLoading ? data?.isAdmin === true : viewer?.isAdmin === true;
+  const isAdmin = viewerLoading
+    ? data?.isAdmin === true
+    : viewer?.isAdmin === true;
 
   const email = firebaseUser?.email ?? null;
 
@@ -144,8 +146,9 @@ export default function AccountScreen() {
           />
           {isAdmin ? (
             <Text style={styles.adminNote}>
-              Un administrateur ne peut pas supprimer son compte. Transférez d&apos;abord le
-              rôle administrateur à un collaborateur.
+              En tant qu&apos;administrateur, vous ne pouvez pas supprimer votre
+              compte. Transférez d&apos;abord le rôle administrateur à un autre
+              collaborateur.
             </Text>
           ) : null}
         </View>

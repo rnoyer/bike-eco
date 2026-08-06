@@ -1,9 +1,9 @@
 # Créer un compte back-office sur le projet live
 
 Procédure à faire soi-même, ~5 minutes, sur `bike-eco-43a84`. Nécessaire au moins une fois :
-aucun parcours produit ne crée de compte back-office (`registerCompany` et `sendInvite` sont
-réservés au rôle `b2b`), donc le premier admin est amorcé hors application. La même procédure
-sert pour les suivants.
+`sendInvite` peut créer un compte back-office, mais seul un administrateur actif peut l'appeler,
+donc le tout premier admin est amorcé hors application. Les suivants s'invitent depuis
+l'application — voir [Comptes back-office suivants](#comptes-back-office-suivants) plus bas.
 
 Tout se passe dans le navigateur, via **Cloud Shell** : les identifiants utilisés sont ceux de
 votre propre compte Google, il n'y a rien à installer et **aucune clé de compte de service** à
@@ -136,6 +136,14 @@ elle laisse derrière elle le document `users/{uid}`, inaccessible et devenu des
 personnelles orphelines. Le script refuse aussi de supprimer le dernier compte back-office
 actif, sans lequel plus aucune entreprise ne peut être validée.
 
-Créer d'autres comptes back-office **depuis l'application** (« Inviter un collègue », aujourd'hui
-un stub) demanderait d'étendre le flux d'invitation au rôle `backoffice` — chantier séparé. En
-attendant, rejouer cette procédure.
+Cette procédure ne sert qu'à amorcer le **tout premier** compte back-office. Pour les suivants,
+voir [Comptes back-office suivants](#comptes-back-office-suivants) ci-dessous.
+
+## Comptes back-office suivants
+
+Ce script ne sert qu'au **premier** compte back-office. Une fois qu'il existe et
+qu'il est administrateur, les membres suivants s'invitent depuis l'application :
+Paramètres → "Inviter un membre de l'équipe Bike-eco". L'invité reçoit un code à
+usage unique valable 1 heure, suit le parcours d'inscription invité, et obtient un
+compte back-office **actif** et **non administrateur** — à promouvoir ensuite depuis
+la page Collaborateur si besoin.

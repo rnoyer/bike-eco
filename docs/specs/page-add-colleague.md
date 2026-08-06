@@ -8,6 +8,11 @@
 
 ## Main section
 
+Cette page sert les deux rôles. Un b2b invite un collaborateur de son entreprise ;
+un back-office invite un membre de l'équipe Bike-eco. Elle n'est atteignable que
+par un administrateur (le bouton "Inviter" de page-settings est masqué pour les
+autres) et le serveur refuse l'appel d'un non-administrateur.
+
 From top top bottom
 
 - One forme field :
@@ -24,7 +29,7 @@ From top top bottom
     invité).
   - link to page-confirmation
     - message : l'invitation à bien été envoyée.
-    - Redirect to page-Dashboard
+    - Redirect to page-Dashboard (celui du rôle : b2b ou back-office)
 
 ## Tab bar props
 

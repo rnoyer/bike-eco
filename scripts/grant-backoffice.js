@@ -1,13 +1,17 @@
 /**
- * Creates (or repairs) a back-office account on the LIVE project.
+ * Creates (or repairs) the FIRST back-office account on the LIVE project.
  *
- * No product path can mint a `backoffice` identity — `registerCompany` and
- * `sendInvite` are b2b-only — so this is the bootstrap. It performs the three
- * server-side writes a working session needs: the Auth user, the custom claims
- * (source of truth for access, see src/lib/auth/session.ts + firestore.rules),
- * and the `users/{uid}` profile doc in the named `bike-eco-db` database
- * (without it AuthProvider leaves the session null and the guard bounces the
- * user back to sign-in).
+ * `sendInvite` can mint a `backoffice` identity too, but only an active admin
+ * caller may invoke it — so nothing in the app can mint the very first one.
+ * This script is that bootstrap. Every back-office account after it is
+ * invited from the app by an existing admin (Paramètres → "Inviter un membre
+ * de l'équipe Bike-eco"); re-run this script only to repair drift on an
+ * existing account, not to add more. It performs the three server-side
+ * writes a working session needs: the Auth user, the custom claims (source
+ * of truth for access, see src/lib/auth/session.ts + firestore.rules), and
+ * the `users/{uid}` profile doc in the named `bike-eco-db` database (without
+ * it AuthProvider leaves the session null and the guard bounces the user
+ * back to sign-in).
  *
  * Self-contained on purpose: single file, one dependency, no repo checkout
  * needed. Run it from Cloud Shell — see docs/ops/first-backoffice-account.md.

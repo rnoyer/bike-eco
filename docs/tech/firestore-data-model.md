@@ -84,7 +84,8 @@ A user carries **no location** — `departement`/`ville`/`region` live on the co
 | field | type | notes |
 |-------|------|-------|
 | `email` | string | invitee |
-| `companyId` | string | |
+| `role` | string | `b2b` \| `backoffice` — the role the invitee will be given |
+| `companyId` | string \| null | the inviter's company; **null** for a back-office invitation |
 | `invitedBy` | uid | |
 | `tokenHash` | string | store a hash, never the raw token |
 | `status` | string | `pending` \| `accepted` \| `expired` |
