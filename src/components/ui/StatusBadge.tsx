@@ -1,7 +1,7 @@
-import { StyleSheet, Text, View } from "react-native";
 import type { DossierStatus } from "@/lib/firestore/schema";
 import { STATUS_LABELS } from "@/lib/ui/format";
 import { tokens } from "@/theme/tokens";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function StatusBadge({ status }: { status: DossierStatus }) {
   const palette = tokens.status[status];
@@ -16,10 +16,10 @@ export default function StatusBadge({ status }: { status: DossierStatus }) {
 
 const styles = StyleSheet.create({
   badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: tokens.space.md,
+    paddingVertical: tokens.space.sm,
     borderRadius: tokens.radius.sm,
     alignSelf: "flex-start",
   },
-  text: { fontSize: 12, fontWeight: "600" },
+  text: { fontSize: 16, fontWeight: "600" },
 });

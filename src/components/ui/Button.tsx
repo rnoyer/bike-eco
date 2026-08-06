@@ -19,6 +19,9 @@ interface Props {
    *  Prefer this over `disabled` for a network round-trip — `disabled` only
    *  dims, which reads as "unavailable", not as "working". */
   loading?: boolean;
+  /** Overrides the spoken label. Only for a `label` that reads badly aloud —
+   *  "Un garagiste/concessionnaire" is spoken with the slash. */
+  accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -30,6 +33,7 @@ export default function Button({
   variant = "primary",
   disabled = false,
   loading = false,
+  accessibilityLabel,
   style,
 }: Props) {
   const onDark = variant === "primary" || variant === "danger";
@@ -53,7 +57,7 @@ export default function Button({
       activeOpacity={blocked ? 1 : 0.8}
       accessibilityRole="button"
       accessibilityState={{ disabled: blocked, busy: loading }}
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
     >
       {loading ? (
         <Spinner

@@ -52,7 +52,9 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: tokens.radius.sm,
-    backgroundColor: tokens.colors.divider,
+    // Tinted rather than grey, so a dossier with no photo still reads as ours
+    // instead of as a hole in the card.
+    backgroundColor: tokens.colors.brandTint,
   },
   body: { flex: 1, gap: tokens.space.xs },
   title: { fontSize: 15, fontWeight: "600", color: tokens.colors.primary },

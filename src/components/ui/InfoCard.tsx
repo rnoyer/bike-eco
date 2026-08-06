@@ -76,6 +76,11 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.colors.primary,
     paddingHorizontal: tokens.space.md,
     paddingVertical: tokens.space.md,
+    // The brand rule between bar and body. The card's `overflow: hidden` clips
+    // it to the radius, and the header is the first child, so it needs no
+    // layout of its own.
+    borderBottomWidth: 3,
+    borderBottomColor: tokens.colors.brand,
   },
   headerText: {
     color: tokens.colors.primaryText,

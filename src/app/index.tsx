@@ -1,7 +1,9 @@
 import { type Href, Stack, useRouter } from "expo-router";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Button from "@/components/ui/Button";
 import PhotoBackground from "@/components/ui/PhotoBackground";
+import { tokens } from "@/theme/tokens";
 
 export default function Index() {
   const router = useRouter();
@@ -26,27 +28,16 @@ export default function Index() {
             <Text style={styles.title}>Qui êtes-vous&nbsp;?</Text>
 
             <View style={styles.actions}>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnPrimary]}
+              <Button
+                label="Un particulier"
                 onPress={() => router.push("/b2cSubmissionForm")}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel="Un particulier"
-              >
-                <Text style={[styles.btnText, styles.btnTextPrimary]}>
-                  Un particulier
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.btn, styles.btnSecondary]}
-                onPress={() => router.push(SIGNIN_ROUTE)}
-                activeOpacity={0.7}
-                accessibilityRole="button"
+              />
+              <Button
+                label="Un garagiste/concessionnaire"
                 accessibilityLabel="Un garagiste ou concessionnaire"
-              >
-                <Text style={styles.btnText}>Un garagiste/concessionnaire</Text>
-              </TouchableOpacity>
+                variant="outlined"
+                onPress={() => router.push(SIGNIN_ROUTE)}
+              />
             </View>
           </View>
         </View>
@@ -60,15 +51,15 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: tokens.space.lg,
   },
   card: {
     width: "100%",
     maxWidth: 420,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 28,
+    backgroundColor: tokens.colors.surface,
+    borderRadius: tokens.radius.lg,
+    paddingHorizontal: tokens.space.lg,
+    paddingVertical: tokens.space.xl,
     // Subtle elevation so it reads as a floating modal.
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
@@ -77,34 +68,11 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111",
+    ...tokens.text.title,
     textAlign: "center",
-    marginBottom: 24,
+    marginBottom: tokens.space.lg,
   },
   actions: {
-    gap: 12,
-  },
-  btn: {
-    height: 52,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnPrimary: {
-    backgroundColor: "#111",
-  },
-  btnSecondary: {
-    borderWidth: 1.5,
-    borderColor: "#E5E7EB",
-  },
-  btnText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111",
-  },
-  btnTextPrimary: {
-    color: "#fff",
+    gap: tokens.space.md,
   },
 });

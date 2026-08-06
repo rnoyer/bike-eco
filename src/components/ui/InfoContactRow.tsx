@@ -19,14 +19,16 @@ const CONTACT = {
     // value keeps its formatting.
     href: (value: string) => `tel:${value.replace(/\s/g, "")}`,
     a11y: (value: string) => `Appeler ${value}`,
-    failure: "Aucune application de téléphone n’est disponible sur cet appareil.",
+    failure:
+      "Aucune application de téléphone n’est disponible sur cet appareil.",
   },
   email: {
     label: "Email",
     icon: mailIcon,
     href: (value: string) => `mailto:${value.trim()}`,
     a11y: (value: string) => `Écrire à ${value}`,
-    failure: "Aucune application de messagerie n’est disponible sur cet appareil.",
+    failure:
+      "Aucune application de messagerie n’est disponible sur cet appareil.",
   },
 } as const satisfies Record<Kind, unknown>;
 
@@ -89,12 +91,16 @@ const styles = StyleSheet.create({
   // Takes the slack so the button sits on the right edge, and wraps rather than
   // pushing the button out of the card.
   value: { fontSize: 14, color: tokens.colors.primary, flex: 1 },
+  // Filled with the brand green, not outlined: a hairline box around a dark
+  // glyph read as a disabled placeholder rather than the row's one action.
+  // Charcoal-on-green is the logo's own pairing, and 6.3:1.
   button: {
-    padding: tokens.space.sm,
+    padding: tokens.space.md,
+    borderRadius: tokens.radius.sm,
+    backgroundColor: tokens.colors.brandTint,
     borderWidth: 1,
     borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.sm,
   },
-  pressed: { backgroundColor: tokens.colors.surfaceAlt },
+  pressed: { backgroundColor: tokens.colors.brandPressed },
   icon: { width: 22, height: 22 },
 });

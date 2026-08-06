@@ -60,6 +60,7 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 15, fontWeight: "600", color: tokens.colors.primary },
   subtitle: { fontSize: 13, color: tokens.colors.muted },
+  // Green, so a row-level action stays distinct from the charcoal page CTAs.
   action: {
     justifyContent: "center",
     paddingHorizontal: tokens.space.md,

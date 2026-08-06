@@ -189,10 +189,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: tokens.space.lg,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#F9FAFB",
+    borderBottomColor: tokens.colors.divider,
   },
+  // Tinted, not grey: the previous #F9FAFB fill was ~1.02:1 on white, so the
+  // current choice was invisible in a long list.
   optionSelected: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: tokens.colors.brandTint,
   },
   optionText: {
     flex: 1,
