@@ -20,7 +20,11 @@ type : Input text (6 caractères, en majuscules)
 mandatory : yes
 
 Le code est un code à usage unique valable 1 heure, envoyé par email lors de
-l'invitation (voir page-add-colleague). Une fois validé, l'email associé est
+l'invitation (voir page-add-colleague). Une invitation porte le rôle qu'elle
+accorde : un invité rejoint soit une entreprise (b2b), soit l'équipe Bike-eco
+(back-office). L'écran de saisie du code est antérieur à sa résolution, donc son
+sous-titre reste neutre : "Saisissez le code à 6 caractères reçu par email pour
+rejoindre votre équipe." Une fois validé, l'email associé est
 transmis (avec le code) à l'étape 1 ci-dessous ; un accès direct sans code
 valide redirige vers cet écran.
 
@@ -29,7 +33,8 @@ valide redirige vers cet écran.
 Form : step 1
 slider : 33%
 title : "Votre compte"
-subtitle : "Informations relative à votre compte utilisateur"
+subtitle : "Vous rejoignez [nom de l'entreprise ou Bike-eco]." — le nom vient de la
+résolution du code ; à défaut, "Informations relative à votre compte utilisateur"
 
 ---
 
@@ -124,7 +129,12 @@ Form : step 3
 slider : 100%
 title : "Votre inscription est terminée !"
 
+Un invité back-office suit exactement le même parcours (compte, coordonnées,
+confirmation) et son compte est actif immédiatement — il n'y a pas d'étape de
+validation, comme pour un invité b2b. Il n'est pas administrateur.
+
 ---
 
 Button primary : "Aller à l'accueil"
-Linkto : B2B Dashboard
+Linkto : B2B Dashboard pour un invité b2b, Back-office Dashboard pour un invité
+back-office (selon le rôle porté par l'invitation).

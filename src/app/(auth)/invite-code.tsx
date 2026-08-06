@@ -28,10 +28,10 @@ export default function InviteCodeScreen() {
   // Single-step, so there is no `useStepForm` to own the pending state.
   const resolving = useAsyncAction(
     async (code: string) => {
-      const { email } = await callResolveInvite(code);
+      const { email, role, organisationName } = await callResolveInvite(code);
       router.push({
         pathname: "/(auth)/register-invited",
-        params: { code, email },
+        params: { code, email, role, organisationName },
       });
     },
     { onError: (message) => alertDialog("Code d'invitation", message) },
@@ -49,7 +49,7 @@ export default function InviteCodeScreen() {
         <FormLayout
           progress={100}
           title="Code d'invitation"
-          subtitle="Saisissez le code à 6 caractères reçu par email pour rejoindre votre entreprise."
+          subtitle="Saisissez le code à 6 caractères reçu par email pour rejoindre votre équipe."
           onPrev={handlePrev}
           onNext={() =>
             void form.handleSubmit((v) => resolving.run(v.code))()

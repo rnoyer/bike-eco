@@ -29,9 +29,11 @@ type CompletedInvite = {
 
 export default function RegisterInvitedScreen() {
   const router = useRouter();
-  const { email, code } = useLocalSearchParams<{
+  const { email, code, role, organisationName } = useLocalSearchParams<{
     email?: string;
     code?: string;
+    role?: string;
+    organisationName?: string;
   }>();
   const [submitted, setSubmitted] = useState(false);
   const usedGoogle = useRef(false);
@@ -105,7 +107,11 @@ export default function RegisterInvitedScreen() {
       } else {
         await refreshSession();
       }
-      router.replace("/(b2b)/(tabs)/dashboard");
+      router.replace(
+        role === "backoffice"
+          ? "/(backoffice)/(tabs)/dashboard"
+          : "/(b2b)/(tabs)/dashboard",
+      );
     },
     {
       mapError: frenchAuthMessage,
@@ -151,7 +157,11 @@ export default function RegisterInvitedScreen() {
           <FormLayout
             progress={meta.progress}
             title={meta.title}
-            subtitle={meta.subtitle}
+            subtitle={
+              step === 0 && organisationName
+                ? `Vous rejoignez ${organisationName}.`
+                : meta.subtitle
+            }
             onPrev={handlePrev}
             onNext={next}
             nextLabel={isLast ? "S'inscrire" : "Suivant"}
