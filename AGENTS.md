@@ -41,6 +41,9 @@ feature. Keep a spec in sync in the same change that alters its feature.
 
 - **Component specs** (`docs/specs/`) — shared UI building blocks. Read the matching
   file before building or editing a component:
+  - `component-info-card.md` — the read-only information card (dark title bar + parts:
+    liste d'information, contact row with action button, comments). Every label/value
+    block in the app is one of these.
   - `component-navbar.md` — top navbar (left / middle / right props).
   - `component-tab-bar.md` — bottom tab bar (always visible, per-page links).
   - `component-card-dossier.md` — thin wide dossier card (thumbnail, title, subtitle).

@@ -11,19 +11,20 @@ description: >-
 
 # UI in bike-eco
 
-Two rendering layers, one token set. Read the matching `docs/specs/page-*.md` or
+One rendering layer, one token set. Read the matching `docs/specs/page-*.md` or
 `component-*.md` before building — they are the source of truth for layout and French
 copy. Gate with `docs/tech/verification.md`.
 
-## The two layers
+## One layer: React Native + tokens
 
-| Layer | Where | Built from | Use for |
-|---|---|---|---|
-| **Native** | `src/components/native/` | `@expo/ui`: `Host`, `Column`, `Row`, `Text`, `Spacer` | Read-only info lists rendered inside a screen |
-| **RN** | `src/components/ui/`, `src/components/form/` | React Native + `@/theme/tokens` | Everything else: forms, cards, buttons, modals, sections |
+Everything in `src/components/ui/` and `src/components/form/` is React Native styled from
+`@/theme/tokens`. There is no second component layer.
 
-Forms are **always** the RN layer — see `bike-eco-forms`. Don't convert an existing
-component from one layer to the other as a side effect of another change.
+`@expo/ui` is used **only** by `NativeTabs` in the tab-bar layouts. It is not a layer you
+build screens or components in — the info lists that used to live in
+`src/components/native/` were replaced by `InfoCard` (see below) precisely because
+`@expo/ui`'s `Row` + `Spacer(flexible)` can't do dividers, icon buttons, or a value that
+wraps instead of squeezing its label.
 
 ## Tokens are the only source of style
 
@@ -42,56 +43,67 @@ radius: sm 8 · md 12 · lg 16        space: xs 4 · sm 8 · md 12 · lg 24 · x
 `tokens.status` is keyed by `DossierStatus`, so adding a status means adding its palette
 entry — `StatusBadge` reads it directly.
 
-The one documented exception: `src/components/native/*InfoList.tsx` declare local `LABEL`
-/ `VALUE` text constants because `@expo/ui` `textStyle` takes plain objects, not RN
-styles. Their values still mirror the tokens (`#71727A`, `#111`).
+## Info cards
 
-## Info lists
+**Every read-only label/value block in the app is an `InfoCard`** — a dark title bar over
+a white body split into parts by hairline dividers. Full contract in
+`docs/specs/component-info-card.md`. Three part components:
 
-`AccountInfoList`, `CompanyInfoList`, `DossierInfoList`, `UserInfoList` all follow one
-shape: build a `rows: [string, string][]` array, then map it to `Row` +
-`Text(label) · Spacer(flexible) · Text(value)`.
+| Part | For |
+|---|---|
+| `InfoRows` | `rows: [label, value][]` — the liste d'information |
+| `InfoContactRow` | `kind="phone" \| "email"` — value plus a right-aligned action button |
+| `InfoComment` | Free text (commentaires, accessoires) full-width below its label |
 
-Conventions that must survive any restyle:
+Rules that must survive any restyle:
+
+- **`InfoCard` replaces `Section`** for these blocks — its title bar *is* the title. Never
+  nest a card in a `Section` of the same name. `Section` is for button groups and card
+  lists. `InfoCard` mirrors `Section`'s `loading` / `error` / `emptyMessage` precedence.
+- **The card draws the dividers**, between consecutive parts. A part never draws its own,
+  and `null` children are dropped first — so a conditional part can't leave a doubled line.
+- **Values flow left after the label**, not right-aligned with a flexible spacer. This is
+  the whole reason the `@expo/ui` lists were replaced: a right-aligned `commentaires`
+  squeezed its label and overflowed. Long values wrap under themselves.
+- **Free text is an `InfoComment`, never a row.** Plus a character cap on the input side
+  (`bike-eco-forms`).
+
+### Formatting lives in `src/lib/ui/format.ts`
+
+The only place that formats a value for display, and the app's one unit-tested UI module:
 
 - **`dash()`** renders `"—"` for `null` / `undefined` / `""`. Never print "null" or an
-  empty row.
-- **Units live in the value**: `${cylindree} cc`, `${kilometrage} km`, `${prix} €` — and
-  the field is dashed when absent, not rendered as a bare unit.
-- **Optional rows are conditional**, via props (`CompanyInfoList`'s `showName`,
-  `showRegion`) — not by rendering an empty row.
-
-### The Android crash
-
-Use a non-scrolling `Column`, **never** a native `List`. The screen's RN `ScrollView`
-owns scrolling; a native scroller measured with unbounded height crashes on Android. This
-is already commented in `DossierInfoList.tsx` — keep the comment if you rewrite the file.
-
-### Long values
-
-A long `commentaires` value in a `Row` fights the label for width, because `Row` +
-`Spacer(flexible)` is a single-line layout. Free-text fields need their own full-width
-block below the label rather than a right-aligned value in the same row, plus a character
-cap on the input side (`bike-eco-forms`).
+  empty row. `InfoRows`, `InfoContactRow` and `InfoComment` all apply it themselves.
+- **Units live in the value** — `euros()` → `"2400 €"`, `kilometres()` → `"48000 km"` —
+  and an absent field is dashed, not rendered as a bare unit.
+- `submittedAt()`, `regionLabel()`, `statusLabel()`. `STATUS_LABELS` is shared with
+  `StatusBadge` so the badge and the "Statut" row cannot drift.
+- **Optional rows are omitted by the caller**, not rendered empty. There are no
+  `showX` props on the parts.
 
 ### Tappable phone / email
 
-`Linking.openURL` with `tel:` and `mailto:` opens the OS dialer and mail client. Guard
-with `canOpenURL` and fall back to plain text — a simulator or a tablet without a dialer
-returns false. Strip spaces from the phone number for the `tel:` href while leaving the
-displayed value formatted.
+`InfoContactRow` already owns this; don't hand-roll it. It guards `Linking.openURL` with
+`canOpenURL` and falls back to a plain row — a simulator or a tablet without a dialer
+returns false, and the button would be a dead tap. It strips spaces from the `tel:` href
+while leaving the displayed value formatted, and carries a French `accessibilityLabel`
+because an icon-only button is otherwise unreachable by a screen reader.
+
+Use it for a contact you can **reach**. "Mon compte" shows the viewer's own number and
+address as plain `InfoRows`.
 
 ## Shared components
 
 | Component | Notes |
 |---|---|
-| `ui/Section` | Title + `loading` + `error` + `emptyMessage` + children. Owns all four states in that precedence — don't reimplement them per screen |
+| `ui/InfoCard` + `ui/InfoRows`, `ui/InfoContactRow`, `ui/InfoComment` | Every read-only label/value block — see "Info cards" above |
+| `ui/Section` | Title + `loading` + `error` + `emptyMessage` + children, for **button groups and card lists**. Owns all four states in that precedence — don't reimplement them per screen |
 | `ui/Spinner` | The **only** spinner. Never render a bare `ActivityIndicator`: this owns the token colour. `ScreenLoader` (named export) is the centred whole-screen/region variant |
 | `ui/ScreenMessage` | Screen-level counterpart to `Section`'s error/empty states: `message` + `tone` (`muted` \| `danger`) |
 | `ui/SectionWrapper` | Layout shell around sections |
 | `ui/DossiersSection`, `ui/CompaniesSection` | Per-section fetch + `Section` |
 | `ui/DossierCard`, `ui/CompanyCard` | Thin wide cards; see their component specs |
-| `ui/StatusBadge` | Reads `tokens.status` by `DossierStatus` |
+| `ui/StatusBadge` | Reads `tokens.status` by `DossierStatus`, and its copy from `lib/ui/format`'s `STATUS_LABELS` |
 | `ui/Button` | The only button. Never hand-roll a `Pressable` with its own styling. `loading` swaps the label for a spinner and blocks presses; `disabled` only dims. `loading` wins — a spinning button is never also dimmed |
 | `ui/ImageViewerModal` | Full-screen modal precedent — wraps content in its own `GestureHandlerRootView` |
 | `ui/ConfirmationView` | Success screen with delayed auto-redirect |
@@ -168,15 +180,17 @@ never invent its own.
 | Mistake | Consequence |
 |---|---|
 | Hardcoding `#111` / `12` instead of a token | Drifts from the rest of the app; breaks a future token change |
-| Native `List` inside `components/native/` | Android crash on unbounded-height measurement |
+| Building a label/value block out of `@expo/ui`, or by hand | `InfoCard` + its three parts is the only shape; `@expo/ui` is `NativeTabs`-only |
+| An `InfoCard` nested inside a `Section` of the same name | The title is rendered twice |
+| A part that draws its own divider | Doubled lines — the card owns the separators |
 | Rendering `null`/`""` instead of `dash()` | "null" or blank rows in the UI |
-| Re-implementing loading / empty / error state per screen | `Section` already owns all four states |
+| Re-implementing loading / empty / error state per screen | `Section` and `InfoCard` both already own all four states |
 | A bare `ActivityIndicator` | `Spinner` / `ScreenLoader` own the token colour and padding |
 | `return null` while a hook is loading | A blank screen is indistinguishable from a broken one — use `ScreenLoader` |
 | A hand-rolled `busy` boolean, or a `useRef` guard with no re-render | `useAsyncAction` (or `useStepForm`'s `submitting`) gives you both the guard and the flag |
 | Rendering a hook's `loading` but discarding its `error` | An offline or denied read then reads as "aucun dossier" |
 | `Alert.alert` instead of `alertDialog` / `confirmDialog` | Silently does nothing on web |
-| A long free-text value in a label/value `Row` | Squeezes the label; text overflows off-screen |
+| A long free-text value in an `InfoRows` row instead of an `InfoComment` | Squeezes the label; text overflows off-screen |
 | `Linking.openURL` without `canOpenURL` | Dead tap on devices with no dialer/mail client |
 | New modal without its own `GestureHandlerRootView` | Gestures silently dead inside the modal |
 | `KeyboardAvoidingView` with no `behavior` on Android, or no `keyboardVerticalOffset` under a Stack header | Keyboard covers the input |

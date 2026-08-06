@@ -3,5 +3,5 @@ import DossierDetailScreen from "@/components/screens/DossierDetailScreen";
 
 export default function BackofficeDossierDetail() {
   const { id } = useGlobalSearchParams<{ id: string }>();
-  return <DossierDetailScreen id={id} />;
+  return <DossierDetailScreen id={id} role="backoffice" />;
 }

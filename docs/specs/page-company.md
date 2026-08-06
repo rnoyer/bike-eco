@@ -16,8 +16,8 @@ Only If registration is pending :
   - Two buttons side by side : 'Autoriser' (validate company), 'Décliner inscription' (discard company, delete everything about this company)
   - Both *Décliner inscription* and *Supprimer cette entreprise* call the same server `deleteCompany` cascade (hard-delete: users + dossiers + chats + stored documents). *Décliner* is the pending-state entry point; *Supprimer* the active-state one.
 
-- Section "Information Entreprise" props :
-  - All form information related to the company : a compact list of label/value rows
+- [`InfoCard`](component-info-card.md) "Information Entreprise" :
+  - One part (liste d'information) : Entreprise / SIRET / Département / Ville / Région.
 
 - Section "Vendeurs de cette entreprise" props :
   - One "Colleague" card per user of this company, each with a "Voir détails" button

@@ -12,11 +12,17 @@ from the "Vendeurs de cette entreprise" section of page-company ("Voir détails"
 
 ## Main section
 
-- Section "Information collaborateur" props — titled "Information vendeur" in the
-  back-office read-only mode, where the user being read belongs to a company, not to
-  the Bike-eco team :
-  - A compact list of label/value rows : Nom / Prénom / Email / Téléphone / Rôle
-    ("Administrateur", "Vendeur" for a b2b account, "Membre" for a back-office one).
+- [`InfoCard`](component-info-card.md) "Information collaborateur" — titled
+  "Informations vendeur" in the back-office read-only mode, where the user being read
+  belongs to a company, not to the Bike-eco team. Three parts :
+  1. Liste d'information : Nom / Prénom / Rôle ("Administrateur", "Vendeur" for a b2b
+     account, "Membre" for a back-office one).
+  2. Téléphone, with a call button on the right.
+  3. Email, with a mail button on the right.
+
+  The card carries **no "Entreprise" row**, in either mode : `users/{uid}` stores only
+  `companyId`, and the back-office read-only view is reached from the company page, where
+  the company is already the context.
 
 Management mode only :
 

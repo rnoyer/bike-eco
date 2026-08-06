@@ -1,7 +1,7 @@
-import AccountInfoList from "@/components/native/AccountInfoList";
-import CompanyInfoList from "@/components/native/CompanyInfoList";
 import Button from "@/components/ui/Button";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import InfoCard from "@/components/ui/InfoCard";
+import InfoRows from "@/components/ui/InfoRows";
 import ScreenMessage from "@/components/ui/ScreenMessage";
 import Section from "@/components/ui/Section";
 import SectionWrapper from "@/components/ui/SectionWrapper";
@@ -92,11 +92,20 @@ export default function AccountScreen() {
   return (
     <ScrollView contentContainerStyle={styles.scrollContent}>
       <SectionWrapper style={styles.fill}>
-        <Section title="Mes informations personnelles">
-          <AccountInfoList user={data} />
-        </Section>
+        <InfoCard title="Mes informations personnelles">
+          {/* No action buttons on the contact rows here: it is the viewer's own
+              number and address. */}
+          <InfoRows
+            rows={[
+              ["Nom", data.nom],
+              ["Prénom", data.prenom],
+              ["Email", data.email],
+              ["Téléphone", data.telephone],
+            ]}
+          />
+        </InfoCard>
         {data.companyId ? (
-          <Section
+          <InfoCard
             title={
               company.data
                 ? `Informations ${company.data.name}`
@@ -107,13 +116,15 @@ export default function AccountScreen() {
             emptyMessage="Entreprise introuvable."
           >
             {company.data ? (
-              <CompanyInfoList
-                company={company.data}
-                showName={false}
-                showRegion={false}
+              <InfoRows
+                rows={[
+                  ["SIRET", company.data.siret],
+                  ["Département", company.data.departement],
+                  ["Ville", company.data.ville],
+                ]}
               />
             ) : null}
-          </Section>
+          </InfoCard>
         ) : null}
         <Section title="Actions sur mon compte">
           <Button

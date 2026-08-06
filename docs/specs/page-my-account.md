@@ -10,9 +10,13 @@
 
 From top to bottom
 
-- Section "Mon compte" : compact list of the user's personal info — Nom / Prénom / Email / Téléphone.
-- Section "Informations [nom entreprise]" (B2B only, i.e. the user has a `companyId`; hidden for back-office
-  users) : compact list of the user's company info — SIRET / Département / Ville.
+- [`InfoCard`](component-info-card.md) "Mes informations personnelles" : one part
+  (liste d'information) — Nom / Prénom / Email / Téléphone. Email and téléphone are plain
+  rows here, **without** the call / mail action buttons used elsewhere: this is the
+  viewer's own contact information.
+- `InfoCard` "Informations [nom entreprise]" (B2B only, i.e. the user has a `companyId`;
+  hidden for back-office users) : one part (liste d'information) — SIRET / Département /
+  Ville.
 - Section "Actions sur mon compte" :
   - "Se déconnecter" (primary).
   - "Changer mon mot de passe" (outlined) — **hidden** for an account with no password credential
@@ -35,9 +39,9 @@ From top to bottom
 
 While the account and company reads are in flight the page shows a centered
 spinner — never a blank view. If a read fails it shows the mapped French error;
-if the account itself is absent, "Compte introuvable.". The company block is a
-`Section`, so it carries its own loading / error / "Entreprise introuvable."
-states independently of the personal-information block.
+if the account itself is absent, "Compte introuvable.". The company card carries
+its own loading / error / "Entreprise introuvable." states inside its body,
+independently of the personal-information card.
 
 ## Tab bar props
 

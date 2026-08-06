@@ -1,18 +1,15 @@
 import { StyleSheet, Text, View } from "react-native";
 import type { DossierStatus } from "@/lib/firestore/schema";
+import { STATUS_LABELS } from "@/lib/ui/format";
 import { tokens } from "@/theme/tokens";
-
-const LABELS: Record<DossierStatus, string> = {
-  a_traiter: "À traiter",
-  en_cours: "En cours",
-  cloture: "Clôturé",
-};
 
 export default function StatusBadge({ status }: { status: DossierStatus }) {
   const palette = tokens.status[status];
   return (
     <View style={[styles.badge, { backgroundColor: palette.bg }]}>
-      <Text style={[styles.text, { color: palette.fg }]}>{LABELS[status]}</Text>
+      <Text style={[styles.text, { color: palette.fg }]}>
+        {STATUS_LABELS[status]}
+      </Text>
     </View>
   );
 }
