@@ -124,8 +124,9 @@ export default function DossierDetailScreen({
   role,
 }: {
   id: string;
-  /** Drives card order only: the back office reads the vehicle first, a b2b
-   *  user follows up on their own submission's status first. */
+  /** Drives card order and the status projection (`viewerStatus`): the back
+   *  office reads the vehicle first, a b2b user follows up on their own
+   *  submission's status first — and never sees `a_traiter`. */
   role: UserRole;
 }) {
   const { data, loading, error } = useDossier(id);

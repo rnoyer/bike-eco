@@ -52,7 +52,7 @@ export const statusLabel = (status: DossierStatus): string =>
 /** The status as a given role is allowed to see it. `a_traiter` is the back
  *  office's own working state — a b2b user only ever sees "En cours" until the
  *  dossier is clôturé. Project once at the screen, then the badge and the
- *  "Statut" row both follow (same label *and* same amber palette). */
+ *  "Statut" row both follow (same label *and* same blue `en_cours` palette). */
 export const viewerStatus = (
   status: DossierStatus,
   role: UserRole,
