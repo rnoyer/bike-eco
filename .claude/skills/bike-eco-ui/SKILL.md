@@ -48,7 +48,7 @@ radius: sm 8 · md 12 · lg 16        space: xs 4 · sm 8 · md 12 · lg 24 · x
 monogram in `#1FC61B` on a `#2A2933` charcoal disc. `primary` is that charcoal, not a
 neutral black.
 
-**Where green is allowed.** `brand` is for *affordances and identity accents* only — the
+**Where green is allowed.** `brand` is for _affordances and identity accents_ only — the
 `InfoCard` header rule, the `InfoContactRow` phone/mail buttons, the `EntityCard` row
 action, a selected `Dropdown` option, the `DossierCard` thumbnail placeholder. It is
 **never** a large fill and **never** a state colour: primary `Button` stays charcoal, and
@@ -56,12 +56,12 @@ action, a selected `Dropdown` option, the `DossierCard` thumbnail placeholder. I
 and would otherwise blur into it.
 
 `brand` is only ever a **background**, under a `primary` glyph or label (6.3:1). It is
-~2.3:1 on white, so green *text* or a green icon on a light surface needs a much darker
+~2.3:1 on white, so green _text_ or a green icon on a light surface needs a much darker
 green than this — none is tokenised, because nothing needs one yet.
 
 **Nothing sets the app background.** There is no `ThemeProvider`, so screens sit on
 react-navigation's own `DefaultTheme` background (`#F2F2F2`). A screen should not paint its
-own background either; white *inside* a screen is `surface`.
+own background either; white _inside_ a screen is `surface`.
 
 `tokens.status` is keyed by `DossierStatus`, so adding a status means adding its palette
 entry — `StatusBadge` reads it directly.
@@ -72,15 +72,15 @@ entry — `StatusBadge` reads it directly.
 a white body split into parts by hairline dividers. Full contract in
 `docs/specs/component-info-card.md`. Three part components:
 
-| Part | For |
-|---|---|
-| `InfoRows` | `rows: [label, value][]` — the liste d'information |
+| Part             | For                                                                  |
+| ---------------- | -------------------------------------------------------------------- |
+| `InfoRows`       | `rows: [label, value][]` — the liste d'information                   |
 | `InfoContactRow` | `kind="phone" \| "email"` — value plus a right-aligned action button |
-| `InfoComment` | Free text (commentaires, accessoires) full-width below its label |
+| `InfoComment`    | Free text (commentaires, accessoires) full-width below its label     |
 
 Rules that must survive any restyle:
 
-- **`InfoCard` replaces `Section`** for these blocks — its title bar *is* the title. Never
+- **`InfoCard` replaces `Section`** for these blocks — its title bar _is_ the title. Never
   nest a card in a `Section` of the same name. `Section` is for button groups and card
   lists. `InfoCard` mirrors `Section`'s `loading` / `error` / `emptyMessage` precedence.
 - **The card draws the dividers**, between consecutive parts. A part never draws its own,
@@ -101,6 +101,11 @@ The only place that formats a value for display, and the app's one unit-tested U
   and an absent field is dashed, not rendered as a bare unit.
 - `submittedAt()`, `regionLabel()`, `statusLabel()`. `STATUS_LABELS` is shared with
   `StatusBadge` so the badge and the "Statut" row cannot drift.
+- **`viewerStatus(status, role)`** — what that role is _allowed_ to see. `a_traiter` is
+  the back office's working state, so a b2b viewer gets `en_cours` back (label **and**
+  blue palette); the back office gets the real status. Project **once at the screen**
+  and pass the result down — `StatusBadge` and the "Statut" row stay role-unaware, so
+  they cannot disagree. `DossierDetailScreen` is the worked example.
 - **Optional rows are omitted by the caller**, not rendered empty. There are no
   `showX` props on the parts.
 
@@ -118,7 +123,7 @@ declares `tel:` or `mailto:`, so it answers `false` and the button disappears on
 while still showing on web (react-native-web resolves it `true` unconditionally). This
 shipped as a bug once.
 
-Package visibility restricts *querying*, not `startActivity` — so `openURL` works
+Package visibility restricts _querying_, not `startActivity` — so `openURL` works
 regardless. Render the affordance and handle the real failure in the promise rejection
 (`alertDialog` with French copy). That rejection fires on Android and on a real iOS
 device; react-native-web always resolves and the iOS simulator resolves `NO` for `tel:`,
@@ -130,19 +135,19 @@ address as plain `InfoRows`.
 
 ## Shared components
 
-| Component | Notes |
-|---|---|
-| `ui/InfoCard` + `ui/InfoRows`, `ui/InfoContactRow`, `ui/InfoComment` | Every read-only label/value block — see "Info cards" above |
-| `ui/Section` | Title + `loading` + `error` + `emptyMessage` + children, for **button groups and card lists**. Owns all four states in that precedence — don't reimplement them per screen |
-| `ui/Spinner` | The **only** spinner. Never render a bare `ActivityIndicator`: this owns the token colour. `ScreenLoader` (named export) is the centred whole-screen/region variant |
-| `ui/ScreenMessage` | Screen-level counterpart to `Section`'s error/empty states: `message` + `tone` (`muted` \| `danger`) |
-| `ui/SectionWrapper` | Layout shell around sections |
-| `ui/DossiersSection`, `ui/CompaniesSection` | Per-section fetch + `Section` |
-| `ui/DossierCard`, `ui/CompanyCard` | Thin wide cards; see their component specs |
-| `ui/StatusBadge` | Reads `tokens.status` by `DossierStatus`, and its copy from `lib/ui/format`'s `STATUS_LABELS` |
-| `ui/Button` | The only button. Never hand-roll a `Pressable` with its own styling. `loading` swaps the label for a spinner and blocks presses; `disabled` only dims. `loading` wins — a spinning button is never also dimmed. The spoken label is the `label`; pass `accessibilityLabel` only when that reads badly aloud (a slash, an abbreviation) |
-| `ui/ImageViewerModal` | Full-screen modal precedent — wraps content in its own `GestureHandlerRootView` |
-| `ui/ConfirmationView` | Success screen with delayed auto-redirect |
+| Component                                                            | Notes                                                                                                                                                                                                                                                                                                                                  |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ui/InfoCard` + `ui/InfoRows`, `ui/InfoContactRow`, `ui/InfoComment` | Every read-only label/value block — see "Info cards" above                                                                                                                                                                                                                                                                             |
+| `ui/Section`                                                         | Title + `loading` + `error` + `emptyMessage` + children, for **button groups and card lists**. Owns all four states in that precedence — don't reimplement them per screen                                                                                                                                                             |
+| `ui/Spinner`                                                         | The **only** spinner. Never render a bare `ActivityIndicator`: this owns the token colour. `ScreenLoader` (named export) is the centred whole-screen/region variant                                                                                                                                                                    |
+| `ui/ScreenMessage`                                                   | Screen-level counterpart to `Section`'s error/empty states: `message` + `tone` (`muted` \| `danger`)                                                                                                                                                                                                                                   |
+| `ui/SectionWrapper`                                                  | Layout shell around sections                                                                                                                                                                                                                                                                                                           |
+| `ui/DossiersSection`, `ui/CompaniesSection`                          | Per-section fetch + `Section`                                                                                                                                                                                                                                                                                                          |
+| `ui/DossierCard`, `ui/CompanyCard`                                   | Thin wide cards; see their component specs                                                                                                                                                                                                                                                                                             |
+| `ui/StatusBadge`                                                     | Reads `tokens.status` by `DossierStatus`, and its copy from `lib/ui/format`'s `STATUS_LABELS`                                                                                                                                                                                                                                          |
+| `ui/Button`                                                          | The only button. Never hand-roll a `Pressable` with its own styling. `loading` swaps the label for a spinner and blocks presses; `disabled` only dims. `loading` wins — a spinning button is never also dimmed. The spoken label is the `label`; pass `accessibilityLabel` only when that reads badly aloud (a slash, an abbreviation) |
+| `ui/ImageViewerModal`                                                | Full-screen modal precedent — wraps content in its own `GestureHandlerRootView`                                                                                                                                                                                                                                                        |
+| `ui/ConfirmationView`                                                | Success screen with delayed auto-redirect                                                                                                                                                                                                                                                                                              |
 
 **Modals:** `ImageViewerModal` is the pattern to follow for a new modal (an auth-failure
 dialog, a confirmation prompt). A modal that hosts gesture-driven content needs its own
@@ -191,7 +196,7 @@ Two rules, both learned from the chat composer being buried under the keyboard:
   add `insets.top` to it. The keyboard arrives in screen coordinates measured from the
   top of the display; the view's frame is laid out inside the screen. Two gaps have to
   be handed back: the header, and — on Android only — the status bar, because
-  `measureInWindow` there reports `y` from *below* the status bar while the keyboard's
+  `measureInWindow` there reports `y` from _below_ the status bar while the keyboard's
   `screenY` includes it. Measured on a Pixel: header 56 + status bar 53.3 = 109.3, and
   omitting either one leaves the composer under the keyboard. iOS measures from the top
   of the window, which is already the top of the screen, so it needs no correction.
@@ -213,22 +218,22 @@ never invent its own.
 
 ## Common mistakes
 
-| Mistake | Consequence |
-|---|---|
-| Hardcoding `#2A2933` / `12` instead of a token | Drifts from the rest of the app; breaks a future token change |
-| `brand` as a text or icon colour on a light surface | ~2.3:1 — fails AA. It is a background only |
-| Green on a primary `Button`, or as a success/state colour | Spends the accent everywhere and collides with `success` / `status.cloture` |
-| Building a label/value block out of `@expo/ui`, or by hand | `InfoCard` + its three parts is the only shape |
-| An `InfoCard` nested inside a `Section` of the same name | The title is rendered twice |
-| A part that draws its own divider | Doubled lines — the card owns the separators |
-| Rendering `null`/`""` instead of `dash()` | "null" or blank rows in the UI |
-| Re-implementing loading / empty / error state per screen | `Section` and `InfoCard` both already own all four states |
-| A bare `ActivityIndicator` | `Spinner` / `ScreenLoader` own the token colour and padding |
-| `return null` while a hook is loading | A blank screen is indistinguishable from a broken one — use `ScreenLoader` |
-| A hand-rolled `busy` boolean, or a `useRef` guard with no re-render | `useAsyncAction` (or `useStepForm`'s `submitting`) gives you both the guard and the flag |
-| Rendering a hook's `loading` but discarding its `error` | An offline or denied read then reads as "aucun dossier" |
-| `Alert.alert` instead of `alertDialog` / `confirmDialog` | Silently does nothing on web |
-| A long free-text value in an `InfoRows` row instead of an `InfoComment` | Squeezes the label; text overflows off-screen |
-| Gating a `tel:` / `mailto:` button on `canOpenURL` | Android package visibility answers `false`; the button vanishes on device but shows on web |
-| New modal without its own `GestureHandlerRootView` | Gestures silently dead inside the modal |
-| `KeyboardAvoidingView` with no `behavior` on Android, or no `keyboardVerticalOffset` under a Stack header | Keyboard covers the input |
+| Mistake                                                                                                   | Consequence                                                                                |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Hardcoding `#2A2933` / `12` instead of a token                                                            | Drifts from the rest of the app; breaks a future token change                              |
+| `brand` as a text or icon colour on a light surface                                                       | ~2.3:1 — fails AA. It is a background only                                                 |
+| Green on a primary `Button`, or as a success/state colour                                                 | Spends the accent everywhere and collides with `success` / `status.cloture`                |
+| Building a label/value block out of `@expo/ui`, or by hand                                                | `InfoCard` + its three parts is the only shape                                             |
+| An `InfoCard` nested inside a `Section` of the same name                                                  | The title is rendered twice                                                                |
+| A part that draws its own divider                                                                         | Doubled lines — the card owns the separators                                               |
+| Rendering `null`/`""` instead of `dash()`                                                                 | "null" or blank rows in the UI                                                             |
+| Re-implementing loading / empty / error state per screen                                                  | `Section` and `InfoCard` both already own all four states                                  |
+| A bare `ActivityIndicator`                                                                                | `Spinner` / `ScreenLoader` own the token colour and padding                                |
+| `return null` while a hook is loading                                                                     | A blank screen is indistinguishable from a broken one — use `ScreenLoader`                 |
+| A hand-rolled `busy` boolean, or a `useRef` guard with no re-render                                       | `useAsyncAction` (or `useStepForm`'s `submitting`) gives you both the guard and the flag   |
+| Rendering a hook's `loading` but discarding its `error`                                                   | An offline or denied read then reads as "aucun dossier"                                    |
+| `Alert.alert` instead of `alertDialog` / `confirmDialog`                                                  | Silently does nothing on web                                                               |
+| A long free-text value in an `InfoRows` row instead of an `InfoComment`                                   | Squeezes the label; text overflows off-screen                                              |
+| Gating a `tel:` / `mailto:` button on `canOpenURL`                                                        | Android package visibility answers `false`; the button vanishes on device but shows on web |
+| New modal without its own `GestureHandlerRootView`                                                        | Gestures silently dead inside the modal                                                    |
+| `KeyboardAvoidingView` with no `behavior` on Android, or no `keyboardVerticalOffset` under a Stack header | Keyboard covers the input                                                                  |

@@ -29,6 +29,11 @@ One part (liste d'information) : date de soumission (`JJ MMM AAAA hh:mm`, e.g.
 "26 juil. 2026 14:30"), statut ("À traiter" / "En cours" / "Clôturé", as plain text —
 not the coloured badge), prix négocié, région ("Nord" / "Sud").
 
+**A b2b user never sees "À traiter".** `a_traiter` is the back office's own working
+state, so for a b2b viewer a dossier reads "En cours" until it is clôturé — in this
+row _and_ in the carousel's badge (which then also takes the blue `en_cours`
+palette). The back office sees the three real statuses.
+
 Read from the live dossier snapshot, so a back-office update on
 [page-dossier-management](page-dossier-management.md) re-renders this card immediately.
 

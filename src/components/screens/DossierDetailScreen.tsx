@@ -7,7 +7,7 @@ import ScreenMessage from "@/components/ui/ScreenMessage";
 import SectionWrapper from "@/components/ui/SectionWrapper";
 import { ScreenLoader } from "@/components/ui/Spinner";
 import { useDossier } from "@/lib/data/useDossier";
-import type { Dossier, UserRole } from "@/lib/firestore/schema";
+import type { Dossier, DossierStatus, UserRole } from "@/lib/firestore/schema";
 import {
   dash,
   euros,
@@ -15,11 +15,19 @@ import {
   regionLabel,
   statusLabel,
   submittedAt,
+  viewerStatus,
 } from "@/lib/ui/format";
 import { tokens } from "@/theme/tokens";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
-function DossierCard({ dossier }: { dossier: Dossier }) {
+function DossierCard({
+  dossier,
+  status,
+}: {
+  dossier: Dossier;
+  /** The viewer's status, already projected by role — not `dossier.status`. */
+  status: DossierStatus;
+}) {
   // Straight off the live `useDossier` snapshot, so a back-office update to
   // status / prix négocié / région re-renders this with no extra wiring.
   return (
@@ -27,7 +35,7 @@ function DossierCard({ dossier }: { dossier: Dossier }) {
       <InfoRows
         rows={[
           ["Date de soumission", submittedAt(dossier.createdAt)],
-          ["Statut", statusLabel(dossier.status)],
+          ["Statut", statusLabel(status)],
           ["Prix négocié", euros(dossier.negotiatedPrice)],
           ["Région", regionLabel(dossier.region)],
         ]}
@@ -87,6 +95,30 @@ function SellerCard({ dossier }: { dossier: Dossier }) {
   );
 }
 
+function LoadedDossier({ dossier, role }: { dossier: Dossier; role: UserRole }) {
+  // Projected once here: the badge over the carousel and the "Statut" row must
+  // never disagree about what this role is shown.
+  const status = viewerStatus(dossier.status, role);
+  return (
+    <>
+      <PhotoCarousel photos={dossier.photos} status={status} />
+      <SectionWrapper>
+        <Text style={styles.heading}>
+          {dossier.vehicle.marque} {dossier.vehicle.modele}
+        </Text>
+        {role === "b2b" ? (
+          <DossierCard dossier={dossier} status={status} />
+        ) : null}
+        <VehicleCard dossier={dossier} />
+        <SellerCard dossier={dossier} />
+        {role === "backoffice" ? (
+          <DossierCard dossier={dossier} status={status} />
+        ) : null}
+      </SectionWrapper>
+    </>
+  );
+}
+
 export default function DossierDetailScreen({
   id,
   role,
@@ -106,18 +138,7 @@ export default function DossierDetailScreen({
       ) : !data ? (
         <ScreenMessage message="Dossier introuvable." />
       ) : (
-        <>
-          <PhotoCarousel photos={data.photos} status={data.status} />
-          <SectionWrapper>
-            <Text style={styles.heading}>
-              {data.vehicle.marque} {data.vehicle.modele}
-            </Text>
-            {role === "b2b" ? <DossierCard dossier={data} /> : null}
-            <VehicleCard dossier={data} />
-            <SellerCard dossier={data} />
-            {role === "backoffice" ? <DossierCard dossier={data} /> : null}
-          </SectionWrapper>
-        </>
+        <LoadedDossier dossier={data} role={role} />
       )}
     </ScrollView>
   );

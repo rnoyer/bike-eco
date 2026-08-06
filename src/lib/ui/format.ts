@@ -1,4 +1,4 @@
-import type { DossierStatus, Region } from "@/lib/firestore/schema";
+import type { DossierStatus, Region, UserRole } from "@/lib/firestore/schema";
 import type { Timestamp } from "firebase/firestore";
 
 /** "—" for an absent value. Never print "null" or leave a row blank. */
@@ -48,3 +48,13 @@ export const STATUS_LABELS: Record<DossierStatus, string> = {
 
 export const statusLabel = (status: DossierStatus): string =>
   STATUS_LABELS[status];
+
+/** The status as a given role is allowed to see it. `a_traiter` is the back
+ *  office's own working state — a b2b user only ever sees "En cours" until the
+ *  dossier is clôturé. Project once at the screen, then the badge and the
+ *  "Statut" row both follow (same label *and* same amber palette). */
+export const viewerStatus = (
+  status: DossierStatus,
+  role: UserRole,
+): DossierStatus =>
+  role === "b2b" && status === "a_traiter" ? "en_cours" : status;

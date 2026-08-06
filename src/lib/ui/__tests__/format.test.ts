@@ -8,6 +8,7 @@ import {
   regionLabel,
   statusLabel,
   submittedAt,
+  viewerStatus,
 } from "../format";
 
 /** Just enough of a `Timestamp` for `submittedAt`, which only calls `toDate`. */
@@ -82,5 +83,22 @@ describe("statusLabel", () => {
     expect(statusLabel("a_traiter")).toBe("À traiter");
     expect(statusLabel("en_cours")).toBe("En cours");
     expect(statusLabel("cloture")).toBe("Clôturé");
+  });
+});
+
+describe("viewerStatus", () => {
+  test("hides the back office's `a_traiter` from a b2b user", () => {
+    expect(viewerStatus("a_traiter", "b2b")).toBe("en_cours");
+  });
+
+  test("leaves every other b2b status alone", () => {
+    expect(viewerStatus("en_cours", "b2b")).toBe("en_cours");
+    expect(viewerStatus("cloture", "b2b")).toBe("cloture");
+  });
+
+  test("shows the back office the real status", () => {
+    expect(viewerStatus("a_traiter", "backoffice")).toBe("a_traiter");
+    expect(viewerStatus("en_cours", "backoffice")).toBe("en_cours");
+    expect(viewerStatus("cloture", "backoffice")).toBe("cloture");
   });
 });
