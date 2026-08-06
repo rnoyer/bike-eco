@@ -11,9 +11,10 @@ import { callDeleteColleague, callSetColleagueAdmin } from "@/lib/data/users";
 import { headerOptions } from "@/lib/navigation/headerOptions";
 import { alertDialog } from "@/lib/ui/dialog";
 import { useAsyncAction } from "@/lib/ui/useAsyncAction";
+import { tokens } from "@/theme/tokens";
 import { Stack } from "expo-router";
 import { useState } from "react";
-import { ScrollView } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 interface Props {
   uid: string;
@@ -39,14 +40,21 @@ export default function ColleagueScreen({
 
   // One action per button, so the button that is working is the one that spins;
   // `busy` then locks the other — same pattern as the company page.
-  const onError = (message: string) => alertDialog("Action impossible", message);
-  const toggling = useAsyncAction(async (next: boolean) => {
-    await callSetColleagueAdmin(uid, next);
-  }, { onError });
-  const deleting = useAsyncAction(async () => {
-    await callDeleteColleague(uid);
-    onDeleted?.();
-  }, { onError });
+  const onError = (message: string) =>
+    alertDialog("Action impossible", message);
+  const toggling = useAsyncAction(
+    async (next: boolean) => {
+      await callSetColleagueAdmin(uid, next);
+    },
+    { onError },
+  );
+  const deleting = useAsyncAction(
+    async () => {
+      await callDeleteColleague(uid);
+      onDeleted?.();
+    },
+    { onError },
+  );
   const busy = toggling.pending || deleting.pending;
 
   // Rendered unconditionally, above the loading/error/not-found states: the
@@ -56,10 +64,14 @@ export default function ColleagueScreen({
   // title only exists once the read-only view's document has resolved; the
   // manage-mode title never depends on it.
   const fullName = data ? `${data.nom} ${data.prenom}` : null;
-  const title = canManage ? "Collaborateur" : fullName ? `Détails ${fullName}` : "Détails";
+  const title = canManage
+    ? "Collaborateur"
+    : fullName
+      ? `Détails ${fullName}`
+      : "Détails";
 
   return (
-    <ScrollView>
+    <ScrollView contentContainerStyle={styles.scrollContent}>
       <Stack.Screen options={headerOptions({ title })} />
       {loading ? (
         <ScreenLoader />
@@ -69,32 +81,41 @@ export default function ColleagueScreen({
         <ScreenMessage message="Utilisateur introuvable." />
       ) : (
         <>
-          <SectionWrapper>
+          <SectionWrapper style={styles.fill}>
             <Section title={infoTitle}>
               <AccountInfoList user={data} roleLabel={roleLabel(data)} />
             </Section>
 
             {canManage ? (
-              <Section title="Gérer ce collaborateur">
-                <Button
-                  label={
-                    data.isAdmin
-                      ? "Retirer rôle Administrateur"
-                      : "Ajouter rôle Administrateur"
-                  }
-                  onPress={() => void toggling.run(!data.isAdmin)}
-                  loading={toggling.pending}
-                  disabled={busy}
-                />
-                <Button
-                  variant="danger"
-                  label="Supprimer utilisateur"
-                  onPress={() => setConfirming(true)}
-                  loading={deleting.pending}
-                  // An admin account cannot be deleted — remove the role first.
-                  disabled={busy || data.isAdmin}
-                />
-              </Section>
+              <View style={styles.toBottom}>
+                <Section title="Gérer ce collaborateur">
+                  <Button
+                    label={
+                      data.isAdmin
+                        ? "Retirer rôle Administrateur"
+                        : "Ajouter rôle Administrateur"
+                    }
+                    onPress={() => void toggling.run(!data.isAdmin)}
+                    loading={toggling.pending}
+                    disabled={busy}
+                  />
+                  <Button
+                    variant="danger"
+                    label="Supprimer utilisateur"
+                    onPress={() => setConfirming(true)}
+                    loading={deleting.pending}
+                    // An admin account cannot be deleted — remove the role first.
+                    disabled={busy || data.isAdmin}
+                  />
+                  {data.isAdmin ? (
+                    <Text style={styles.adminNote}>
+                      Vous ne pouvez pas supprimer un compte administrateur.
+                      Retirez d&apos;abord le rôle administrateur à ce
+                      collaborateur.
+                    </Text>
+                  ) : null}
+                </Section>
+              </View>
             ) : null}
           </SectionWrapper>
 
@@ -115,3 +136,14 @@ export default function ColleagueScreen({
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  // The three together pin the button to the bottom: the content container
+  // stretches to at least the viewport, SectionWrapper takes that height, and
+  // the auto margin eats the leftover space. Content taller than the viewport
+  // simply scrolls, with the button last.
+  scrollContent: { flexGrow: 1 },
+  fill: { flexGrow: 1 },
+  toBottom: { marginTop: "auto", gap: tokens.space.sm },
+  adminNote: { fontSize: 13, color: tokens.colors.muted },
+});
