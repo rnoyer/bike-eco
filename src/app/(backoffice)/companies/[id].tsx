@@ -2,10 +2,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 
-import CompanyInfoList from "@/components/native/CompanyInfoList";
 import Button from "@/components/ui/Button";
 import ColleagueCard from "@/components/ui/ColleagueCard";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import InfoCard from "@/components/ui/InfoCard";
+import InfoRows from "@/components/ui/InfoRows";
 import ScreenMessage from "@/components/ui/ScreenMessage";
 import Section from "@/components/ui/Section";
 import SectionWrapper from "@/components/ui/SectionWrapper";
@@ -13,6 +14,7 @@ import { ScreenLoader } from "@/components/ui/Spinner";
 import { callApproveCompany, callDeleteCompany } from "@/lib/data/registration";
 import { useCompany, useCompanyUsers } from "@/lib/data/useCompanies";
 import { alertDialog, confirmDialog } from "@/lib/ui/dialog";
+import { regionLabel } from "@/lib/ui/format";
 import { useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { tokens } from "@/theme/tokens";
 
@@ -84,9 +86,17 @@ export default function CompanyDetailScreen() {
           </Section>
         ) : null}
 
-        <Section title="Information Entreprise">
-          <CompanyInfoList company={company.data} />
-        </Section>
+        <InfoCard title="Information Entreprise">
+          <InfoRows
+            rows={[
+              ["Entreprise", company.data.name],
+              ["SIRET", company.data.siret],
+              ["Département", company.data.departement],
+              ["Ville", company.data.ville],
+              ["Région", regionLabel(company.data.region)],
+            ]}
+          />
+        </InfoCard>
 
         <Section
           title="Vendeurs de cette entreprise"

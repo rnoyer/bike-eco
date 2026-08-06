@@ -1,8 +1,11 @@
 # Generic `Section` component
 
-A titled block of content with a shared title / loading / error / empty look. It is the
-single source of truth for the "section" appearance used across the app (dashboards,
-back-office company list & detail, account, settings, dossier detail).
+A titled block of content with a shared title / loading / error / empty look, used for
+**button groups and lists of cards** (dashboards, back-office company list & detail,
+settings, "Actions sur mon compte", "Gérer ce collaborateur").
+
+Read-only label/value blocks are **not** `Section`s — they are
+[`InfoCard`](component-info-card.md)s, whose dark title bar replaces the section title.
 
 ## Props
 
@@ -34,8 +37,9 @@ and `ui/ScreenMessage`.
 
 `DossiersSection` and `CompaniesSection` are thin wrappers over `Section` (they keep their
 own `dossiers`/`companies` + `renderCard` prop shape and pass `{items.map(renderCard)}` as
-children). The account, settings, dossier-detail, and back-office company-detail screens use
-`Section` directly for their titled blocks.
+children). The account, settings, colleague and back-office company-detail screens use
+`Section` directly for their button groups and card lists — but their label/value blocks
+are `InfoCard`s.
 
 ## Layout
 

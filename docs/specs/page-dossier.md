@@ -15,23 +15,42 @@ opens **that photo** full screen with pinch / double-tap zoom and a "✕" to clo
 The full-screen view shows one photo at a time — swiping between photos happens in
 the inline carousel, not in the full-screen view.
 
-Below the vehicle-name heading, the data sits in two `Section`s, each a compact list of :
+Below the vehicle-name heading, the data sits in three [`InfoCard`](component-info-card.md)s.
 
-- title : field label
-- value : field value
+**Their order differs by role.** The back office reads the vehicle first; a b2b user is
+following up on their own submission, so its status comes first :
+
+- **B2B** : Informations Dossier, Informations véhicule, Informations vendeur.
+- **Bike-eco Backoffice** : Informations véhicule, Informations vendeur, Informations Dossier.
+
+### "Informations Dossier"
+
+One part (liste d'information) : date de soumission (`JJ MMM AAAA hh:mm`, e.g.
+"26 juil. 2026 14:30"), statut ("À traiter" / "En cours" / "Clôturé", as plain text —
+not the coloured badge), prix négocié, région ("Nord" / "Sud").
+
+Read from the live dossier snapshot, so a back-office update on
+[page-dossier-management](page-dossier-management.md) re-renders this card immediately.
 
 ### "Informations véhicule"
 
-The vehicle's form data : marque, modèle et cylindrée, année, kilométrage, électrique,
-accessoires, état, carte grise, contrôle technique, prix souhaité, commentaires.
+Four parts :
+
+1. Liste d'information : marque, modèle et cylindrée, année, kilométrage, électrique.
+2. Comments : accessoires.
+3. Liste d'information : état, carte grise, contrôle technique, prix souhaité.
+4. Comments : commentaires.
 
 "Modèle et Cylindrée" is a single row, mirroring the B2B submission form — which is the
 only source of dossiers — where both are one field (`vehicle.modele`).
 
 ### "Informations vendeur"
 
-Who filed the dossier, in this order : entreprise, nom, prénom, email, téléphone,
-date de soumission (`JJ MMM AAAA hh:mm`, e.g. "26 juil. 2026 14:30").
+Who filed the dossier, in three parts :
+
+1. Liste d'information : entreprise, nom, prénom.
+2. Téléphone, with a call button on the right.
+3. Email, with a mail button on the right.
 
 Email and téléphone are read from the dossier's denormalized `submitter`, not from the
 submitter's `users/{uid}` doc — the doc can be gone by the time the dossier is viewed (a

@@ -1,6 +1,8 @@
-import AccountInfoList from "@/components/native/AccountInfoList";
 import Button from "@/components/ui/Button";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import InfoCard from "@/components/ui/InfoCard";
+import InfoContactRow from "@/components/ui/InfoContactRow";
+import InfoRows from "@/components/ui/InfoRows";
 import ScreenMessage from "@/components/ui/ScreenMessage";
 import Section from "@/components/ui/Section";
 import SectionWrapper from "@/components/ui/SectionWrapper";
@@ -82,9 +84,17 @@ export default function ColleagueScreen({
       ) : (
         <>
           <SectionWrapper style={styles.fill}>
-            <Section title={infoTitle}>
-              <AccountInfoList user={data} roleLabel={roleLabel(data)} />
-            </Section>
+            <InfoCard title={infoTitle}>
+              <InfoRows
+                rows={[
+                  ["Nom", data.nom],
+                  ["Prénom", data.prenom],
+                  ["Rôle", roleLabel(data)],
+                ]}
+              />
+              <InfoContactRow kind="phone" value={data.telephone} />
+              <InfoContactRow kind="email" value={data.email} />
+            </InfoCard>
 
             {canManage ? (
               <View style={styles.toBottom}>
