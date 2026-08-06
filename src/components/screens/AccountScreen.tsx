@@ -1,6 +1,7 @@
 import AccountInfoList from "@/components/native/AccountInfoList";
 import CompanyInfoList from "@/components/native/CompanyInfoList";
 import Button from "@/components/ui/Button";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import ScreenMessage from "@/components/ui/ScreenMessage";
 import Section from "@/components/ui/Section";
 import SectionWrapper from "@/components/ui/SectionWrapper";
@@ -14,10 +15,14 @@ import { hasPasswordProvider } from "@/lib/auth/passwordProvider";
 import { useAccount } from "@/lib/data/useAccount";
 import { useCompany } from "@/lib/data/useCompanies";
 import { useSession } from "@/lib/data/useSession";
+import { useUser } from "@/lib/data/useUser";
+import { callDeleteMyAccount } from "@/lib/data/users";
 import { alertDialog, confirmDialog } from "@/lib/ui/dialog";
 import { useAsyncAction } from "@/lib/ui/useAsyncAction";
+import { tokens } from "@/theme/tokens";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { ScrollView, StyleSheet } from "react-native";
+import { useState } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { auth } from "../../../firebaseConfig";
 
 export default function AccountScreen() {
@@ -26,7 +31,17 @@ export default function AccountScreen() {
   const { signOut } = useSession();
   const { firebaseUser } = useAuth();
 
+  // Live rather than the AuthProvider snapshot taken at sign-in: a demoted
+  // admin who already transferred the role must see the delete button enable
+  // itself without restarting the app. Falls back to the session's value
+  // while the live read is loading, so nothing flickers into a
+  // more-permissive state.
+  const { data: viewer, loading: viewerLoading } = useUser(data?.id ?? "");
+  const isAdmin = viewerLoading ? data?.isAdmin === true : viewer?.isAdmin === true;
+
   const email = firebaseUser?.email ?? null;
+
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const sendingReset = useAsyncAction(
     async (address: string) => {
@@ -47,6 +62,16 @@ export default function AccountScreen() {
     mapError: frenchAuthMessage,
     onError: (message) => alertDialog("Déconnexion impossible", message),
   });
+
+  // The server deletes the Auth user, which invalidates this session; sign out
+  // explicitly so the guard routes to sign-in instead of leaving a dead session.
+  const deletingAccount = useAsyncAction(
+    async () => {
+      await callDeleteMyAccount();
+      await signOut();
+    },
+    { onError: (message) => alertDialog("Suppression impossible", message) },
+  );
 
   const handleChangePassword = () => {
     if (!email) return;
@@ -107,19 +132,36 @@ export default function AccountScreen() {
         </Section>
         {/* Outside <Section> on purpose: the auto margin needs a growing
             parent, and SectionWrapper is the one that fills the viewport. */}
-        <Button
-          style={styles.toBottom}
-          variant="danger"
-          label="Supprimer mon compte"
-          // Still a stub; it will need a pending state when it is wired.
-          onPress={() =>
-            alertDialog(
-              "Supprimer mon compte",
-              "Action non disponible pour le moment.",
-            )
-          }
-        />
+        <View style={styles.toBottom}>
+          <Button
+            variant="danger"
+            label="Supprimer mon compte"
+            onPress={() => setConfirmingDelete(true)}
+            loading={deletingAccount.pending}
+            // An admin account cannot be deleted: the company would be left
+            // with nobody able to manage its team.
+            disabled={isAdmin || deletingAccount.pending}
+          />
+          {isAdmin ? (
+            <Text style={styles.adminNote}>
+              Un administrateur ne peut pas supprimer son compte. Transférez d&apos;abord le
+              rôle administrateur à un collaborateur.
+            </Text>
+          ) : null}
+        </View>
       </SectionWrapper>
+      <ConfirmModal
+        visible={confirmingDelete}
+        title="Supprimer mon compte ?"
+        message="Cette action supprime définitivement votre compte. Vos dossiers et vos conversations sont conservés."
+        confirmLabel="Supprimer mon compte"
+        disabled={deletingAccount.pending}
+        onCancel={() => setConfirmingDelete(false)}
+        onConfirm={() => {
+          setConfirmingDelete(false);
+          void deletingAccount.run();
+        }}
+      />
     </ScrollView>
   );
 }
@@ -131,5 +173,6 @@ const styles = StyleSheet.create({
   // simply scrolls, with the button last.
   scrollContent: { flexGrow: 1 },
   fill: { flexGrow: 1 },
-  toBottom: { marginTop: "auto" },
+  toBottom: { marginTop: "auto", gap: tokens.space.sm },
+  adminNote: { fontSize: 13, color: tokens.colors.muted },
 });

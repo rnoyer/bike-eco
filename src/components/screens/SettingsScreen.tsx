@@ -6,12 +6,14 @@ interface Props {
   role: UserRole;
   onInvite: () => void;
   onManageCompanies?: () => void;
+  onManageColleagues: () => void;
 }
 
 export default function SettingsScreen({
   role,
   onInvite,
   onManageCompanies,
+  onManageColleagues,
 }: Props) {
   return (
     <ScrollView>
@@ -19,6 +21,7 @@ export default function SettingsScreen({
         role={role}
         onInvite={onInvite}
         onManageCompanies={onManageCompanies}
+        onManageColleagues={onManageColleagues}
       />
     </ScrollView>
   );

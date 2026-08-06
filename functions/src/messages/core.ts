@@ -1,4 +1,4 @@
-import { RegError, type CallerClaims } from "../registration/core";
+import { RegError, type CallerClaims } from "../errors";
 import type { SendMessageInput } from "./schemas";
 
 export interface MessageAttachment {

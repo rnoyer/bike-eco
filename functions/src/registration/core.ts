@@ -6,23 +6,7 @@ import type {
   ResolveInviteInput,
   SendInviteInput,
 } from "./schemas";
-
-export type RegErrorCode =
-  | "unauthenticated" | "permission-denied" | "already-exists"
-  | "invalid-argument" | "not-found" | "failed-precondition";
-
-export class RegError extends Error {
-  constructor(public code: RegErrorCode, message: string) {
-    super(message);
-  }
-}
-
-export interface CallerClaims {
-  uid: string;
-  role?: string;
-  status?: string;
-  companyId?: string | null;
-}
+import { RegError, type CallerClaims } from "../errors";
 
 export interface StoredInvitation {
   id: string;
@@ -49,9 +33,15 @@ export interface Deps {
   sendInviteEmail(to: string, code: string): Promise<void>;
 }
 
-function profileDoc(input: { nom: string; prenom: string; telephone: string }, email: string, companyId: string, status: "pending" | "active") {
+function profileDoc(
+  input: { nom: string; prenom: string; telephone: string },
+  email: string,
+  companyId: string,
+  status: "pending" | "active",
+  isAdmin: boolean,
+) {
   return {
-    role: "b2b", companyId,
+    role: "b2b", companyId, isAdmin,
     nom: input.nom, prenom: input.prenom, email,
     telephone: input.telephone,
     status,
@@ -89,7 +79,7 @@ export async function registerCompanyCore(
     createdByName: `${input.prenom} ${input.nom}`,
     validatedAt: null,
   });
-  await deps.writeUser(uid, profileDoc(input, email, companyId, "pending"));
+  await deps.writeUser(uid, profileDoc(input, email, companyId, "pending", true));
   await deps.setClaims(uid, { role: "b2b", companyId, status: "pending" });
   await deps.sendApplicantEmail(email, input.companyName);
 }
@@ -145,7 +135,7 @@ export async function acceptInviteCore(
     }
     uid = authUid;
   }
-  await deps.writeUser(uid, profileDoc(input, inv.email, inv.companyId, "active"));
+  await deps.writeUser(uid, profileDoc(input, inv.email, inv.companyId, "active", false));
   await deps.setClaims(uid, { role: "b2b", companyId: inv.companyId, status: "active" });
   await deps.deleteInvitation(inv.id);
 }

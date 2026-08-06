@@ -137,3 +137,22 @@ test("a duplicate SIRET is rejected BEFORE any user/company is created", async (
   expect(d.calls.companies).toEqual({});
   expect(d.calls.users).toEqual({});
 });
+
+test("registerCompany makes the registrant an admin", async () => {
+  const d = fakeDeps();
+  await registerCompanyCore(companyInput, null, null, d);
+  expect(d.calls.users["uid_new"].isAdmin).toBe(true);
+});
+
+test("acceptInvite creates a non-admin colleague", async () => {
+  const inv = {
+    id: "inv1", email: "new@x.fr", companyId: "comp_1", companyName: "G",
+    tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000,
+  };
+  const d = fakeDeps({ findInvitationByHash: async () => inv });
+  await acceptInviteCore(
+    { method: "password", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000", password: "password123" },
+    null, null, d,
+  );
+  expect(d.calls.users["uid_new"].isAdmin).toBe(false);
+});

@@ -4,12 +4,20 @@ import type { AppUser } from "@/lib/firestore/schema";
 const LABEL = { fontSize: 14, color: "#71727A" } as const;
 const VALUE = { fontSize: 14, fontWeight: "500", color: "#111" } as const;
 
-export default function AccountInfoList({ user }: { user: AppUser }) {
+export default function AccountInfoList({
+  user,
+  roleLabel,
+}: {
+  user: AppUser;
+  /** Adds a "Rôle" row — used by the colleague screens, omitted on "Mon compte". */
+  roleLabel?: string;
+}) {
   const rows: [string, string][] = [
     ["Nom", user.nom],
     ["Prénom", user.prenom],
     ["Email", user.email],
     ["Téléphone", user.telephone],
+    ...(roleLabel ? ([["Rôle", roleLabel]] as [string, string][]) : []),
   ];
   return (
     <Host matchContents>

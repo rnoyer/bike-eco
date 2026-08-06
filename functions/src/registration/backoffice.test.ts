@@ -1,5 +1,5 @@
 import { approveCompanyCore, deleteCompanyCore, type BackofficeDeps } from "./backoffice";
-import type { CallerClaims } from "./core";
+import type { CallerClaims } from "../errors";
 
 const boCaller: CallerClaims = { uid: "bo1", role: "backoffice", status: "active", companyId: null };
 

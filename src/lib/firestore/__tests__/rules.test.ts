@@ -69,6 +69,15 @@ beforeAll(async () => {
       negotiatedPrice: null,
     });
     await setDoc(doc(db, "users/user_b2b_nord"), { nom: "Durand" });
+    await setDoc(doc(db, "users/user_mate"), {
+      nom: "Petit", prenom: "Sam", role: "b2b", companyId: "comp_1", isAdmin: false,
+    });
+    await setDoc(doc(db, "users/user_other"), {
+      nom: "Roux", prenom: "Alix", role: "b2b", companyId: "comp_2", isAdmin: false,
+    });
+    await setDoc(doc(db, "users/user_bo"), {
+      nom: "Verdier", prenom: "Lou", role: "backoffice", companyId: null, isAdmin: true,
+    });
   });
 });
 
@@ -96,6 +105,37 @@ test("owner cannot escalate their own claims fields", async () => {
   const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertSucceeds(updateDoc(doc(db, "users/user_b2b_nord"), { telephone: "0699999999" }));
   await assertFails(updateDoc(doc(db, "users/user_b2b_nord"), { role: "backoffice" }));
+});
+
+test("a b2b user reads a colleague of the same company", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertSucceeds(getDoc(doc(db, "users/user_mate")));
+});
+
+test("a b2b user cannot read a user of another company", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertFails(getDoc(doc(db, "users/user_other")));
+});
+
+test("a null-companyId account cannot read a back-office user via the teammate clause", async () => {
+  // Back-office `users/{uid}` docs carry `companyId: null`. Without the
+  // `myCompany() != null` guard, an active account whose own `companyId`
+  // claim is also null (unassigned, or malformed) would match
+  // `resource.data.companyId == myCompany()` as `null == null` and read
+  // every back-office profile.
+  const db = env
+    .authenticatedContext("user_null_company", {
+      role: "b2b",
+      companyId: null,
+      status: "active",
+    })
+    .firestore();
+  await assertFails(getDoc(doc(db, "users/user_bo")));
+});
+
+test("a user cannot make themselves an admin", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertFails(updateDoc(doc(db, "users/user_b2b_nord"), { isAdmin: true }));
 });
 
 // ── dossier create ─────────────────────────────────────────────────────────

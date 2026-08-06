@@ -11,6 +11,7 @@ export {
   acceptInvite,
   approveCompany, deleteCompany, registerCompany, resolveInvite, sendInvite
 } from "./registration";
+export { deleteColleague, deleteMyAccount, setColleagueAdmin } from "./users";
 
 // Per-function caps still apply; this bounds the blast radius of autoscaling.
 setGlobalOptions({ maxInstances: 10 });

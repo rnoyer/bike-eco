@@ -4,7 +4,7 @@ import { HttpsError } from "firebase-functions/https";
 import * as logger from "firebase-functions/logger";
 import { ZodError } from "zod";
 
-import { RegError, type CallerClaims } from "./registration/core";
+import { RegError, type CallerClaims } from "./errors";
 
 // Point the admin SDK at the local emulators in dev. Deployed Gen2 functions
 // always run with NODE_ENV="production", so this block is skipped in prod.

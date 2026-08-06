@@ -47,6 +47,20 @@ it mounts — and it will look like the link is broken, not like a guard problem
 Change routing policy there, with a test — never by scattering `router.replace` calls in
 screens.
 
+## Admin gating is not a claim
+
+`isAdmin` (promote/delete a colleague, the "Gérer" button, "Supprimer mon compte") is
+**not** a custom claim — `SessionUser` spreads it straight from the `users/{uid}` profile
+doc. `session.isAdmin` is only a **snapshot taken at sign-in** (`AuthProvider` loads the
+profile with a one-shot `getDoc`), so it never notices a promotion or demotion until the
+app restarts. The client gates read the profile **live** instead, with `useUser(session.id)`
+(`onSnapshot`) in `ColleaguesScreen`, the colleague-detail routes, and `AccountScreen`,
+falling back to the session snapshot only while that read is loading so nothing flickers
+into a more-permissive state. Every callable that needs it (`setColleagueAdmin`,
+`deleteColleague`, `deleteMyAccount`) re-reads it from the profile document server-side
+and never trusts the caller's claims for that check — the client-side staleness above
+only ever affects how fast the UI catches up, never authorization.
+
 ## Claims set after sign-in need `refreshSession()`
 
 `onAuthStateChanged` does **not** re-fire when custom claims change. Any flow where the

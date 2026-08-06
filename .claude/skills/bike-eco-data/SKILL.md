@@ -40,6 +40,11 @@ dossiers/{dossierId}/messages/{messageId}
   local `Timestamp` instead of `null`. Consumers call `.toMillis()` / `.toDate()` on
   `createdAt` (dashboard sort, `ChatThread`) and would throw on null. Keep it.
 - `role`, `companyId` and `status` are **server-set Auth claims**, never client-writable.
+- `isAdmin` is server-set too, but lives **only** on the `users/{uid}` document — it is
+  deliberately never mirrored into custom claims (a claim would go stale until the
+  promoted user's ID token refreshed). The read rule lets an active teammate (same
+  `companyId`) read each other's profile, not just the owner and back-office; `useColleagues`
+  / `useUser` are the hooks over that rule (`src/lib/data/colleagues.ts`).
 - Statuses are `const` tuples (`DOSSIER_STATUSES`, `USER_STATUSES`, `COMPANY_STATUSES`)
   with types derived from them — add a value to the tuple, not to a hand-written union.
 

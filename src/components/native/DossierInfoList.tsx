@@ -11,8 +11,9 @@ export default function DossierInfoList({ dossier }: { dossier: Dossier }) {
   const { vehicle, condition, papers, pricing } = dossier;
   const rows: [string, string][] = [
     ["Marque", dash(vehicle.marque)],
-    ["Modèle", dash(vehicle.modele)],
-    ["Cylindrée", vehicle.cylindree ? `${vehicle.cylindree} cc` : "—"],
+    // The B2B funnel — the only source of dossiers — collects model and
+    // displacement in one "Modèle et Cylindrée" field, so they render as one row.
+    ["Modèle et Cylindrée", dash(vehicle.modele)],
     ["Année", dash(vehicle.annee)],
     ["Kilométrage", vehicle.kilometrage ? `${vehicle.kilometrage} km` : "—"],
     ["Électrique", dash(vehicle.electrique)],

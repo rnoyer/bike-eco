@@ -22,8 +22,11 @@ Below the vehicle-name heading, the data sits in two `Section`s, each a compact 
 
 ### "Informations véhicule"
 
-The vehicle's form data : marque, modèle, cylindrée, année, kilométrage, électrique,
+The vehicle's form data : marque, modèle et cylindrée, année, kilométrage, électrique,
 accessoires, état, carte grise, contrôle technique, prix souhaité, commentaires.
+
+"Modèle et Cylindrée" is a single row, mirroring the B2B submission form — which is the
+only source of dossiers — where both are one field (`vehicle.modele`).
 
 ### "Informations vendeur"
 
@@ -31,8 +34,9 @@ Who filed the dossier, in this order : entreprise, nom, prénom, email, téléph
 date de soumission (`JJ MMM AAAA hh:mm`, e.g. "26 juil. 2026 14:30").
 
 Email and téléphone are read from the dossier's denormalized `submitter`, not from the
-submitter's `users/{uid}` doc — that document is readable only by its owner and the
-back-office, so a B2B teammate viewing a colleague's dossier could not fetch it.
+submitter's `users/{uid}` doc — the doc can be gone by the time the dossier is viewed (a
+deleted colleague's `users/{uid}` is removed but their dossiers are kept), so the
+denormalized copy is the only value guaranteed to still exist.
 
 Any missing value renders as "—".
 
