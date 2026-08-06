@@ -83,11 +83,22 @@ The only place that formats a value for display, and the app's one unit-tested U
 
 ### Tappable phone / email
 
-`InfoContactRow` already owns this; don't hand-roll it. It guards `Linking.openURL` with
-`canOpenURL` and falls back to a plain row — a simulator or a tablet without a dialer
-returns false, and the button would be a dead tap. It strips spaces from the `tel:` href
-while leaving the displayed value formatted, and carries a French `accessibilityLabel`
-because an icon-only button is otherwise unreachable by a screen reader.
+`InfoContactRow` already owns this; don't hand-roll it. It strips spaces from the `tel:`
+href while leaving the displayed value formatted, and carries a French
+`accessibilityLabel` because an icon-only button is otherwise unreachable by a screen
+reader.
+
+**Never gate the button on `Linking.canOpenURL`.** On Android that call is
+`Intent.resolveActivity`, which package visibility filters from API 30 up unless the app
+declares a `<queries>` entry for the scheme — and nothing in this app's plugin set
+declares `tel:` or `mailto:`, so it answers `false` and the button disappears on device
+while still showing on web (react-native-web resolves it `true` unconditionally). This
+shipped as a bug once.
+
+Package visibility restricts *querying*, not `startActivity` — so `openURL` works
+regardless. Render the affordance and handle the real failure in the promise rejection
+(`alertDialog` with French copy). The same reasoning applies to any future `tel:`,
+`mailto:`, `sms:` or third-party-app deep link.
 
 Use it for a contact you can **reach**. "Mon compte" shows the viewer's own number and
 address as plain `InfoRows`.
@@ -191,6 +202,6 @@ never invent its own.
 | Rendering a hook's `loading` but discarding its `error` | An offline or denied read then reads as "aucun dossier" |
 | `Alert.alert` instead of `alertDialog` / `confirmDialog` | Silently does nothing on web |
 | A long free-text value in an `InfoRows` row instead of an `InfoComment` | Squeezes the label; text overflows off-screen |
-| `Linking.openURL` without `canOpenURL` | Dead tap on devices with no dialer/mail client |
+| Gating a `tel:` / `mailto:` button on `canOpenURL` | Android package visibility answers `false`; the button vanishes on device but shows on web |
 | New modal without its own `GestureHandlerRootView` | Gestures silently dead inside the modal |
 | `KeyboardAvoidingView` with no `behavior` on Android, or no `keyboardVerticalOffset` under a Stack header | Keyboard covers the input |

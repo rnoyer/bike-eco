@@ -75,9 +75,15 @@ French accessibility label ("Appeler …" / "Écrire à …"), which an icon-onl
 be reachable by a screen reader at all.
 
 - The `tel:` href strips spaces; the **displayed** value keeps its formatting.
-- `Linking.canOpenURL` is checked before the button is rendered. A simulator or a tablet
-  with no dialer degrades to a plain row rather than a dead tap.
+- The button is **always** rendered when there is a value. It is deliberately not gated on
+  `Linking.canOpenURL`: on Android that check is filtered by package visibility from API 30
+  up, so it answers `false` for `tel:` / `mailto:` and the button disappears on device
+  while still showing on web. Package visibility does not restrict `startActivity`, so
+  `openURL` works; a genuine "no app can open this" surfaces as a French dialog
+  ("Aucune application de téléphone n'est disponible sur cet appareil.").
 - An empty value renders `"—"` and no button.
+- The button is 22px icon inside `space.sm` padding, a `border` hairline and a `radius.sm`
+  corner, and tints its background `surfaceAlt` while pressed.
 
 Used for a **contact you can reach**. "Mon compte" shows the viewer's own number and
 address as plain `InfoRows` — calling yourself is pointless.
