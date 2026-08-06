@@ -91,6 +91,7 @@ export default function CompanyDetailScreen() {
             rows={[
               ["Entreprise", company.data.name],
               ["SIRET", company.data.siret],
+              ["N° TVA", company.data.tva ?? ""],
               ["Département", company.data.departement],
               ["Ville", company.data.ville],
               ["Région", regionLabel(company.data.region)],

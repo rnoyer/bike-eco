@@ -114,11 +114,11 @@ Empty text renders `"—"` under the label, keeping the part's height stable.
 | Screen | Card | Parts |
 |---|---|---|
 | [My account](page-my-account.md) | "Mes informations personnelles" | Nom · Prénom · Email · Téléphone |
-| My account (B2B only) | "Informations {entreprise}" | SIRET · Département · Ville |
+| My account (B2B only) | "Informations {entreprise}" | SIRET · N° TVA · Département · Ville |
 | [Dossier](page-dossier.md) | "Informations Dossier" | Date de soumission · Statut · Prix négocié · Région |
 | Dossier | "Informations véhicule" | rows · Accessoires · rows · Commentaires |
 | Dossier | "Informations vendeur" | rows · Téléphone · Email |
-| [Company](page-company.md) | "Information Entreprise" | Entreprise · SIRET · Département · Ville · Région |
+| [Company](page-company.md) | "Information Entreprise" | Entreprise · SIRET · N° TVA · Département · Ville · Région |
 | [Colleague](page-colleague.md) | "Information collaborateur" / "Informations vendeur" | Nom · Prénom · Rôle · Téléphone · Email |
 
 ## Layout

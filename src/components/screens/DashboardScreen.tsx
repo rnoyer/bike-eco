@@ -36,15 +36,22 @@ export default function DashboardScreen({
   const hydrating = isBackoffice && !ready;
 
   if (isBackoffice) {
-    const card = (d: WithId<Dossier>) => (
-      <DossierCard
-        key={d.id}
-        thumbnailUrl={d.thumbnailUrl}
-        title={`${d.submitter.companyName} - ${d.submitter.prenom} ${d.submitter.nom}`}
-        subtitle={`${d.vehicle.marque} ${d.vehicle.modele}`}
-        onPress={() => onOpenDossier(d.id)}
-      />
-    );
+    const card = (d: WithId<Dossier>) => {
+      const vehicle = `${d.vehicle.marque} ${d.vehicle.modele}`;
+      return (
+        <DossierCard
+          key={d.id}
+          thumbnailUrl={d.thumbnailUrl}
+          title={`${d.submitter.companyName} - ${d.submitter.prenom} ${d.submitter.nom}`}
+          subtitle={
+            d.negotiatedPrice !== null
+              ? `Prix négocié : ${d.negotiatedPrice} € - ${vehicle}`
+              : vehicle
+          }
+          onPress={() => onOpenDossier(d.id)}
+        />
+      );
+    };
     return (
       <ScrollView>
         <SectionWrapper>

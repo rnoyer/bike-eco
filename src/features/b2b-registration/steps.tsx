@@ -6,6 +6,7 @@ import ControlledField from "@/components/form/ControlledField";
 import { DEPARTMENTS } from "@/constants/departments";
 import { AccountFields, CoordonneesFields } from "@/features/registration/fields";
 import { digitsOnly } from "@/lib/forms/transforms";
+import { normalizeTva, TVA_LENGTH } from "@/lib/forms/tva";
 import type { StepConfig } from "@/lib/forms/useStepForm";
 import { tokens } from "@/theme/tokens";
 import type { B2bCompanyRegistrationForm } from "./schema";
@@ -18,6 +19,7 @@ function EntrepriseFields() {
   return (
     <>
       <ControlledField name="siret" label="Numéro SIRET *" placeholder="14 chiffres" keyboardType="numeric" maxLength={14} transform={digitsOnly(14)} returnKeyType="next" />
+      <ControlledField name="tva" label="Numéro de TVA (optionnel)" placeholder="FR + clé (2) + 9 premiers chiffres du SIRET" autoCapitalize="characters" autoCorrect={false} maxLength={TVA_LENGTH} transform={normalizeTva} returnKeyType="next" />
       <ControlledField name="companyName" label="Nom de votre entreprise *" placeholder="Nom de votre entreprise" autoCapitalize="words" returnKeyType="next" />
       <ControlledDropdown name="companyDepartement" label="Département *" placeholder="Département" options={DEPARTMENTS} searchable />
       <ControlledField name="companyVille" label="Ville *" placeholder="Ville de l'entreprise" autoCapitalize="words" returnKeyType="done" />
@@ -31,7 +33,7 @@ export const B2B_COMPANY_REGISTRATION_STEPS: CompanyStep[] = [
     progress: 25,
     title: "Coordonnées Entreprise",
     subtitle: "Indiquez le numéro SIRET de votre entreprise",
-    fields: ["siret", "companyName", "companyDepartement", "companyVille"],
+    fields: ["siret", "tva", "companyName", "companyDepartement", "companyVille"],
     render: () => <EntrepriseFields />,
   },
   {

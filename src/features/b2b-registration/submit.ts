@@ -18,6 +18,8 @@ export async function submitCompanyRegistration(
   await callRegisterCompany({
     method: "password",
     siret: values.siret,
+    // Optional field: omitted rather than sent empty, so the server stores null.
+    tva: values.tva || undefined,
     companyName: values.companyName,
     companyDepartement: values.companyDepartement,
     companyVille: values.companyVille,

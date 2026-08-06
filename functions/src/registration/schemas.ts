@@ -21,10 +21,18 @@ const acceptCredential = z.discriminatedUnion("method", [
 export const registerCompanySchema = z
   .object({
     siret: z.string().regex(/^\d{14}$/),
+    // Optional French VAT number: "FR" + a 2-character key + the 9-digit SIREN,
+    // i.e. the first 9 digits of the SIRET (checked below).
+    tva: z.string().regex(/^FR[0-9A-Z]{2}\d{9}$/).optional(),
     companyName: z.string().trim().min(1),
     companyDepartement: z.string().trim().min(1), // company location (step 1)
     companyVille: z.string().trim().min(1),
     ...profile,
+  })
+  .superRefine((v, ctx) => {
+    if (v.tva && v.tva.slice(4) !== v.siret.slice(0, 9)) {
+      ctx.addIssue({ code: "custom", message: "tva/siret mismatch", path: ["tva"] });
+    }
   })
   .and(registerCredential);
 

@@ -4,6 +4,7 @@ import type { UserRole } from "@/lib/firestore/schema";
 export interface RegisterCompanyPayload {
   method: "password" | "google";
   siret: string;
+  tva?: string; // optional VAT number — "FR" + key + the SIRET's SIREN
   companyName: string;
   companyDepartement: string;
   companyVille: string;

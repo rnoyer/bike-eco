@@ -60,6 +60,16 @@ test("registerCompany (password) creates pending company+user, pins claims, emai
   expect(d.calls.emails).toEqual([{ kind: "applicant", to: "c@x.fr", name: "Garage X" }]);
 });
 
+test("registerCompany stores the TVA number, or null when it was not given", async () => {
+  const withTva = fakeDeps();
+  await registerCompanyCore({ ...companyInput, tva: "FR1A123456789" }, null, null, withTva);
+  expect(withTva.calls.companies["12345678901234-aaaaaa"].tva).toBe("FR1A123456789");
+
+  const without = fakeDeps();
+  await registerCompanyCore(companyInput, null, null, without);
+  expect(without.calls.companies["12345678901234-aaaaaa"].tva).toBeNull();
+});
+
 test("registerCompany rejects a duplicate SIRET", async () => {
   const d = fakeDeps({ companyExistsForSiret: async () => true });
   await expect(registerCompanyCore(companyInput, null, null, d)).rejects.toMatchObject({ code: "already-exists" });

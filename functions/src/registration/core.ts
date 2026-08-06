@@ -81,6 +81,7 @@ export async function registerCompanyCore(
   const companyId = deps.newCompanyId(input.siret);
   await deps.writeCompany(companyId, {
     siret: input.siret,
+    tva: input.tva ?? null, // optional at registration
     name: input.companyName,
     status: "pending",
     departement: input.companyDepartement,

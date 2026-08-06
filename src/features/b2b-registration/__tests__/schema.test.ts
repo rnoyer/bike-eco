@@ -6,6 +6,7 @@ import {
 
 const valid = {
   siret: "12345678901234",
+  tva: "",
   companyName: "Garage Test",
   companyDepartement: "33 - Gironde",
   companyVille: "Bordeaux",
@@ -89,6 +90,29 @@ describe("b2bCompanyRegistrationSchema", () => {
       nom: "N", prenom: "P", telephone: "0600000000",
     });
     expect(result.success).toBe(false);
+  });
+
+  test("an empty TVA number is accepted — the field is optional", () => {
+    expect(b2bCompanyRegistrationSchema.safeParse({ ...valid, tva: "" }).success).toBe(true);
+  });
+
+  test("accepts a TVA number matching the SIRET's SIREN", () => {
+    expect(
+      b2bCompanyRegistrationSchema.safeParse({ ...valid, tva: "FR1A123456789" }).success,
+    ).toBe(true);
+  });
+
+  test("rejects a TVA number whose SIREN differs from the SIRET", () => {
+    const result = b2bCompanyRegistrationSchema.safeParse({ ...valid, tva: "FR1A987654321" });
+    expect(result.success).toBe(false);
+    const issue = result.error!.issues.find((i) => i.path.join(".") === "tva");
+    expect(issue?.message).toBe("Le numéro de TVA et le numéro SIRET doivent correspondre");
+  });
+
+  test("reports a malformed TVA number on the tva field", () => {
+    const result = b2bCompanyRegistrationSchema.safeParse({ ...valid, tva: "BE1A123456789" });
+    expect(result.success).toBe(false);
+    expect(result.error!.issues.map((i) => i.path.join("."))).toContain("tva");
   });
 
   test("companyVille is required", () => {

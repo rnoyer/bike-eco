@@ -59,6 +59,12 @@ export type AttachmentType = "image" | "pdf";
  */
 export interface Company {
   siret: string; // 14 digits, immutable
+  /**
+   * Optional VAT number: "FR" + a 2-character key + the SIRET's 9-digit SIREN.
+   * `null` when the applicant left it blank, and `undefined` on companies
+   * registered before the field existed — read it through `?? ""` / `dash()`.
+   */
+  tva?: string | null;
   name: string;
   status: CompanyStatus; // manual validation by the Bike-eco team
   departement: string; // "33 - Gironde" — captured at registration

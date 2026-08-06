@@ -50,6 +50,7 @@ Dates are `timestamp`; numeric vehicle values (`prix`, `annee`, `kilometrage`,
 | field | type | notes |
 |-------|------|-------|
 | `siret` | string | 14 digits, immutable |
+| `tva` | string \| null | optional VAT number — `FR` + 2-character key + the SIRET's 9-digit SIREN (e.g. `FR1A123456789`); `null` when not given, absent on companies created before the field existed |
 | `name` | string | |
 | `status` | string | `pending` → `active` (manual validation by the team; a declined applicant is hard-deleted, so there is no persisted `rejected`) |
 | `departement` | string | company location, e.g. `"33 - Gironde"` — captured at registration |

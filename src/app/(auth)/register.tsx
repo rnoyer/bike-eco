@@ -39,6 +39,7 @@ export default function RegisterScreen() {
             await callRegisterCompany({
               method: "google",
               siret: values.siret,
+              tva: values.tva || undefined,
               companyName: values.companyName,
               companyDepartement: values.companyDepartement,
               companyVille: values.companyVille,

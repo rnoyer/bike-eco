@@ -35,6 +35,7 @@ async function main() {
 
   await db.doc(`companies/comp_nord`).set({
     siret: "12345678900011",
+    tva: "FR1A123456789",
     name: "Garage du Nord",
     status: "active",
     departement: "75 - Paris",
@@ -113,6 +114,7 @@ async function main() {
   // A second company so cross-company isolation is checkable by hand.
   await db.doc(`companies/comp_sud`).set({
     siret: "98765432100022",
+    tva: "FR32987654321",
     name: "Garage du Sud",
     status: "active",
     departement: "13 - Bouches-du-Rhône",
@@ -169,6 +171,7 @@ async function main() {
   // A pending company for exercising the 4b validation loop.
   await db.doc(`companies/comp_pending`).set({
     siret: "22222222222222",
+    tva: "FR42222222222",
     name: "Garage Nouveau",
     status: "pending",
     departement: "33 - Gironde",

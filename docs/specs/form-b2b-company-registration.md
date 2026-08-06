@@ -22,6 +22,30 @@ default value : null
 type : Input number
 mandatory : yes
 
+label : "Numéro de TVA (optionnel)"
+placeholder : "FR + clé (2) + 9 premiers chiffres du SIRET"
+default value : null
+type : Input text (saisie normalisée : majuscules, séparateurs supprimés, 13 caractères max)
+mandatory : no
+validation : champ vide = valide. S'il est renseigné, "Suivant" ne passe pas au step
+suivant tant qu'il n'est pas vidé ou corrigé :
+
+- ne commence pas par "FR" → "Le numéro de TVA doit commencer par "FR""
+- ne fait pas exactement 13 caractères, ou la clé (2 caractères) n'est pas
+  alphanumérique, ou les 9 derniers ne sont pas des chiffres →
+  "Ceci ne correspond pas à un numéro de TVA."
+- les 9 derniers caractères ≠ les 9 premiers chiffres du SIRET (le SIREN) →
+  "Le numéro de TVA et le numéro SIRET doivent correspondre"
+  (contrôle ignoré tant que le SIRET n'est pas lui-même à 14 chiffres : le champ
+  SIRET affiche déjà sa propre erreur)
+
+Structure : "FR" + clé de contrôle (2 caractères, chiffres ou lettres) + SIREN
+(9 premiers chiffres du SIRET). Ex. SIRET `12345678901234` → TVA `FR1A123456789`.
+
+Le numéro de TVA est affiché partout où le SIRET l'est
+([page-company](page-company.md), [page-my-account](page-my-account.md)), sous le
+label `N° TVA`, et `"—"` lorsqu'il est absent.
+
 label : "Nom de votre entreprise\*"
 placeholder : "Nom de votre entreprise"
 default value : null

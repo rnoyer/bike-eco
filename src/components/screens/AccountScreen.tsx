@@ -119,6 +119,7 @@ export default function AccountScreen() {
               <InfoRows
                 rows={[
                   ["SIRET", company.data.siret],
+                  ["N° TVA", company.data.tva ?? ""],
                   ["Département", company.data.departement],
                   ["Ville", company.data.ville],
                 ]}

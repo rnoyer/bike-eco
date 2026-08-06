@@ -15,8 +15,8 @@ From top to bottom
   rows here, **without** the call / mail action buttons used elsewhere: this is the
   viewer's own contact information.
 - `InfoCard` "Informations [nom entreprise]" (B2B only, i.e. the user has a `companyId`;
-  hidden for back-office users) : one part (liste d'information) — SIRET / Département /
-  Ville.
+  hidden for back-office users) : one part (liste d'information) — SIRET / N° TVA /
+  Département / Ville. `N° TVA` is optional at registration and renders `"—"` when absent.
 - Section "Actions sur mon compte" :
   - "Se déconnecter" (primary).
   - "Changer mon mot de passe" (outlined) — **hidden** for an account with no password credential
