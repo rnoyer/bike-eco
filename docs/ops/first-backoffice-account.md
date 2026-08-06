@@ -136,9 +136,8 @@ elle laisse derrière elle le document `users/{uid}`, inaccessible et devenu des
 personnelles orphelines. Le script refuse aussi de supprimer le dernier compte back-office
 actif, sans lequel plus aucune entreprise ne peut être validée.
 
-Créer d'autres comptes back-office **depuis l'application** (« Inviter un collègue », aujourd'hui
-un stub) demanderait d'étendre le flux d'invitation au rôle `backoffice` — chantier séparé. En
-attendant, rejouer cette procédure.
+Cette procédure ne sert qu'à amorcer le **tout premier** compte back-office. Pour les suivants,
+voir [Comptes back-office suivants](#comptes-back-office-suivants) ci-dessous.
 
 ## Comptes back-office suivants
 
