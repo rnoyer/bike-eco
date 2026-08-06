@@ -36,12 +36,32 @@ styles, and the per-status badge palette. Never hardcode a hex or spacing value 
 covers.
 
 ```ts
-colors: primary #111 · primaryText #fff · muted #71727A · border #E5E7EB
+colors: primary #2A2933 · primaryText #fff · muted #71727A · border #E5E7EB
         divider #F3F4F6 · disabled #C1C1C6 (also placeholder) · surfaceAlt #FAFAFA
-        surface/bg #fff · danger #9F0712 · success #16A34A
+        surface #fff · danger #9F0712 · success #16A34A
+brand:  brand #1FC61B · brandTint #E7F7E6 · brandPressed #17A814
 status: a_traiter (amber) · en_cours (blue) · cloture (green)   // keyed by DossierStatus
 radius: sm 8 · md 12 · lg 16        space: xs 4 · sm 8 · md 12 · lg 24 · xl 28
 ```
+
+`primary` and the `brand*` colours come from the logo (`assets/images/icon.png`): a **BE**
+monogram in `#1FC61B` on a `#2A2933` charcoal disc. `primary` is that charcoal, not a
+neutral black.
+
+**Where green is allowed.** `brand` is for *affordances and identity accents* only — the
+`InfoCard` header rule, the `InfoContactRow` phone/mail buttons, the `EntityCard` row
+action, a selected `Dropdown` option, the `DossierCard` thumbnail placeholder. It is
+**never** a large fill and **never** a state colour: primary `Button` stays charcoal, and
+"this went well" stays `success`/`status`, which sit deliberately close to the brand green
+and would otherwise blur into it.
+
+`brand` is only ever a **background**, under a `primary` glyph or label (6.3:1). It is
+~2.3:1 on white, so green *text* or a green icon on a light surface needs a much darker
+green than this — none is tokenised, because nothing needs one yet.
+
+**Nothing sets the app background.** There is no `ThemeProvider`, so screens sit on
+react-navigation's own `DefaultTheme` background (`#F2F2F2`). A screen should not paint its
+own background either; white *inside* a screen is `surface`.
 
 `tokens.status` is keyed by `DossierStatus`, so adding a status means adding its palette
 entry — `StatusBadge` reads it directly.
@@ -120,7 +140,7 @@ address as plain `InfoRows`.
 | `ui/DossiersSection`, `ui/CompaniesSection` | Per-section fetch + `Section` |
 | `ui/DossierCard`, `ui/CompanyCard` | Thin wide cards; see their component specs |
 | `ui/StatusBadge` | Reads `tokens.status` by `DossierStatus`, and its copy from `lib/ui/format`'s `STATUS_LABELS` |
-| `ui/Button` | The only button. Never hand-roll a `Pressable` with its own styling. `loading` swaps the label for a spinner and blocks presses; `disabled` only dims. `loading` wins — a spinning button is never also dimmed |
+| `ui/Button` | The only button. Never hand-roll a `Pressable` with its own styling. `loading` swaps the label for a spinner and blocks presses; `disabled` only dims. `loading` wins — a spinning button is never also dimmed. The spoken label is the `label`; pass `accessibilityLabel` only when that reads badly aloud (a slash, an abbreviation) |
 | `ui/ImageViewerModal` | Full-screen modal precedent — wraps content in its own `GestureHandlerRootView` |
 | `ui/ConfirmationView` | Success screen with delayed auto-redirect |
 
@@ -195,7 +215,9 @@ never invent its own.
 
 | Mistake | Consequence |
 |---|---|
-| Hardcoding `#111` / `12` instead of a token | Drifts from the rest of the app; breaks a future token change |
+| Hardcoding `#2A2933` / `12` instead of a token | Drifts from the rest of the app; breaks a future token change |
+| `brand` as a text or icon colour on a light surface | ~2.3:1 — fails AA. It is a background only |
+| Green on a primary `Button`, or as a success/state colour | Spends the accent everywhere and collides with `success` / `status.cloture` |
 | Building a label/value block out of `@expo/ui`, or by hand | `InfoCard` + its three parts is the only shape |
 | An `InfoCard` nested inside a `Section` of the same name | The title is rendered twice |
 | A part that draws its own divider | Doubled lines — the card owns the separators |

@@ -83,5 +83,6 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: "rgba(255,255,255,0.5)",
   },
-  dotActive: { backgroundColor: tokens.colors.bg },
+  // Sits on a photo, so it stays white — not the app canvas.
+  dotActive: { backgroundColor: tokens.colors.surface },
 });

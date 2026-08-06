@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: tokens.space.lg,
     gap: tokens.space.md,
-    backgroundColor: tokens.colors.bg,
+    backgroundColor: tokens.colors.surface,
   },
   check: {
     fontSize: 56,

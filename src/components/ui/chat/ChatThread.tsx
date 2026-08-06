@@ -228,7 +228,8 @@ const styles = StyleSheet.create({
     gap: tokens.space.xs,
   },
   mine: { backgroundColor: tokens.colors.primary },
-  theirs: { backgroundColor: tokens.colors.bg },
+  // White, so the bubble stays distinct from the canvas behind the thread.
+  theirs: { backgroundColor: tokens.colors.surface },
   // Greyed while in flight; a failed bubble stays at full strength because it
   // is asking the user to act on it.
   sending: { opacity: 0.6 },

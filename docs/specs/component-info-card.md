@@ -1,7 +1,7 @@
 # `InfoCard` component
 
-The read-only information card: a dark title bar over a white body, whose body is split
-into **parts** separated by hairline dividers. It is the single source of truth for every
+The read-only information card: a dark title bar under a green brand rule, over a white
+body split into **parts** separated by hairline dividers. It is the single source of truth for every
 label/value block in the app — "Mes informations personnelles", "Informations véhicule",
 "Informations vendeur", "Informations Dossier", "Information Entreprise",
 "Information collaborateur".
@@ -16,7 +16,8 @@ button groups ("Actions sur mon compte", "Gérer ce collaborateur") and lists of
 ### Props
 
 - `title: string` — rendered in the dark title bar (`primary` background, `primaryText`,
-  15px/600).
+  15px/600), closed by a 3px `brand` rule along its bottom edge. That rule is the card's
+  brand moment: the body below it stays neutral.
 - `loading?: boolean` — centered spinner in the body, under the bar.
 - `error?: string | null` — already-French copy from the read hook (`mapDataError`), shown
   in `danger` in place of the parts.
@@ -36,7 +37,7 @@ button groups ("Actions sur mon compte", "Gérer ce collaborateur") and lists of
 - `null` children are dropped (by `Children.toArray`) before the dividers are computed, so
   a conditionally-absent part never leaves a doubled line behind.
 - The body is clipped (`overflow: hidden`) to the card radius, so the square title bar
-  takes the card's rounded top corners.
+  takes the card's rounded top corners — and the header's `brand` rule with it.
 
 ## Parts
 
@@ -87,8 +88,11 @@ be reachable by a screen reader at all.
   resolves `openURL` unconditionally (`window.open` never throws), and the iOS simulator
   resolves `NO` for `tel:` rather than rejecting. Both are dev/browser-only degradations.
 - An empty value renders `"—"` and no button.
-- The button is 22px icon inside `space.sm` padding, a `border` hairline and a `radius.sm`
-  corner, and tints its background `surfaceAlt` while pressed.
+- The button is a 22px icon inside `space.sm` padding on a **filled `brand` background**
+  with a `radius.sm` corner, tinting to `brandPressed` while pressed. Filled, not outlined:
+  the previous hairline box around a dark glyph read as a disabled placeholder rather than
+  as the row's one action, and its `surfaceAlt` pressed state was a ~1.02:1 change. The
+  glyph stays `primary` — charcoal on green is the logo's own pairing, at 6.3:1.
 
 Used for a **contact you can reach**. "Mon compte" shows the viewer's own number and
 address as plain `InfoRows` — calling yourself is pointless.
