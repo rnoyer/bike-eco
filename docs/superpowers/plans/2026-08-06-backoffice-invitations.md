@@ -604,18 +604,22 @@ git commit -m "feat: invited funnel routes by role and names the organisation"
 ### Task 5: Back-office "Inviter un collègue" route
 
 **Files:**
+- Create: `src/components/screens/AddColleagueScreen.tsx`
 - Create: `src/app/(backoffice)/add-colleague.tsx`
 - Create: `src/app/(backoffice)/invite-sent.tsx`
+- Modify: `src/app/(b2b)/add-colleague.tsx`
 - Modify: `src/app/(backoffice)/(tabs)/settings.tsx`
 - Modify: `docs/specs/page-add-colleague.md`
 
 **Interfaces:**
 - Consumes: `useInvite` (`src/lib/data/useInvite.ts`, unchanged — the server derives the role from the caller), `AddColleagueForm`, `ConfirmationView`.
-- Produces: the routes `/(backoffice)/add-colleague` and `/(backoffice)/invite-sent`.
+- Produces: `AddColleagueScreen` (props: `{ onSent: () => void }`), and the routes `/(backoffice)/add-colleague` and `/(backoffice)/invite-sent`.
 
-- [ ] **Step 1: Create the back-office add-colleague route**
+The page is identical for both roles — only the confirmation destination differs — so it follows this repo's established shape: a shared screen component under `src/components/screens/`, plus a thin route file per role that supplies the callback. This is exactly how `ColleaguesScreen` is used by `(b2b)/colleagues/index.tsx` and `(backoffice)/colleagues/index.tsx`.
 
-Create `src/app/(backoffice)/add-colleague.tsx`:
+- [ ] **Step 1: Extract the shared screen**
+
+Create `src/components/screens/AddColleagueScreen.tsx`, moving the body of the existing b2b route into it. The header title is identical for both roles, so it lives here:
 
 ```tsx
 import AddColleagueForm from "@/components/form/AddColleagueForm";
@@ -623,11 +627,17 @@ import { useInvite } from "@/lib/data/useInvite";
 import { headerOptions } from "@/lib/navigation/headerOptions";
 import { alertDialog } from "@/lib/ui/dialog";
 import { tokens } from "@/theme/tokens";
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import { ScrollView, StyleSheet } from "react-native";
 
-export default function BackofficeAddColleague() {
-  const router = useRouter();
+interface Props {
+  /** The invitation is on its way — go to the caller's confirmation screen. */
+  onSent: () => void;
+}
+
+/** "Inviter un collègue", shared by both roles: `sendInvite` derives the
+ *  invitation's role from the caller, so only the destination differs. */
+export default function AddColleagueScreen({ onSent }: Props) {
   const { invite, pending } = useInvite({
     onError: (message) => alertDialog("Invitation impossible", message),
   });
@@ -643,7 +653,7 @@ export default function BackofficeAddColleague() {
         busy={pending}
         onSubmit={async (email) => {
           // `invite` resolves to undefined on failure, having already alerted.
-          if (await invite(email)) router.replace("/(backoffice)/invite-sent");
+          if (await invite(email)) onSent();
         }}
       />
     </ScrollView>
@@ -653,7 +663,41 @@ export default function BackofficeAddColleague() {
 const styles = StyleSheet.create({ content: { padding: tokens.space.lg } });
 ```
 
-- [ ] **Step 2: Create the invitation-sent confirmation route**
+- [ ] **Step 2: Make the b2b route a thin wrapper**
+
+Replace `src/app/(b2b)/add-colleague.tsx` entirely — its behaviour is unchanged:
+
+```tsx
+import AddColleagueScreen from "@/components/screens/AddColleagueScreen";
+import { useRouter } from "expo-router";
+
+export default function B2bAddColleague() {
+  const router = useRouter();
+  return (
+    <AddColleagueScreen onSent={() => router.replace("/(b2b)/confirmation")} />
+  );
+}
+```
+
+- [ ] **Step 3: Create the back-office route**
+
+Create `src/app/(backoffice)/add-colleague.tsx`:
+
+```tsx
+import AddColleagueScreen from "@/components/screens/AddColleagueScreen";
+import { useRouter } from "expo-router";
+
+export default function BackofficeAddColleague() {
+  const router = useRouter();
+  return (
+    <AddColleagueScreen
+      onSent={() => router.replace("/(backoffice)/invite-sent")}
+    />
+  );
+}
+```
+
+- [ ] **Step 4: Create the invitation-sent confirmation route**
 
 Create `src/app/(backoffice)/invite-sent.tsx`. It is a separate route because the existing `(backoffice)/confirmation.tsx` is hard-coded to dossier wording:
 
@@ -676,7 +720,7 @@ export default function BackofficeInviteSent() {
 }
 ```
 
-- [ ] **Step 3: Point the back-office Paramètres button at the new route**
+- [ ] **Step 5: Point the back-office Paramètres button at the new route**
 
 Replace `src/app/(backoffice)/(tabs)/settings.tsx` entirely — the `alertDialog` stub and its import go away:
 
@@ -697,7 +741,7 @@ export default function BackofficeSettings() {
 }
 ```
 
-- [ ] **Step 4: Regenerate typed routes**
+- [ ] **Step 6: Regenerate typed routes**
 
 Two route files were added, so `tsc` cannot resolve their `href` until `.expo/types/router.d.ts` is regenerated — bare `tsc` does not do it:
 
@@ -710,7 +754,7 @@ pkill -f "expo start"; pkill -f "expo/cli"; sleep 1
 
 Expected: `TYPES REGENERATED` is printed.
 
-- [ ] **Step 5: Update the page spec**
+- [ ] **Step 7: Update the page spec**
 
 In `docs/specs/page-add-colleague.md`, replace the "## Main section" intro block's button bullet list item for the confirmation link, and add a note at the top of "## Main section":
 
@@ -729,15 +773,15 @@ and replace the "link to page-confirmation" sub-bullet block with:
     - Redirect to page-Dashboard (celui du rôle : b2b ou back-office)
 ```
 
-- [ ] **Step 6: Run the gate**
+- [ ] **Step 8: Run the gate**
 
 Run: `npx tsc --noEmit && npx expo lint && npm test`
 Expected: all three green.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add "src/app/(backoffice)/add-colleague.tsx" "src/app/(backoffice)/invite-sent.tsx" "src/app/(backoffice)/(tabs)/settings.tsx" docs/specs/page-add-colleague.md
+git add src/components/screens/AddColleagueScreen.tsx "src/app/(b2b)/add-colleague.tsx" "src/app/(backoffice)/add-colleague.tsx" "src/app/(backoffice)/invite-sent.tsx" "src/app/(backoffice)/(tabs)/settings.tsx" docs/specs/page-add-colleague.md
 git commit -m "feat: back-office invite-a-colleague route"
 ```
 
