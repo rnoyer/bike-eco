@@ -6,6 +6,10 @@ import { useLocalSearchParams } from "expo-router";
 export default function BackofficeUserDetail() {
   const { uid } = useLocalSearchParams<{ uid: string }>();
   return (
-    <ColleagueScreen uid={uid} canManage={false} infoTitle="Information vendeur" />
+    <ColleagueScreen
+      uid={uid}
+      canManage={false}
+      infoTitle="Informations vendeur"
+    />
   );
 }
