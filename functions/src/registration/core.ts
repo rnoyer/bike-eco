@@ -124,17 +124,22 @@ export async function sendInviteCore(
   await deps.sendInviteEmail(input.email, code, organisationName);
 }
 
+/** The name shown to an invitee: their future company, or Bike-eco itself. */
+export function organisationNameOf(inv: StoredInvitation): string {
+  return inv.role === "backoffice" ? BIKE_ECO_ORGANISATION : (inv.companyName ?? "");
+}
+
 export async function resolveInviteCore(
   input: ResolveInviteInput,
   deps: Deps,
-): Promise<{ email: string; companyName: string }> {
+): Promise<{ email: string; role: InviteRole; organisationName: string }> {
   const inv = await deps.findInvitationByHash(hashInviteCode(input.code));
   if (!inv) throw new RegError("not-found", "Code d'invitation invalide ou expiré.");
   if (inv.expiresAt <= deps.now()) {
     await deps.deleteInvitation(inv.id);
     throw new RegError("not-found", "Code d'invitation invalide ou expiré.");
   }
-  return { email: inv.email, companyName: inv.companyName };
+  return { email: inv.email, role: inv.role, organisationName: organisationNameOf(inv) };
 }
 
 export async function acceptInviteCore(

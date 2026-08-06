@@ -90,12 +90,23 @@ test("sendInvite refuses a non-active or non-b2b caller", async () => {
 test("resolveInvite returns the email for a valid code and deletes an expired one", async () => {
   const good = { id: "inv1", email: "new@x.fr", role: "b2b" as const, companyId: "comp_1", companyName: "Garage X", tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000 };
   const d = fakeDeps({ findInvitationByHash: async (h) => (h === good.tokenHash ? good : null) });
-  await expect(resolveInviteCore({ code: "a1b2c3" }, d)).resolves.toEqual({ email: "new@x.fr", companyName: "Garage X" });
+  await expect(resolveInviteCore({ code: "a1b2c3" }, d)).resolves.toEqual({ email: "new@x.fr", role: "b2b", organisationName: "Garage X" });
 
   const expired = { ...good, expiresAt: 500_000 };
   const d2 = fakeDeps({ findInvitationByHash: async () => expired });
   await expect(resolveInviteCore({ code: "A1B2C3" }, d2)).rejects.toMatchObject({ code: "not-found" });
   expect(d2.calls.invitations["inv1"]).toBe("deleted");
+});
+
+test("resolveInvite names Bike-eco for a back-office invitation", async () => {
+  const inv = {
+    id: "inv2", email: "team@bike-eco.fr", role: "backoffice" as const, companyId: null,
+    companyName: null, tokenHash: hashInviteCode("Z9Y8X7"), expiresAt: 2_000_000,
+  };
+  const d = fakeDeps({ findInvitationByHash: async () => inv });
+  await expect(resolveInviteCore({ code: "Z9Y8X7" }, d)).resolves.toEqual({
+    email: "team@bike-eco.fr", role: "backoffice", organisationName: "Bike-eco",
+  });
 });
 
 test("acceptInvite creates an ACTIVE user in the invitation's company and deletes the invite", async () => {

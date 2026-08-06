@@ -35,9 +35,14 @@ function realDeps(): Deps {
       if (snap.empty) return null;
       const doc = snap.docs[0];
       const d = doc.data();
+      // A back-office invitation has no company — skip the lookup entirely
+      // rather than issuing a `doc(null)` read.
+      const companyId = (d.companyId as string | null) ?? null;
       return {
-        id: doc.id, email: d.email, companyId: d.companyId, tokenHash: d.tokenHash,
-        companyName: (await db().collection("companies").doc(d.companyId).get()).data()?.name ?? "",
+        id: doc.id, email: d.email, role: d.role, companyId, tokenHash: d.tokenHash,
+        companyName: companyId
+          ? ((await db().collection("companies").doc(companyId).get()).data()?.name as string) ?? ""
+          : null,
         expiresAt: d.expiresAt.toMillis(),
       } satisfies StoredInvitation;
     },
