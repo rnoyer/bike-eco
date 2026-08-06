@@ -46,12 +46,13 @@ export interface Deps {
 function profileDoc(
   input: { nom: string; prenom: string; telephone: string },
   email: string,
-  companyId: string,
+  role: InviteRole,
+  companyId: string | null,
   status: "pending" | "active",
   isAdmin: boolean,
 ) {
   return {
-    role: "b2b", companyId, isAdmin,
+    role, companyId, isAdmin,
     nom: input.nom, prenom: input.prenom, email,
     telephone: input.telephone,
     status,
@@ -89,7 +90,7 @@ export async function registerCompanyCore(
     createdByName: `${input.prenom} ${input.nom}`,
     validatedAt: null,
   });
-  await deps.writeUser(uid, profileDoc(input, email, companyId, "pending", true));
+  await deps.writeUser(uid, profileDoc(input, email, "b2b", companyId, "pending", true));
   await deps.setClaims(uid, { role: "b2b", companyId, status: "pending" });
   await deps.sendApplicantEmail(email, input.companyName);
 }
@@ -163,7 +164,7 @@ export async function acceptInviteCore(
     }
     uid = authUid;
   }
-  await deps.writeUser(uid, profileDoc(input, inv.email, inv.companyId, "active", false));
-  await deps.setClaims(uid, { role: "b2b", companyId: inv.companyId, status: "active" });
+  await deps.writeUser(uid, profileDoc(input, inv.email, inv.role, inv.companyId, "active", false));
+  await deps.setClaims(uid, { role: inv.role, companyId: inv.companyId, status: "active" });
   await deps.deleteInvitation(inv.id);
 }

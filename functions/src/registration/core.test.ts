@@ -200,3 +200,23 @@ test("sendInvite refuses a non-admin back-office caller", async () => {
   ).rejects.toMatchObject({ code: "permission-denied" });
   expect(d.calls.invitations).toEqual({});
 });
+
+test("acceptInvite on a back-office invitation creates an active, non-admin team member", async () => {
+  const inv = {
+    id: "inv2", email: "team@bike-eco.fr", role: "backoffice" as const, companyId: null,
+    companyName: null, tokenHash: hashInviteCode("Z9Y8X7"), expiresAt: 2_000_000,
+  };
+  const d = fakeDeps({ findInvitationByHash: async () => inv });
+  await acceptInviteCore(
+    { method: "password", code: "Z9Y8X7", nom: "N", prenom: "P", telephone: "0600000000", password: "password123" },
+    null, null, d,
+  );
+  expect(d.calls.users["uid_new"]).toMatchObject({
+    role: "backoffice", companyId: null, status: "active", isAdmin: false,
+    nom: "N", prenom: "P", email: "team@bike-eco.fr", telephone: "0600000000",
+  });
+  expect(d.calls.claims).toEqual({
+    uid: "uid_new", claims: { role: "backoffice", companyId: null, status: "active" },
+  });
+  expect(d.calls.invitations["inv2"]).toBe("deleted");
+});
