@@ -2013,7 +2013,7 @@ import type { DossierStatus, Region } from "@/lib/firestore/schema";
 import { mapDataError } from "./dataErrors";
 
 /**
- * Back-office status / région / prix négocié update (page-dossier-management).
+ * Back-office status / région / prix validé update (page-dossier-management).
  * These four fields are exactly what the update rule allows.
  */
 export function useDossierManagement() {

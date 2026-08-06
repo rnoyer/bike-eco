@@ -1,6 +1,6 @@
 # Back-office Dossier management specifications
 
-This page to manage status and store the negociated price.
+This page to manage status and store the validated price.
 
 ## Navbar props
 
@@ -33,14 +33,14 @@ type : dropdown
 - "en cours"
 - "cloturé"
 
-  label : "Prix d’achat négocié"
+  label : "Prix d’achat validé"
   placeholder : "€"
   default value : null
   type : Input number
   unit : "€"
   mandatory : no
 
-  Primary Button : "Mettre à jour", update dossier region, statut and negociated price
+  Primary Button : "Mettre à jour", update dossier region, statut and validated price
 
 ## Loading and error states
 

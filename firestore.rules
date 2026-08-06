@@ -51,7 +51,7 @@ service cloud.firestore {
         && request.resource.data.companyId == myCompany()
         && request.resource.data.submittedBy == request.auth.uid
         && request.resource.data.status == 'a_traiter'
-        && request.resource.data.negotiatedPrice == null
+        && request.resource.data.validatedPrice == null
         && request.resource.data.region in ['NORTH', 'SOUTH'];
 
       // Exactly the fields DossierManagementForm submits — nothing more —
@@ -62,12 +62,12 @@ service cloud.firestore {
       // still passing the key check — a classic create/update inconsistency.
       allow update: if isBackoffice()
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['status', 'region', 'negotiatedPrice', 'updatedAt'])
+             .hasOnly(['status', 'region', 'validatedPrice', 'updatedAt'])
         && request.resource.data.status in ['a_traiter', 'en_cours', 'cloture']
         && request.resource.data.region in ['NORTH', 'SOUTH']
-        && (request.resource.data.negotiatedPrice == null
-            || (request.resource.data.negotiatedPrice is number
-                && request.resource.data.negotiatedPrice >= 0));
+        && (request.resource.data.validatedPrice == null
+            || (request.resource.data.validatedPrice is number
+                && request.resource.data.validatedPrice >= 0));
 
       allow delete: if false;
 

@@ -1659,7 +1659,7 @@ export default function DossierManagementForm({
             ))}
           </Picker>
         </FieldGroup.Section>
-        <FieldGroup.Section title="Prix d’achat négocié">
+        <FieldGroup.Section title="Prix d’achat validé">
           <TextInput value={price} placeholder="€" keyboardType="numeric" />
         </FieldGroup.Section>
         <Button
@@ -2770,7 +2770,7 @@ Expected: no errors.
 
 - [ ] **Step 6: Manual run check**
 
-As Back-office, open a dossier. Verify: 3-tab native bar (Dossier · Messages · Statut dossier); Statut dossier shows the status dropdown (default = the dossier's status) + "Prix d'achat négocié" numeric field + "Mettre à jour"; submitting routes to the confirmation screen, which auto-redirects to the dashboard.
+As Back-office, open a dossier. Verify: 3-tab native bar (Dossier · Messages · Statut dossier); Statut dossier shows the status dropdown (default = the dossier's status) + "Prix d'achat validé" numeric field + "Mettre à jour"; submitting routes to the confirmation screen, which auto-redirects to the dashboard.
 
 - [ ] **Step 7: Commit**
 

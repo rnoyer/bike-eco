@@ -29,14 +29,14 @@ function DossierCard({
   status: DossierStatus;
 }) {
   // Straight off the live `useDossier` snapshot, so a back-office update to
-  // status / prix négocié / région re-renders this with no extra wiring.
+  // status / prix validé / région re-renders this with no extra wiring.
   return (
     <InfoCard title="Informations Dossier">
       <InfoRows
         rows={[
           ["Date de soumission", submittedAt(dossier.createdAt)],
           ["Statut", statusLabel(status)],
-          ["Prix négocié", euros(dossier.negotiatedPrice)],
+          ["Prix validé", euros(dossier.validatedPrice)],
           ["Région", regionLabel(dossier.region)],
         ]}
       />

@@ -60,7 +60,7 @@ export function toDossierPayload(
     region: regionForDepartement(company.departement),
     companyId: company.id,
     submittedBy: session.id,
-    negotiatedPrice: null,
+    validatedPrice: null,
     submitter: {
       nom: session.nom,
       prenom: session.prenom,

@@ -27,7 +27,7 @@ following up on their own submission, so its status comes first :
 
 One part (liste d'information) : date de soumission (`JJ MMM AAAA hh:mm`, e.g.
 "26 juil. 2026 14:30"), statut ("À traiter" / "En cours" / "Clôturé", as plain text —
-not the coloured badge), prix négocié, région ("Nord" / "Sud").
+not the coloured badge), prix validé, région ("Nord" / "Sud").
 
 **A b2b user never sees "À traiter".** `a_traiter` is the back office's own working
 state, so for a b2b viewer a dossier reads "En cours" until it is clôturé — in this

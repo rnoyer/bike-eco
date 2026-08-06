@@ -103,7 +103,7 @@ B2B only. Form sections are grouped into nested maps for readability.
 | `region` | string | `NORTH` \| `SOUTH`, derived from the submitter's **company** `departement` (reuses `isNord`/`isSud`); reassignable by the back-office (page-dossier-management) |
 | `companyId` | string | owner company |
 | `submittedBy` | uid | |
-| `negotiatedPrice` | number \| null | back-office deal outcome (page-dossier-management) |
+| `validatedPrice` | number \| null | back-office deal outcome (page-dossier-management) |
 | `submitter` | map | denormalized display: `{ nom, prenom, companyName }` (for cards/chat) |
 | `vehicle` | map | see below |
 | `keys` | map | see below |
@@ -205,7 +205,7 @@ need two composite indexes:
 
 - **dossiers** — read: B2B users where `companyId` matches their claim; team where
   `region` matches. Create: B2B authed user. Update: team (status transitions +
-  `negotiatedPrice`), always combined with field validation — never
+  `validatedPrice`), always combined with field validation — never
   ownership-only.
 - **companies / users** — a `users/{uid}` document is readable by its owner, the
   back-office team, and an active teammate sharing the same `companyId` (so "Mes

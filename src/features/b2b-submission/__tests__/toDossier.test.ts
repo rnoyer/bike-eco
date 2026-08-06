@@ -36,7 +36,7 @@ test("région follows the submitter's département", () => {
 test("a new dossier is unstarted, unpriced, and owned by the submitter", () => {
   const d = toDossierPayload(B2B_SUBMISSION_DEFAULTS, session, company, photos);
   expect(d.status).toBe("a_traiter");
-  expect(d.negotiatedPrice).toBeNull();
+  expect(d.validatedPrice).toBeNull();
   expect(d.companyId).toBe("comp_nord");
   expect(d.submittedBy).toBe("user_b2b_nord");
   expect(d.region).toBe("NORTH");

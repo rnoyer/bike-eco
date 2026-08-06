@@ -43,7 +43,11 @@ interface Props {
   initialRegion: Region;
   initialStatus: DossierStatus;
   initialPrice: number | null;
-  onSubmit: (region: Region, status: DossierStatus, price: number | null) => void;
+  onSubmit: (
+    region: Region,
+    status: DossierStatus,
+    price: number | null,
+  ) => void;
   /** The update is in flight — the button spins and stops accepting taps. */
   busy?: boolean;
 }
@@ -85,7 +89,7 @@ export default function DossierManagementForm({
         />
         <ControlledField
           name="price"
-          label="Prix d'achat négocié"
+          label="Prix d'achat validé"
           placeholder="€"
           keyboardType="numeric"
           suffix="€"
@@ -98,8 +102,8 @@ export default function DossierManagementForm({
             onSubmit(
               regionValueOf(v.region),
               statusValueOf(v.status),
-              v.price ? Number(v.price) : null
-            )
+              v.price ? Number(v.price) : null,
+            ),
           )}
         />
       </View>

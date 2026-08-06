@@ -89,7 +89,7 @@ async function main() {
   ] as const) {
     await db.doc(`dossiers/${id}`).set({
       status, region, companyId: "comp_nord", submittedBy: "user_b2b_nord",
-      negotiatedPrice: null,
+      validatedPrice: null,
       submitter: {
         nom: "Durand", prenom: "Camille", companyName: "Garage du Nord",
         email: "b2b@garage-nord.fr", telephone: "0601020304",
@@ -138,7 +138,7 @@ async function main() {
   });
   await db.doc(`dossiers/dos_sud`).set({
     status: "a_traiter", region: "SOUTH", companyId: "comp_sud",
-    submittedBy: "user_b2b_sud", negotiatedPrice: null,
+    submittedBy: "user_b2b_sud", validatedPrice: null,
     submitter: {
       nom: "Blanc", prenom: "Dominique", companyName: "Garage du Sud",
       email: "b2b@garage-sud.fr", telephone: "0621222324",

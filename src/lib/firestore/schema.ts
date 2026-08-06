@@ -171,7 +171,7 @@ export interface Dossier {
   region: Region; // initially derived from the submitter's company departement; reassignable by the back-office (page-dossier-management)
   companyId: string;
   submittedBy: string; // uid
-  negotiatedPrice: number | null; // back-office deal outcome (page-dossier-management)
+  validatedPrice: number | null; // back-office deal outcome (page-dossier-management)
   submitter: DossierSubmitter;
   vehicle: DossierVehicle;
   keys: DossierKeys;

@@ -8,7 +8,7 @@ Dossier's Card props :
 - title : Relevant information to identify Dossier
 - subtitle : Additionnal information to identify Dossier. Optional — when absent,
   no subtitle line is rendered. On the B2B dashboard it shows
-  "Prix négocié : [X] €" only once the back-office has set a negotiated price.
+  "Prix validé : [X] €" only once the back-office has set a validated price.
   On the back-office dashboard it shows the vehicle ("[marque] [modèle et
-  cylindrée]"), prefixed with the price once one is negotiated:
-  "Prix négocié : [X] € - [marque] [modèle et cylindrée]".
+  cylindrée]"), prefixed with the price once one is validated:
+  "Prix validé : [X] € - [marque] [modèle et cylindrée]".

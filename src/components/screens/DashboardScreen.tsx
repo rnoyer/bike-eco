@@ -44,8 +44,8 @@ export default function DashboardScreen({
           thumbnailUrl={d.thumbnailUrl}
           title={`${d.submitter.companyName} - ${d.submitter.prenom} ${d.submitter.nom}`}
           subtitle={
-            d.negotiatedPrice !== null
-              ? `Prix négocié : ${d.negotiatedPrice} € - ${vehicle}`
+            d.validatedPrice !== null
+              ? `Prix validé : ${d.validatedPrice} € - ${vehicle}`
               : vehicle
           }
           onPress={() => onOpenDossier(d.id)}
@@ -96,8 +96,8 @@ export default function DashboardScreen({
       thumbnailUrl={d.thumbnailUrl}
       title={`${d.vehicle.marque} ${d.vehicle.modele}`}
       subtitle={
-        d.negotiatedPrice !== null
-          ? `Prix négocié : ${d.negotiatedPrice} €`
+        d.validatedPrice !== null
+          ? `Prix validé : ${d.validatedPrice} €`
           : undefined
       }
       onPress={() => onOpenDossier(d.id)}

@@ -28,7 +28,7 @@ const newDossier = (overrides: Record<string, unknown> = {}) => ({
   region: "NORTH",
   companyId: "comp_1",
   submittedBy: "user_b2b_nord",
-  negotiatedPrice: null,
+  validatedPrice: null,
   photos: [],
   thumbnailUrl: null,
   ...overrides,
@@ -60,13 +60,13 @@ beforeAll(async () => {
       companyId: "comp_1",
       status: "a_traiter",
       region: "NORTH",
-      negotiatedPrice: null,
+      validatedPrice: null,
     });
     await setDoc(doc(db, "dossiers/dos_2"), {
       companyId: "comp_2",
       status: "a_traiter",
       region: "SOUTH",
-      negotiatedPrice: null,
+      validatedPrice: null,
     });
     await setDoc(doc(db, "users/user_b2b_nord"), { nom: "Durand" });
     await setDoc(doc(db, "users/user_mate"), {
@@ -165,7 +165,7 @@ test("a dossier cannot be born already in progress or priced", async () => {
     addDoc(collection(db, "dossiers"), newDossier({ status: "en_cours" })),
   );
   await assertFails(
-    addDoc(collection(db, "dossiers"), newDossier({ negotiatedPrice: 4200 })),
+    addDoc(collection(db, "dossiers"), newDossier({ validatedPrice: 4200 })),
   );
 });
 
@@ -198,13 +198,13 @@ test("backoffice does not file dossiers", async () => {
 
 // ── dossier update ─────────────────────────────────────────────────────────
 
-test("backoffice updates status, region and negotiated price", async () => {
+test("backoffice updates status, region and validated price", async () => {
   const db = env.authenticatedContext("bo_1", boClaims).firestore();
   await assertSucceeds(
     updateDoc(doc(db, "dossiers/dos_1"), {
       status: "en_cours",
       region: "SOUTH",
-      negotiatedPrice: 4200,
+      validatedPrice: 4200,
     }),
   );
 });
@@ -221,17 +221,17 @@ test("backoffice cannot write an out-of-domain status, region or price", async (
   await assertFails(updateDoc(doc(db, "dossiers/dos_1"), { status: "banana" }));
   await assertFails(updateDoc(doc(db, "dossiers/dos_1"), { region: "MARS" }));
   await assertFails(
-    updateDoc(doc(db, "dossiers/dos_1"), { negotiatedPrice: -50 }),
+    updateDoc(doc(db, "dossiers/dos_1"), { validatedPrice: -50 }),
   );
   await assertFails(
-    updateDoc(doc(db, "dossiers/dos_1"), { negotiatedPrice: "cher" }),
+    updateDoc(doc(db, "dossiers/dos_1"), { validatedPrice: "cher" }),
   );
 });
 
 test("a dealer cannot update their own dossier", async () => {
   const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
-    updateDoc(doc(db, "dossiers/dos_1"), { negotiatedPrice: 99999 }),
+    updateDoc(doc(db, "dossiers/dos_1"), { validatedPrice: 99999 }),
   );
 });
 

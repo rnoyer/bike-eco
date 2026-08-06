@@ -19,15 +19,15 @@ Three problems with what exists today:
 
 ## Decisions taken
 
-| Question | Decision |
-|---|---|
-| Palette | Reuse `tokens.colors.primary` (`#111`). No new colour tokens. |
-| Rendering layer | React Native. The four `@expo/ui` info lists are deleted. |
-| Relationship to `Section` | The card **replaces** `Section` for these blocks — its title bar *is* the title. `Section` stays for button groups and card lists. |
-| `Statut` value | Plain text (`À traiter` / `En cours` / `Clôturé`), not a `StatusBadge`. |
-| `Entreprise` on the back-office user detail | Dropped — `users/{uid}` has only `companyId`, and that screen is reached from the company page. |
-| Drop shadow from the mockups | Not shipped. `tokens` has no shadow entry; border-only, like `EntityCard`. |
-| Contact rows on "Mon compte" | Plain rows, no action buttons — it is the viewer's own number. |
+| Question                                    | Decision                                                                                                                           |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Palette                                     | Reuse `tokens.colors.primary` (`#111`). No new colour tokens.                                                                      |
+| Rendering layer                             | React Native. The four `@expo/ui` info lists are deleted.                                                                          |
+| Relationship to `Section`                   | The card **replaces** `Section` for these blocks — its title bar _is_ the title. `Section` stays for button groups and card lists. |
+| `Statut` value                              | Plain text (`À traiter` / `En cours` / `Clôturé`), not a `StatusBadge`.                                                            |
+| `Entreprise` on the back-office user detail | Dropped — `users/{uid}` has only `companyId`, and that screen is reached from the company page.                                    |
+| Drop shadow from the mockups                | Not shipped. `tokens` has no shadow entry; border-only, like `EntityCard`.                                                         |
+| Contact rows on "Mon compte"                | Plain rows, no action buttons — it is the viewer's own number.                                                                     |
 
 ## Components
 
@@ -48,7 +48,7 @@ The shell.
 - **Body** — `tokens.colors.surface`, wrapped in `tokens.colors.border` at
   `tokens.radius.md` with `overflow: "hidden"` so the bar clips to the top
   corners.
-- **Dividers** — the card inserts a 1px `tokens.colors.divider` line *between*
+- **Dividers** — the card inserts a 1px `tokens.colors.divider` line _between_
   its children. Parts never draw their own separator, so any part can be first,
   last, or only, without a conditional.
 - `loading` / `error` follow `Section`'s precedence (`loading` → spinner;
@@ -61,7 +61,12 @@ conditionally-absent part does not leave a doubled line.
 ### `InfoRows` — "liste d'information"
 
 ```tsx
-<InfoRows rows={[["Entreprise", "Garage du Sud"], ["SIRET", "98765432100022"]]} />
+<InfoRows
+  rows={[
+    ["Entreprise", "Garage du Sud"],
+    ["SIRET", "98765432100022"],
+  ]}
+/>
 ```
 
 One row per pair: a bold label with a trailing `" :"`, then the value flowing
@@ -163,12 +168,12 @@ The photo carousel and the `{marque} {modele}` heading stay above the cards.
 
 **`InfoCard "Informations Dossier"`** — new. One `InfoRows`:
 
-| Row | Source |
-|---|---|
+| Row                | Source                           |
+| ------------------ | -------------------------------- |
 | Date de soumission | `submittedAt(dossier.createdAt)` |
-| Statut | `statusLabel(dossier.status)` |
-| Prix négocié | `euros(dossier.negotiatedPrice)` |
-| Région | `regionLabel(dossier.region)` |
+| Statut             | `statusLabel(dossier.status)`    |
+| Prix validé        | `euros(dossier.negotiatedPrice)` |
+| Région             | `regionLabel(dossier.region)`    |
 
 It reads from the live `useDossier` snapshot, so a back-office update to status,
 negotiated price or region re-renders it with no extra wiring.

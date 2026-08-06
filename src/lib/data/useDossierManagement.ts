@@ -10,7 +10,7 @@ import { useAsyncAction, type AsyncActionOptions } from "@/lib/ui/useAsyncAction
 import { mapDataError } from "./dataErrors";
 
 /**
- * Back-office status / région / prix négocié update (page-dossier-management).
+ * Back-office status / région / prix validé update (page-dossier-management).
  * These four fields are exactly what the update rule allows.
  *
  * Raced against the shared write timeout: offline, Firestore buffers the write
@@ -33,7 +33,7 @@ export function useDossierManagement(options?: AsyncActionOptions) {
             updateDoc(dossierDoc(id), {
               region,
               status,
-              negotiatedPrice: price,
+              validatedPrice: price,
               updatedAt: serverTimestamp(),
             }),
           () => {},

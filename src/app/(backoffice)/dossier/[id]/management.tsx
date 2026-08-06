@@ -28,7 +28,7 @@ export default function BackofficeDossierManagement() {
         <DossierManagementForm
           initialRegion={data.region}
           initialStatus={data.status}
-          initialPrice={data.negotiatedPrice}
+          initialPrice={data.validatedPrice}
           busy={pending}
           onSubmit={async (region, status, price) => {
             if (await updateManagement(id, region, status, price)) {
