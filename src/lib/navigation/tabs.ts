@@ -57,7 +57,7 @@ function appTabs(group: Group): TabConfig[] {
       name: "settings",
       label: "Paramètres",
       sf: "building.fill",
-      md: "settings",
+      md: "corporate_fare",
       icon: buildingIcon,
       href: `/${group}/(tabs)/settings`,
     },
