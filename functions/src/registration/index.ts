@@ -10,7 +10,7 @@ import { generateCompanyId } from "./companyId";
 import {
   acceptInviteCore,
   registerCompanyCore, resolveInviteCore, sendInviteCore,
-  type Deps, type StoredInvitation,
+  type Deps, type InviteRole, type StoredInvitation,
 } from "./core";
 import { sendApplicantEmail, sendApprovalEmail, sendInviteEmail } from "./emails";
 import {
@@ -35,11 +35,17 @@ function realDeps(): Deps {
       if (snap.empty) return null;
       const doc = snap.docs[0];
       const d = doc.data();
+      // `doc.data()` is `any`, so a malformed/missing `role` would otherwise
+      // flow straight into setCustomUserClaims as a role-less account. Fail
+      // closed: an unrecognised role is treated as "no such invitation".
+      const role: InviteRole | null =
+        d.role === "backoffice" ? "backoffice" : d.role === "b2b" ? "b2b" : null;
+      if (!role) return null;
       // A back-office invitation has no company — skip the lookup entirely
       // rather than issuing a `doc(null)` read.
       const companyId = (d.companyId as string | null) ?? null;
       return {
-        id: doc.id, email: d.email, role: d.role, companyId, tokenHash: d.tokenHash,
+        id: doc.id, email: d.email, role, companyId, tokenHash: d.tokenHash,
         companyName: companyId
           ? ((await db().collection("companies").doc(companyId).get()).data()?.name as string) ?? ""
           : null,
@@ -126,10 +132,7 @@ export const sendInvite = onCall({ secrets: B2C_EMAIL_SECRETS }, async (req) => 
   if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
   try {
     const input = sendInviteSchema.parse(req.data);
-    await sendInviteCore(input, {
-      uid: req.auth.uid, role: req.auth.token.role as string,
-      status: req.auth.token.status as string, companyId: req.auth.token.companyId as string,
-    }, realDeps());
+    await sendInviteCore(input, callerFrom(req), realDeps());
     return { ok: true };
   } catch (e) { toHttps(e); }
 });

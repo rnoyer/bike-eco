@@ -82,7 +82,7 @@ test("sendInvite writes a hashed, 1h invitation for an active b2b caller", async
   expect(d.calls.emails[0]).toMatchObject({ kind: "invite", to: "new@x.fr", organisationName: "Garage X" });
 });
 
-test("sendInvite refuses a non-active or non-b2b caller", async () => {
+test("sendInvite refuses a non-active caller", async () => {
   const d = fakeDeps();
   await expect(sendInviteCore({ email: "x@x.fr" }, { role: "b2b", status: "pending", companyId: "c", uid: "u" }, d)).rejects.toMatchObject({ code: "permission-denied" });
 });
