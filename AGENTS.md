@@ -36,7 +36,6 @@ feature. Keep a spec in sync in the same change that alters its feature.
   - `page-settings.md` — settings (invite a colleague, delete account).
   - `page-add-colleague.md` — invite a colleague by email.
   - `page-confirmation.md` — generic success screen with delayed auto-redirect (title/message/delay/redirection-link props).
-  - `page-colleagues.md` — "Mes collaborateurs" list (b2b's company / back-office's team).
   - `page-colleague.md` — one colleague: info, and (admin only) promote/demote + delete.
 
 - **Component specs** (`docs/specs/`) — shared UI building blocks. Read the matching

@@ -21,7 +21,7 @@ export default function B2bColleague() {
     <ColleagueScreen
       uid={uid}
       canManage={canManage}
-      onDeleted={() => router.replace("/(b2b)/colleagues")}
+      onDeleted={() => router.replace("/(b2b)/(tabs)/settings")}
     />
   );
 }

@@ -8,14 +8,15 @@ interface Props {
   role: UserRole;
   onInvite: () => void;
   onManageCompanies?: () => void;
-  onManageColleagues: () => void;
+  /** Opens the colleague management page. Only ever called for an admin. */
+  onManageColleague: (uid: string) => void;
 }
 
 export default function SettingsScreen({
   role,
   onInvite,
   onManageCompanies,
-  onManageColleagues,
+  onManageColleague,
 }: Props) {
   const { data: session } = useAccount();
   // Live rather than the AuthProvider snapshot taken at sign-in, so a
@@ -23,7 +24,7 @@ export default function SettingsScreen({
   // to the session's value while the live read is loading, so nothing
   // flickers into a more-permissive state.
   const { data: viewer, loading: viewerLoading } = useUser(session?.id ?? "");
-  const canInvite = viewerLoading
+  const isAdmin = viewerLoading
     ? session?.isAdmin === true
     : viewer?.isAdmin === true;
 
@@ -31,10 +32,10 @@ export default function SettingsScreen({
     <ScrollView>
       <SettingsList
         role={role}
-        canInvite={canInvite}
+        isAdmin={isAdmin}
         onInvite={onInvite}
         onManageCompanies={onManageCompanies}
-        onManageColleagues={onManageColleagues}
+        onManageColleague={onManageColleague}
       />
     </ScrollView>
   );

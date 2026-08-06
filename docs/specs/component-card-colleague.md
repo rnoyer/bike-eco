@@ -6,6 +6,7 @@ Colleague's Card props :
 
 - title : "[Nom] [Prénom]"
 - subtitle : "Rôle: [Administrateur|Vendeur|Membre]"
-- right : optional button — "Gérer" on page-colleagues (administrators only, opens
+- right : optional button — "Gérer" in the "Mes collaborateurs" section of page-settings
+  (administrators only, opens
   page-colleague), "Voir détails" on page-company (opens page-colleague read-only).
   With no button the card is plain, non-clickable information.

@@ -8,7 +8,7 @@ export default function BackofficeSettings() {
       role="backoffice"
       onManageCompanies={() => router.push("/(backoffice)/companies")}
       onInvite={() => router.push("/(backoffice)/add-colleague")}
-      onManageColleagues={() => router.push("/(backoffice)/colleagues")}
+      onManageColleague={(uid) => router.push(`/(backoffice)/colleagues/${uid}`)}
     />
   );
 }

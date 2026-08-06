@@ -1,5 +1,6 @@
 import Dropdown from "@/components/form/Dropdown";
 import Button from "@/components/ui/Button";
+import ColleaguesSection from "@/components/ui/ColleaguesSection";
 import Section from "@/components/ui/Section";
 import SectionWrapper from "@/components/ui/SectionWrapper";
 import { useRegionFilter } from "@/lib/data/useRegionFilter";
@@ -14,18 +15,20 @@ const REGION_LABELS = REGION_OPTIONS.map((o) => o.label);
 
 interface Props {
   role: UserRole;
-  canInvite: boolean;
+  /** Gates both admin-only affordances: inviting, and the per-colleague
+   *  "Gérer" button. */
+  isAdmin: boolean;
   onInvite: () => void;
   onManageCompanies?: () => void;
-  onManageColleagues: () => void;
+  onManageColleague: (uid: string) => void;
 }
 
 export default function SettingsList({
   role,
-  canInvite,
+  isAdmin,
   onInvite,
   onManageCompanies,
-  onManageColleagues,
+  onManageColleague,
 }: Props) {
   const { region, setRegion } = useRegionFilter();
   const currentLabel =
@@ -53,7 +56,7 @@ export default function SettingsList({
           />
         </Section>
       ) : null}
-      {canInvite ? (
+      {isAdmin ? (
         <Section
           title={
             role === "backoffice"
@@ -64,13 +67,7 @@ export default function SettingsList({
           <Button variant="outlined" label="Inviter" onPress={onInvite} />
         </Section>
       ) : null}
-      <Section title="Mes collaborateurs">
-        <Button
-          variant="outlined"
-          label="Voir mes collaborateurs"
-          onPress={onManageColleagues}
-        />
-      </Section>
+      <ColleaguesSection canManage={isAdmin} onManage={onManageColleague} />
     </SectionWrapper>
   );
 }

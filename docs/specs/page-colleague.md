@@ -1,6 +1,7 @@
 # "Collaborateur" page specifications
 
-Reached from page-colleagues ("Gérer", administrators only) and, in read-only mode,
+Reached from the "Mes collaborateurs" section of page-settings ("Gérer", administrators
+only) and, in read-only mode,
 from the "Vendeurs de cette entreprise" section of page-company ("Voir détails").
 
 ## Navbar props

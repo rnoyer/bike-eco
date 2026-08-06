@@ -3,11 +3,11 @@ import type { AndroidSymbol } from "expo-symbols";
 import type { ImageSourcePropType } from "react-native";
 import type { SFSymbol } from "sf-symbols-typescript";
 
+import buildingIcon from "@/assets/images/icons/building.svg";
 import folderOpenIcon from "@/assets/images/icons/folder_open.svg";
 import gridViewIcon from "@/assets/images/icons/grid_view.svg";
 import mailIcon from "@/assets/images/icons/mail.svg";
 import personIcon from "@/assets/images/icons/person.svg";
-import settingsIcon from "@/assets/images/icons/settings.svg";
 import twoWheelerIcon from "@/assets/images/icons/two_wheeler.svg";
 
 /**
@@ -56,9 +56,9 @@ function appTabs(group: Group): TabConfig[] {
     {
       name: "settings",
       label: "Paramètres",
-      sf: "gearshape.fill",
+      sf: "building.fill",
       md: "settings",
-      icon: settingsIcon,
+      icon: buildingIcon,
       href: `/${group}/(tabs)/settings`,
     },
   ];

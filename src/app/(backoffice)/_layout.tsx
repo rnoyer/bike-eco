@@ -12,10 +12,6 @@ export default function BackofficeLayout() {
         options={{ title: "Gestion des entreprises vendeur" }}
       />
       <Stack.Screen name="companies/[id]" options={{ title: "Entreprise" }} />
-      <Stack.Screen
-        name="colleagues/index"
-        options={{ title: "Mes collaborateurs" }}
-      />
     </Stack>
   );
 }

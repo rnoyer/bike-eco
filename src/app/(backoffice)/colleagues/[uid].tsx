@@ -21,7 +21,7 @@ export default function BackofficeColleague() {
     <ColleagueScreen
       uid={uid}
       canManage={canManage}
-      onDeleted={() => router.replace("/(backoffice)/colleagues")}
+      onDeleted={() => router.replace("/(backoffice)/(tabs)/settings")}
     />
   );
 }

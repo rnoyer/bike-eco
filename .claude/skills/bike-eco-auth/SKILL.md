@@ -54,7 +54,7 @@ screens.
 doc. `session.isAdmin` is only a **snapshot taken at sign-in** (`AuthProvider` loads the
 profile with a one-shot `getDoc`), so it never notices a promotion or demotion until the
 app restarts. The client gates read the profile **live** instead, with `useUser(session.id)`
-(`onSnapshot`) in `ColleaguesScreen`, the colleague-detail routes, and `AccountScreen`,
+(`onSnapshot`) in `SettingsScreen`, the colleague-detail routes, and `AccountScreen`,
 falling back to the session snapshot only while that read is loading so nothing flickers
 into a more-permissive state. Every callable that needs it (`setColleagueAdmin`,
 `deleteColleague`, `deleteMyAccount`) re-reads it from the profile document server-side
