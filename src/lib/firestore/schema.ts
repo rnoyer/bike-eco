@@ -93,6 +93,14 @@ export interface AppUser {
   email: string; // PII — owner + team read only
   telephone: string; // PII
   status: UserStatus; // pending until the company is validated
+  /**
+   * Back-office only: the région this member manages. `null` = "Toute la
+   * France". Drives both the dashboard filter and notification fan-out, so
+   * a member can never watch NORTH while being paged about SOUTH.
+   * `undefined` on accounts created before the field existed — read it
+   * through `?? null`.
+   */
+  notificationRegion?: Region | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -171,6 +179,13 @@ export interface Dossier {
   region: Region; // initially derived from the submitter's company departement; reassignable by the back-office (page-dossier-management)
   companyId: string;
   submittedBy: string; // uid
+  /**
+   * Who last wrote this document. Set to `submittedBy` at creation and to the
+   * back-office caller on every management update. `onDocumentUpdated` carries
+   * no auth context, so this is the only way the notification trigger can skip
+   * the person who made the change.
+   */
+  updatedBy: string; // uid
   validatedPrice: number | null; // back-office deal outcome (page-dossier-management)
   submitter: DossierSubmitter;
   vehicle: DossierVehicle;
@@ -199,5 +214,29 @@ export interface Message {
   senderRole: UserRole;
   text: string;
   attachments: MessageAttachment[];
+  createdAt: Timestamp;
+}
+
+// ─── push tokens (subcollection of users) ────────────────────────────────────
+
+/**
+ * One document per device. The id is a random device id minted once into
+ * kv-store, not the token itself, so a rotated FCM token updates its row in
+ * place instead of orphaning one.
+ */
+export interface PushToken {
+  token: string;
+  platform: "ios" | "android";
+  updatedAt: Timestamp;
+}
+
+// ─── mutes (subcollection of dossiers) ───────────────────────────────────────
+
+/**
+ * Presence means "this uid has muted this dossier". Absence means subscribed —
+ * which is what makes "subscribed by default" free: no backfill, and no write
+ * when a dossier is created.
+ */
+export interface DossierMute {
   createdAt: Timestamp;
 }

@@ -11,8 +11,10 @@ import type {
   AppUser,
   Company,
   Dossier,
+  DossierMute,
   Invitation,
   Message,
+  PushToken,
 } from "./schema";
 
 /** A Firestore document paired with its id (docs don't carry their own id). */
@@ -24,6 +26,8 @@ export const COLLECTIONS = {
   invitations: "invitations",
   dossiers: "dossiers",
   messages: "messages",
+  pushTokens: "pushTokens",
+  mutes: "mutes",
 } as const;
 
 /** Identity converter that types reads/writes as T without transforming data. */
@@ -74,3 +78,23 @@ export const messagesRef = (dossierId: string) =>
 
 export const messageDoc = (dossierId: string, messageId: string) =>
   doc(messagesRef(dossierId), messageId);
+
+// ─── pushTokens subcollection ────────────────────────────────────────────────
+
+export const pushTokensRef = (uid: string) =>
+  collection(userDoc(uid), COLLECTIONS.pushTokens).withConverter(
+    typed<PushToken>(),
+  );
+
+export const pushTokenDoc = (uid: string, deviceId: string) =>
+  doc(pushTokensRef(uid), deviceId);
+
+// ─── mutes subcollection ─────────────────────────────────────────────────────
+
+export const dossierMutesRef = (dossierId: string) =>
+  collection(dossierDoc(dossierId), COLLECTIONS.mutes).withConverter(
+    typed<DossierMute>(),
+  );
+
+export const dossierMuteDoc = (dossierId: string, uid: string) =>
+  doc(dossierMutesRef(dossierId), uid);
