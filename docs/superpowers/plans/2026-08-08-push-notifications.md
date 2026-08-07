@@ -79,15 +79,17 @@ npx expo run:android
 
 Expected: the build succeeds and the app launches. A Metro reload does **not** include native code, so this rebuild is mandatory.
 
-- [ ] **Step 5: Rebuild iOS**
+- [ ] **Step 5: Kick off the iOS build**
+
+This machine is Linux — there is no Xcode, so `npx expo run:ios` cannot run. iOS pods are proven by an EAS cloud build instead. Start it and do **not** block on it:
 
 ```bash
-npx expo run:ios
+npx eas-cli@latest build --platform ios --profile development --non-interactive --no-wait
 ```
 
-Expected: pods resolve and the app launches.
+Expected: a build URL. Record it in your report. An iOS build takes ~15-25 minutes; the controller polls it while later tasks proceed. If the command fails asking for Apple credentials or an interactive login, **do not attempt to authenticate** — report the exact error and move on; the controller escalates that to the human.
 
-**If pod install fails** with a non-modular-header or Swift-module error, add `useFrameworks: "static"` to the iOS block of the existing `expo-build-properties` plugin in `app.json`, delete `ios/Pods` and `ios/Podfile.lock`, and rerun. If that in turn breaks the existing `GoogleUtilities` / `RecaptchaInterop` `extraPods` entries, remove those two `extraPods` entries — `use_frameworks! :linkage => :static` makes the `modular_headers` workaround they encode unnecessary. **Stop and report** if neither combination builds; every later task assumes this one passed.
+**If the build later fails** on a non-modular-header or Swift-module pod error, the fix is to add `useFrameworks: "static"` to the iOS block of the existing `expo-build-properties` plugin in `app.json`; and if that breaks the existing `GoogleUtilities` / `RecaptchaInterop` `extraPods` entries, remove those two entries — `use_frameworks! :linkage => :static` makes the `modular_headers` workaround they encode unnecessary. That fix is the controller's to schedule, not this task's.
 
 - [ ] **Step 6: Run the gate**
 
