@@ -145,3 +145,9 @@ test("free text is trimmed and oui/non answers are narrowed", () => {
   expect(d.condition.etat).toBe("Bon état");
   expect(d.papers.resultatCT).toBe("Favorable");
 });
+
+test("stamps updatedBy with the submitter's uid", () => {
+  const d = toDossierPayload(B2B_SUBMISSION_DEFAULTS, session, company, photos);
+  expect(d.updatedBy).toBe("user_b2b_nord");
+  expect(d.updatedBy).toBe(d.submittedBy);
+});

@@ -11,7 +11,11 @@ import { mapDataError } from "./dataErrors";
 
 /**
  * Back-office status / région / prix validé update (page-dossier-management).
- * These four fields are exactly what the update rule allows.
+ * These five fields are exactly what the update rule allows.
+ *
+ * `actorUid` is written to `updatedBy` because the notification trigger fires
+ * on `onDocumentUpdated`, which carries no auth context — without it the
+ * trigger cannot skip the member who made the change.
  *
  * Raced against the shared write timeout: offline, Firestore buffers the write
  * and `updateDoc` neither resolves nor rejects, so the screen would sit with a
@@ -26,6 +30,7 @@ export function useDossierManagement(options?: AsyncActionOptions) {
       region: Region,
       status: DossierStatus,
       price: number | null,
+      actorUid: string,
     ) => {
       try {
         await writeWithTimeout(
@@ -34,6 +39,7 @@ export function useDossierManagement(options?: AsyncActionOptions) {
               region,
               status,
               validatedPrice: price,
+              updatedBy: actorUid,
               updatedAt: serverTimestamp(),
             }),
           () => {},
