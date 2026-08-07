@@ -32,12 +32,15 @@ test("siret must be exactly 14 digits", () => {
 test("tva is optional, but must be FR + key + the SIRET's SIREN when present", () => {
   expect(registerCompanySchema.safeParse({ ...base, tva: "FR1A123456789" }).success).toBe(true);
   expect(registerCompanySchema.safeParse({ ...base, tva: undefined }).success).toBe(true);
+  // The callable wire format has no `undefined`: the Firebase SDK encodes an
+  // undefined property as an explicit null, so a cleared field arrives as null.
+  expect(registerCompanySchema.safeParse({ ...base, tva: null }).success).toBe(true);
   // wrong prefix / wrong length / non-digit SIREN / SIREN not matching the SIRET
   expect(registerCompanySchema.safeParse({ ...base, tva: "BE1A123456789" }).success).toBe(false);
   expect(registerCompanySchema.safeParse({ ...base, tva: "FR1A12345678" }).success).toBe(false);
   expect(registerCompanySchema.safeParse({ ...base, tva: "FR1A12345678A" }).success).toBe(false);
   expect(registerCompanySchema.safeParse({ ...base, tva: "FR1A987654321" }).success).toBe(false);
-  // an empty string is not a "cleared" field — the client omits it entirely
+  // an empty string is not a "cleared" field — the client sends null instead
   expect(registerCompanySchema.safeParse({ ...base, tva: "" }).success).toBe(false);
 });
 

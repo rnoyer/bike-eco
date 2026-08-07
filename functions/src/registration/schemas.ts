@@ -22,8 +22,10 @@ export const registerCompanySchema = z
   .object({
     siret: z.string().regex(/^\d{14}$/),
     // Optional French VAT number: "FR" + a 2-character key + the 9-digit SIREN,
-    // i.e. the first 9 digits of the SIRET (checked below).
-    tva: z.string().regex(/^FR[0-9A-Z]{2}\d{9}$/).optional(),
+    // i.e. the first 9 digits of the SIRET (checked below). `nullish`, not
+    // `optional`: the callable wire format cannot carry `undefined`, so a client
+    // sending `tva: undefined` is encoded by the SDK as an explicit `null`.
+    tva: z.string().regex(/^FR[0-9A-Z]{2}\d{9}$/).nullish(),
     companyName: z.string().trim().min(1),
     companyDepartement: z.string().trim().min(1), // company location (step 1)
     companyVille: z.string().trim().min(1),
