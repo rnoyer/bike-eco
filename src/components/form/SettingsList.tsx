@@ -48,10 +48,10 @@ export default function SettingsList({
         />
       ) : null}
       {role === "backoffice" ? (
-        <Section title="Gestion des entreprises">
+        <Section title="Gérer les entreprises et les vendeurs">
           <Button
             variant="outlined"
-            label="Ajouter/Supprimer une entreprises"
+            label="Gérer"
             onPress={() => onManageCompanies?.()}
           />
         </Section>
