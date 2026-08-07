@@ -28,7 +28,14 @@ service cloud.firestore {
       // are server-set and must never be client-writable.
       allow update: if request.auth.uid == uid
         && !request.resource.data.diff(resource.data).affectedKeys()
-             .hasAny(['role', 'companyId', 'status', 'isAdmin', 'createdAt']);
+             .hasAny(['role', 'companyId', 'status', 'isAdmin', 'createdAt'])
+        // A key allow-list alone lets any value through a permitted key (see
+        // the dossier update rule below for the same reasoning) — without
+        // this, a member could write "MARS" or a number into notificationRegion
+        // and silently break their own notification fan-out.
+        && (!('notificationRegion' in request.resource.data)
+            || request.resource.data.notificationRegion == null
+            || request.resource.data.notificationRegion in ['NORTH', 'SOUTH']);
       allow create, delete: if false;
 
       // Device handles. Owner-only: nothing in the app reads another user's

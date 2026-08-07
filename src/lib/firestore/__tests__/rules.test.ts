@@ -140,6 +140,36 @@ test("a user cannot make themselves an admin", async () => {
   await assertFails(updateDoc(doc(db, "users/user_b2b_nord"), { isAdmin: true }));
 });
 
+// ── notificationRegion ─────────────────────────────────────────────────────
+
+test("a user sets their own notificationRegion to a real region", async () => {
+  const db = env.authenticatedContext("user_bo", boClaims).firestore();
+  await assertSucceeds(
+    updateDoc(doc(db, "users/user_bo"), { notificationRegion: "NORTH" }),
+  );
+});
+
+test("a user sets their own notificationRegion to null (Toute la France)", async () => {
+  const db = env.authenticatedContext("user_bo", boClaims).firestore();
+  await assertSucceeds(
+    updateDoc(doc(db, "users/user_bo"), { notificationRegion: null }),
+  );
+});
+
+test("a user cannot set notificationRegion to a junk string", async () => {
+  const db = env.authenticatedContext("user_bo", boClaims).firestore();
+  await assertFails(
+    updateDoc(doc(db, "users/user_bo"), { notificationRegion: "MARS" }),
+  );
+});
+
+test("a user cannot set notificationRegion to a non-string value", async () => {
+  const db = env.authenticatedContext("user_bo", boClaims).firestore();
+  await assertFails(
+    updateDoc(doc(db, "users/user_bo"), { notificationRegion: 42 }),
+  );
+});
+
 // ── dossier create ─────────────────────────────────────────────────────────
 
 test("a dealer files a dossier for their own company", async () => {
@@ -365,6 +395,13 @@ test("a dealer cannot mute another company's dossier", async () => {
     setDoc(doc(db, "dossiers/dos_2/mutes/user_b2b_nord"), {
       createdAt: new Date(),
     }),
+  );
+});
+
+test("a back-office user can mute any dossier, including another company's", async () => {
+  const db = env.authenticatedContext("bo_1", boClaims).firestore();
+  await assertSucceeds(
+    setDoc(doc(db, "dossiers/dos_2/mutes/bo_1"), { createdAt: new Date() }),
   );
 });
 
