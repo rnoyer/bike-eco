@@ -46,8 +46,7 @@ node grant-backoffice.js \
   --email  admin@bike-eco.fr \
   --prenom Alex \
   --nom    Martin \
-  --tel    0605060708 \
-  --region all
+  --tel    0605060708
 ```
 
 `--password` est optionnel : sans lui le script génère un mot de passe aléatoire et l'affiche —
@@ -57,9 +56,12 @@ il n'est que temporaire, l'étape 4 le remplace.
 (`users/{uid}.notificationRegion`), qui filtre le dashboard back-office **et** cadre les
 notifications push (voir `docs/specs/feature-push-notifications.md`). `all` = "Toute la
 France" (`null`), ce qui est aussi le comportement quand le champ n'a jamais été posé.
-Sans le drapeau, le script **ne touche pas** au champ — un passage de réparation
-n'efface donc pas un choix fait depuis Paramètres → "Région gérée". Le titulaire peut le
-changer à tout moment depuis cet écran.
+
+Il est volontairement **absent de la commande ci-dessus**, qui sert aussi de commande de
+réparation ([Dépannage](#dépannage)) : sans le drapeau le script ne touche pas au champ,
+donc une réparation n'efface pas un choix fait entre-temps depuis Paramètres → "Région
+gérée". Ne l'ajouter que pour poser (ou corriger) délibérément la région ; le titulaire
+peut de toute façon la changer lui-même depuis cet écran.
 
 Le compte créé est **administrateur** (`isAdmin: true`) par défaut — c'est l'équipe
 fondatrice, et seul un administrateur peut gérer (ou supprimer) les membres de l'équipe
@@ -131,7 +133,8 @@ Si le `403` persiste :
 
 ### Écran de connexion en boucle après le script
 
-Le document `users/{uid}` manque ou est mal formé — relancer le script, puis se
+Le document `users/{uid}` manque ou est mal formé — relancer le script **tel quel** (sans
+`--region` : la réparation ne doit pas réécrire la région gérée), puis se
 déconnecter/reconnecter (les claims ne sont relues qu'au rafraîchissement du token).
 
 ## Gestion courante

@@ -37,7 +37,17 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
     if (!flag.startsWith("--")) continue;
-    args[flag.slice(2)] = argv[i + 1];
+    // Both spellings, and a flag left without a value records "" rather than
+    // `undefined` — that difference is what lets `readRegion` tell "not asked
+    // for" (leave the field alone) apart from "asked for, badly" (refuse).
+    const eq = flag.indexOf("=");
+    if (eq !== -1) {
+      args[flag.slice(2, eq)] = flag.slice(eq + 1);
+      continue;
+    }
+    const value = argv[i + 1];
+    args[flag.slice(2)] =
+      value === undefined || value.startsWith("--") ? "" : value;
   }
   const missing = REQUIRED.filter((k) => !args[k]);
   if (missing.length) {
@@ -70,7 +80,7 @@ const REGIONS = { north: "NORTH", south: "SOUTH", all: null };
  *  has since made in Paramètres → "Région gérée". */
 function readRegion(args) {
   if (args.region === undefined) return undefined;
-  const key = String(args.region).toLowerCase();
+  const key = args.region.toLowerCase();
   if (!(key in REGIONS)) {
     console.error(
       `Invalid --region "${args.region}". Expected one of: north, south, all.`,
