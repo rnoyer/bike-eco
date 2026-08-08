@@ -4,10 +4,17 @@ import {
   onTokenRefresh,
 } from "@react-native-firebase/messaging";
 import * as Notifications from "expo-notifications";
-import { deleteDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  deleteDoc,
+  getDocs,
+  query,
+  serverTimestamp,
+  setDoc,
+  where,
+} from "firebase/firestore";
 import { Platform } from "react-native";
 
-import { pushTokenDoc } from "@/lib/firestore/collections";
+import { pushTokenDoc, pushTokensRef } from "@/lib/firestore/collections";
 import { writeWithTimeout } from "@/lib/firestore/writeWithTimeout";
 import { getDeviceId } from "./deviceId";
 import { isStaleTokenRefresh } from "./staleRegistration";
@@ -115,6 +122,46 @@ let activeSubscription: { uid: string; unsubscribe: () => void } | null =
   null;
 
 /**
+ * Delete this account's other rows that carry the FCM handle we just wrote.
+ *
+ * One token is one device, so any row other than `deviceId` holding it is an
+ * orphan: the device registered under an id it has since lost. Clearing app
+ * data, a reinstall and a restore all do that, and until `getDeviceId` was
+ * made single-flight two overlapping first-launch attempts did too.
+ *
+ * Nothing else collects these. The server-side prune in
+ * `functions/src/notifications/send.ts` only deletes rows FCM reports *dead*,
+ * and an orphan's handle is alive — every send to it succeeds. `dispatch`
+ * groups by token so the device is not notified twice, but the row still
+ * exists, and it is not the one `unregisterPushToken` deletes: after sign-out
+ * it keeps delivering that account's notifications to this device.
+ *
+ * Done at registration rather than at sign-out because the token is already in
+ * hand here, with no user waiting on a button and no credential about to be
+ * revoked. Best-effort: a failure here must not fail the registration that
+ * already succeeded, or `usePushRegistration` would treat the attempt as
+ * unregistered and retry it on every foreground.
+ */
+async function pruneOrphanRows(
+  uid: string,
+  deviceId: string,
+  token: string,
+): Promise<void> {
+  try {
+    const snap = await getDocs(
+      query(pushTokensRef(uid), where("token", "==", token)),
+    );
+    await Promise.all(
+      snap.docs
+        .filter((row) => row.id !== deviceId)
+        .map((row) => deleteDoc(row.ref)),
+    );
+  } catch (error) {
+    console.error("Push orphan prune failed", error);
+  }
+}
+
+/**
  * Ask once (if never asked), then store this device's FCM token under the
  * signed-in user.
  *
@@ -152,7 +199,9 @@ export async function registerPushToken(
         updatedAt: serverTimestamp(),
       });
 
-    await write(await getFcmToken(messagingInstance));
+    const token = await getFcmToken(messagingInstance);
+    await write(token);
+    await pruneOrphanRows(uid, deviceId, token);
 
     // A fresh registration supersedes whatever listener is currently active -
     // most often its own predecessor from a prior mount that hasn't been
@@ -216,15 +265,20 @@ export async function unregisterPushToken(uid: string): Promise<void> {
     // button - wrapped in `useAsyncAction` - would spin forever with no error
     // and no escape.
     //
-    // The ordering requirement is still honoured: the delete is *issued*
-    // before `fbSignOut` revokes the credential the owner-only rule checks, so
-    // a buffered delete that flushes later still carries a valid auth context.
-    // What the ordering never required is *blocking* on it - this is
-    // best-effort cleanup, and the server-side prune of dead FCM handles in
-    // `send.ts` is the backstop for a row that never goes.
+    // Issuing the delete before `fbSignOut` is what buys the owner-only rule a
+    // valid credential, but only for a delete that reaches the server *within*
+    // the bound. A timed-out one does not land later: Firestore attaches
+    // credentials when a mutation is sent, not when it is queued, and it
+    // abandons the previous user's unacknowledged mutations on the user change
+    // `fbSignOut` triggers. So the timeout branch loses the delete outright.
     //
-    // No compensation on timeout, for the same reason: a delete landing late
-    // is exactly the outcome we want, not one to undo.
+    // Accepted rather than papered over with a longer bound, which would only
+    // move the cliff while making the button slower. The recovery is on the
+    // next sign-in: `pruneOrphanRows` deletes every row of this account that
+    // carries the handle, including one this path failed to remove.
+    //
+    // Hence no compensation either - there is nothing to undo, and a delete
+    // that does land late is the outcome we wanted.
     const ref = pushTokenDoc(uid, await getDeviceId());
     await writeWithTimeout(() => deleteDoc(ref), () => {}, UNREGISTER_TIMEOUT_MS);
   } catch (error) {

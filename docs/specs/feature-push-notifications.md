@@ -70,7 +70,9 @@ const moto = (v: DossierVehicle) =>
   as `null`.
 - `users/{uid}/pushTokens/{deviceId}` — one row per device (`{ token, platform,
   updatedAt }`), keyed by a random device id minted once so a rotated FCM token updates
-  in place instead of orphaning a row. Deleted on sign-out.
+  in place instead of orphaning a row. Deleted on sign-out, and any of this account's
+  *other* rows carrying the same token are deleted at the next registration
+  (`pruneOrphanRows`).
 - `dossiers/{dossierId}/mutes/{uid}` — presence means muted, absence means subscribed
   (`{ createdAt }`); this makes "subscribed by default" free, with no backfill and no
   write at dossier creation.
@@ -106,10 +108,22 @@ const moto = (v: DossierVehicle) =>
   commit is overwritten by the guard's `router.replace`, which still sees the pre-push
   `segments`. `AuthGate` passes `redirectFor(...) === null` into `useNotificationRouting`
   so a cold-start tap lands on its target instead of the dashboard.
-- **`unregisterPushToken` is time-bounded.** `signOut` awaits it, and offline Firestore
-  buffers a `deleteDoc` that then neither resolves nor rejects — an unbounded await would
-  spin the "Se déconnecter" button forever. The delete is issued before `fbSignOut` (the
-  owner-only rule needs the credential) but never blocks on it.
+- **`unregisterPushToken` is time-bounded, and the bound can lose the delete.** `signOut`
+  awaits it, and offline Firestore buffers a `deleteDoc` that then neither resolves nor
+  rejects — an unbounded await would spin the "Se déconnecter" button forever. Issuing the
+  delete before `fbSignOut` gives the owner-only rule a credential, but only for a delete
+  that reaches the server inside the 3 s bound: Firestore attaches credentials when a
+  mutation is *sent*, not when it is queued, and abandons the previous user's
+  unacknowledged mutations on the user change `fbSignOut` triggers. A timed-out delete is
+  therefore lost, not deferred. Raising the bound only moves the cliff — the recovery is
+  `pruneOrphanRows` on the next sign-in.
+- **The device id is single-flight.** `getDeviceId` is a read-modify-write over
+  `expo-sqlite/kv-store`, and `registerPushToken` genuinely runs concurrently — an
+  in-flight attempt is not cancelled when `usePushRegistration`'s effect is torn down, so
+  a remount (or the iOS permission alert backgrounding the app mid-attempt) starts a
+  second one. Without the shared promise in `deviceId.ts`, both callers found an empty key
+  on a first launch and minted different ids, giving the device two rows on one live FCM
+  handle — the orphan case below, self-inflicted.
 - **Deleting an account must be recursive.** `users/{uid}/pushTokens` is a subcollection,
   so a plain `.delete()` on the profile leaves device tokens behind as personal data.
   `deleteColleague`/`deleteAccount`, the company cascade, and both ops scripts use
@@ -118,9 +132,11 @@ const moto = (v: DossierVehicle) =>
   same FCM token, and each one would be a separate banner on the same device. The way
   it happens in practice: the client loses the `push.deviceId` it keeps in
   `expo-sqlite/kv-store` (app data cleared, a reinstall, a restore) and re-registers
-  under a fresh id, while FCM hands the device back the *same* token. Nothing prunes
-  the leftover row — its token is alive, so every send to it succeeds — so the
-  duplicate is permanent until the token finally rotates. Two accounts on one phone,
+  under a fresh id, while FCM hands the device back the *same* token. The server-side
+  prune cannot collect the leftover row — its token is alive, so every send to it
+  succeeds — and sign-out only deletes the id the client currently holds, so until
+  `pruneOrphanRows` runs at the next sign-in the row keeps delivering that account's
+  notifications to the device *after* it has signed out. Two accounts on one phone,
   and a uid appearing twice in `deliveries`, land in the same place. `dispatch` groups
   the batch's rows by token and sends each token once; a dead-token response prunes
   *every* row carrying that token, since the ones left out of the batch will never be
