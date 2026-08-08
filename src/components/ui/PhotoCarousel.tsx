@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import {
   Dimensions,
@@ -20,9 +21,12 @@ const W = Dimensions.get("window").width;
 export default function PhotoCarousel({
   photos,
   status,
+  topLeft,
 }: {
   photos: string[];
   status?: DossierStatus;
+  /** Overlaid opposite the status badge. Used for the subscription toggle. */
+  topLeft?: ReactNode;
 }) {
   const [index, setIndex] = useState(0);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
@@ -51,6 +55,7 @@ export default function PhotoCarousel({
           </Pressable>
         ))}
       </ScrollView>
+      {topLeft ? <View style={styles.topLeft}>{topLeft}</View> : null}
       {status ? (
         <View style={styles.badge}>
           <StatusBadge status={status} />
@@ -73,6 +78,7 @@ const styles = StyleSheet.create({
   wrap: { width: W, height: W * 0.75, backgroundColor: tokens.colors.divider },
   photo: { width: W, height: W * 0.75 },
   badge: { position: "absolute", top: tokens.space.md, right: tokens.space.md },
+  topLeft: { position: "absolute", top: tokens.space.md, left: tokens.space.md },
   dots: {
     position: "absolute",
     bottom: 10,

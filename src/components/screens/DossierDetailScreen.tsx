@@ -1,3 +1,4 @@
+import DossierMuteButton from "@/components/ui/DossierMuteButton";
 import InfoCard from "@/components/ui/InfoCard";
 import InfoComment from "@/components/ui/InfoComment";
 import InfoContactRow from "@/components/ui/InfoContactRow";
@@ -95,13 +96,25 @@ function SellerCard({ dossier }: { dossier: Dossier }) {
   );
 }
 
-function LoadedDossier({ dossier, role }: { dossier: Dossier; role: UserRole }) {
+function LoadedDossier({
+  id,
+  dossier,
+  role,
+}: {
+  id: string;
+  dossier: Dossier;
+  role: UserRole;
+}) {
   // Projected once here: the badge over the carousel and the "Statut" row must
   // never disagree about what this role is shown.
   const status = viewerStatus(dossier.status, role);
   return (
     <>
-      <PhotoCarousel photos={dossier.photos} status={status} />
+      <PhotoCarousel
+        photos={dossier.photos}
+        status={status}
+        topLeft={<DossierMuteButton dossierId={id} />}
+      />
       <SectionWrapper>
         <Text style={styles.heading}>
           {dossier.vehicle.marque} {dossier.vehicle.modele}
@@ -139,7 +152,7 @@ export default function DossierDetailScreen({
       ) : !data ? (
         <ScreenMessage message="Dossier introuvable." />
       ) : (
-        <LoadedDossier dossier={data} role={role} />
+        <LoadedDossier id={id} dossier={data} role={role} />
       )}
     </ScrollView>
   );
