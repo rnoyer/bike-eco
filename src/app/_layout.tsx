@@ -5,11 +5,18 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ScreenLoader } from "@/components/ui/Spinner";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 import { redirectFor, resolveAuthRoute } from "@/lib/auth/routeGuard";
+import { useForegroundNotifications } from "@/lib/notifications/useForegroundNotifications";
+import { useNotificationRouting } from "@/lib/notifications/useNotificationRouting";
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { loading, initializing, session, status } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+
+  // Inside the gate, not around it: a cold-start tap has to wait for the
+  // session before it can pick a route group.
+  useNotificationRouting();
+  useForegroundNotifications();
 
   useEffect(() => {
     if (loading) return;
