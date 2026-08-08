@@ -29,6 +29,12 @@ Two resolved readings of the original spec:
   *back-office* messages. A b2b colleague's message notifies the back-office but not
   their own teammates — otherwise a teammate's message would falsely read as coming from
   Bike-eco.
+- **Status copy is role-dependent, like the chat copy.** The label goes through
+  `viewerStatus`, so a b2b recipient is never told "À traiter" — the back office's own
+  working state, which their dossier screen renders as "En cours". The management
+  dropdown can move a dossier back to "À traiter", so this is reachable, and without the
+  projection the notification would contradict the screen it links to. `dispatch` groups
+  by rendered content, so the two variants split into two multicasts on their own.
 - **"Subscribed by default" is scoped to the dossiers you manage.** Back-office dossier
   notifications respect `notificationRegion`; without that, every back-office user would
   be paged about every chat message in the country. B2B users are unaffected — they only
@@ -49,7 +55,7 @@ const moto = (v: DossierVehicle) =>
 | Dossier created | `Une nouvelle proposition d'achat vient d'être publié.` | `Entreprise {company.name}`<br>`Vendeur : {prenom} {nom}` |
 | Message → back-office | `1 nouveau message de {prenom} {nom}` | `Pour la {moto}` |
 | Message → b2b | `1 nouveau message de Bike-eco` | `Pour la {moto}` |
-| Status changed | `Le statut de la {moto} a évolué` | `Nouveau statut: {STATUS_LABELS[status]}` |
+| Status changed | `Le statut de la {moto} a évolué` | `Nouveau statut: {STATUS_LABELS[viewerStatus(status, recipientRole)]}` |
 | Price changed | `Le prix validé de la {moto} a évolué` | `Prix validé: {euros(validatedPrice)}` |
 
 ## Data
@@ -74,8 +80,35 @@ const moto = (v: DossierVehicle) =>
   to `(default)` and silently never fires.
 - Triggers run `retry: false` — a duplicate push is worse than a missed one, and a
   notification has no compensating action.
-- `STATUS_LABELS` and `euros` are duplicated in `functions/src/notifications/labels.ts`
-  and must be kept in sync with `src/lib/ui/format.ts`.
+- `STATUS_LABELS`, `euros` and `viewerStatus` are duplicated in
+  `functions/src/notifications/labels.ts` and must be kept in sync with
+  `src/lib/ui/format.ts`.
+- **Only one banner per foreground message.** The FCM payload carries both a
+  `notification` and a `data` block, so on iOS the push reaches expo-notifications'
+  `UNUserNotificationCenter` delegate as well as RNFB's `onMessage`. The handler answers
+  `shouldShowBanner: false` for a remote trigger (`isRemoteNotification`) so the OS does
+  not present it: the *local* copy scheduled by `useForegroundNotifications` is the one
+  that carries the "don't ping me for the thread I'm reading" suppression. Android never
+  reaches that branch — expo's messaging service declares `android:priority="-1"`, so
+  RNFB wins the service race and expo never sees the remote message.
+- **Three tap entry points, not two.** `getInitialNotification` (cold start) and
+  `onNotificationOpenedApp` (backgrounded) only fire for FCM-delivered taps; a tap on the
+  *foreground* banner is a tap on a locally scheduled notification and reaches only
+  expo's `addNotificationResponseReceivedListener`. All three feed the same parked-payload
+  drain; the response listener filters remote triggers out so an iOS tap is not routed twice.
+- **The parked payload drains only once the auth guard has settled.** Auth resolving
+  exposes `role`/`status` and drops the splash in one commit, and a route pushed in that
+  commit is overwritten by the guard's `router.replace`, which still sees the pre-push
+  `segments`. `AuthGate` passes `redirectFor(...) === null` into `useNotificationRouting`
+  so a cold-start tap lands on its target instead of the dashboard.
+- **`unregisterPushToken` is time-bounded.** `signOut` awaits it, and offline Firestore
+  buffers a `deleteDoc` that then neither resolves nor rejects — an unbounded await would
+  spin the "Se déconnecter" button forever. The delete is issued before `fbSignOut` (the
+  owner-only rule needs the credential) but never blocks on it.
+- **Deleting an account must be recursive.** `users/{uid}/pushTokens` is a subcollection,
+  so a plain `.delete()` on the profile leaves device tokens behind as personal data.
+  `deleteColleague`/`deleteAccount`, the company cascade, and both ops scripts use
+  `recursiveDelete`.
 - `messaging/invalid-argument` must **not** be added to `DEAD_TOKEN_CODES` in
   `send.ts`, even though it looks like an obviously-dead-token code.
   `sendEachForMulticast` sends one message per token but validates the shared

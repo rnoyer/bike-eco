@@ -52,6 +52,17 @@ Appears only when the OS push permission is denied (b2b and back-office alike):
 Hidden while the permission status is still loading, when it is granted or
 undetermined, and on web (where push is unsupported and there is nothing to open).
 
+The permission is **followed, not read once**. Settings is a sibling NativeTab of the
+Dashboard and stays mounted, so a mount-only read would miss both of the ordinary ways
+the value changes: the Dashboard's own prompt turning it into "denied" (the row would
+never appear until a restart) and the user granting it in the OS settings this very row
+sent them to (the row would never clear, and no token would ever be registered).
+`usePushPermission` therefore subscribes to `subscribeToPushPermission` — published by
+every path that learns the OS answer, including `registerPushToken`'s prompt — and
+re-reads whenever the app returns to the foreground. `usePushRegistration` retries on the
+same foreground signal, but only while it holds no registration and only on an
+already-granted permission, so it never re-prompts and never repeats a token write.
+
 ### Section "Mes collaborateurs" (b2b and back-office)
 
 The list is rendered inline here — there is no separate "Mes collaborateurs" page.

@@ -92,10 +92,12 @@ Le script supprime, dans l'ordre utilisé par la suppression d'entreprise du bac
 (**Storage d'abord**, pour ne jamais laisser de fichiers qu'aucun document ne référence) :
 
 1. les fichiers `dossiers/{companyId}/{dossierId}/` de chaque dossier soumis,
-2. ces dossiers et leur sous-collection `messages`,
+2. ces dossiers et leurs sous-collections `messages` et `mutes`,
 3. les invitations qu'il a envoyées et celles adressées à son adresse,
 4. l'utilisateur Auth,
-5. le document `users/{uid}`.
+5. le document `users/{uid}` **et sa sous-collection `pushTokens`** (les jetons de
+   notification de ses appareils : des données personnelles qu'un `delete()` simple
+   laisserait derrière lui, une sous-collection ne partant pas avec son document).
 
 ```bash
 node delete-b2b-user.js --email jean@garage-nord.fr          # simulation : affiche le plan
@@ -175,7 +177,8 @@ supprime donc, dans cet ordre :
 
 1. les invitations envoyées par ce compte, et toute invitation en attente adressée à son email,
 2. l'utilisateur Auth,
-3. le document `users/{uid}` — ce que la console laisse derrière elle.
+3. le document `users/{uid}` **et sa sous-collection `pushTokens`** — ce que la console
+   laisse derrière elle.
 
 ```bash
 node delete-backoffice.js --email alex@bike-eco.fr          # simulation : affiche le plan
