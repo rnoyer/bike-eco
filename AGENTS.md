@@ -48,6 +48,9 @@ feature. Keep a spec in sync in the same change that alters its feature.
   - `component-card-dossier.md` — thin wide dossier card (thumbnail, title, subtitle).
   - `component-dossiers-section.md` — titled list of dossiers (per-section fetch, loading + empty states).
   - `component-card-colleague.md` — colleague card (title/subtitle/optional action button).
+  - `feature-push-notifications.md` — the five push events, who receives each,
+    and the exact French copy. Read before touching `functions/src/notifications/`
+    or `src/lib/notifications/`.
 
 - **Runbooks** (`docs/ops/`) — operational procedures against the live project:
   - `first-backoffice-account.md` — creating a `backoffice` account on `bike-eco-43a84`

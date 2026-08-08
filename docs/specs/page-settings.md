@@ -35,8 +35,22 @@ type : dropdown
 - "Moitié sud" (maps to region `SOUTH`)
 - "Toute la France" (no region filter)
 
-behaviour : filters the dossiers shown on the back-office dashboard by region. The chosen
-option is persisted locally and restored when the app is restarted.
+behaviour : filters the dossiers shown on the back-office dashboard by region, and drives
+push-notification fan-out (see [`feature-push-notifications.md`](feature-push-notifications.md)).
+Persisted account-side to `users/{uid}.notificationRegion` — not device-local storage —
+so the choice is shared across the member's devices and read live (`useUser`'s
+`onSnapshot`), the same document the dashboard filter reads, rather than the auth-session
+snapshot.
+
+### Section "Notifications désactivées"
+
+Appears only when the OS push permission is denied (b2b and back-office alike):
+
+- Button outlined : "Ouvrir les réglages" — opens the device's OS settings
+  (`Linking.openSettings()`) so the user can re-enable notifications.
+
+Hidden while the permission status is still loading, when it is granted or
+undetermined, and on web (where push is unsupported and there is nothing to open).
 
 ### Section "Mes collaborateurs" (b2b and back-office)
 

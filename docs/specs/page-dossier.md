@@ -15,6 +15,12 @@ opens **that photo** full screen with pinch / double-tap zoom and a "✕" to clo
 The full-screen view shows one photo at a time — swiping between photos happens in
 the inline carousel, not in the full-screen view.
 
+The carousel also carries the notification subscription toggle: a bell button in the
+**top-left** corner, opposite the status badge, using the same icon-button treatment as
+the contact rows (see [`component-info-card.md`](component-info-card.md)). Bell-ring
+means subscribed (the default); bell-off means muted. Present for both roles, and
+disabled until the mute state has loaded.
+
 Below the vehicle-name heading, the data sits in three [`InfoCard`](component-info-card.md)s.
 
 **Their order differs by role.** The back office reads the vehicle first; a b2b user is

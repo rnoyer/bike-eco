@@ -93,6 +93,9 @@ be reachable by a screen reader at all.
   the previous hairline box around a dark glyph read as a disabled placeholder rather than
   as the row's one action, and its `surfaceAlt` pressed state was a ~1.02:1 change. The
   glyph stays `primary` — charcoal on green is the logo's own pairing, at 6.3:1.
+- The button itself is the shared `IconButton` (`src/components/ui/IconButton.tsx`) —
+  icon, accessibility label, `onPress`, `disabled` — so this row and the dossier
+  subscription bell (see [`page-dossier.md`](page-dossier.md)) cannot drift apart.
 
 Used for a **contact you can reach**. "Mon compte" shows the viewer's own number and
 address as plain `InfoRows` — calling yourself is pointless.
