@@ -8,6 +8,7 @@ import { deleteDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { Platform } from "react-native";
 
 import { pushTokenDoc } from "@/lib/firestore/collections";
+import { writeWithTimeout } from "@/lib/firestore/writeWithTimeout";
 import { getDeviceId } from "./deviceId";
 import { isStaleTokenRefresh } from "./staleRegistration";
 
@@ -45,20 +46,51 @@ function toPermission(status: Notifications.PermissionStatus): PushPermission {
   return "undetermined";
 }
 
+/**
+ * Subscribers to the OS permission value, for `usePushPermission`.
+ *
+ * The OS exposes no change event, and the value is changed from a *different
+ * screen* than the one that renders it: `registerPushToken` prompts from the
+ * Dashboard, while the "Notifications désactivées" row lives on Settings — a
+ * sibling NativeTab mounted at the same time. Without this, Settings sits on
+ * the "undetermined" it read at mount and never shows the row for a permission
+ * the user denied thirty seconds ago on the tab next door. Same single-source
+ * requirement `useRegionFilter` satisfies with a live snapshot; here the
+ * publisher has to be hand-rolled because there is nothing to listen to.
+ */
+const permissionListeners = new Set<(permission: PushPermission) => void>();
+
+export function subscribeToPushPermission(
+  listener: (permission: PushPermission) => void,
+): () => void {
+  permissionListeners.add(listener);
+  return () => {
+    permissionListeners.delete(listener);
+  };
+}
+
+/** Every path that learns the OS answer announces it, so all readers agree. */
+function publishPermission(permission: PushPermission): PushPermission {
+  for (const listener of permissionListeners) listener(permission);
+  return permission;
+}
+
 export async function getPushPermission(): Promise<PushPermission> {
   try {
     const { status } = await Notifications.getPermissionsAsync();
-    return toPermission(status);
+    return publishPermission(toPermission(status));
   } catch (error) {
-    // The one entry point here with a single caller and no existing
-    // try/catch: `usePushPermission` does `void getPushPermission().then(...)`
-    // with no `.catch()`, so an uncaught rejection would be an unhandled
-    // promise rejection rather than the swallowed, logged failure this whole
-    // feature promises. "undetermined" is the safe fallback value: like
+    // Callers fire this and forget it (`void getPushPermission()`), with no
+    // `.catch()`, so an uncaught rejection would be an unhandled promise
+    // rejection rather than the swallowed, logged failure this whole feature
+    // promises. "undetermined" is the safe fallback value: like
     // "unsupported" above, it does not satisfy `SettingsList`'s `denied`
     // gate, so a failed permission check never renders a broken row.
     console.error("Push permission check failed", error);
-    return "undetermined";
+    // Published like any other answer: `usePushPermission` learns the value
+    // only through the publisher, so a silent return would leave the Settings
+    // row stuck on "loading" forever after one failed check.
+    return publishPermission("undetermined");
   }
 }
 
@@ -86,11 +118,17 @@ let activeSubscription: { uid: string; unsubscribe: () => void } | null =
  * Ask once (if never asked), then store this device's FCM token under the
  * signed-in user.
  *
- * Returns an unsubscribe for the token-refresh listener. Every failure is
- * swallowed: notifications are an enhancement, and a denied permission or an
- * offline token write must never surface on a working screen.
+ * Returns an unsubscribe for the token-refresh listener, or `null` when no
+ * registration happened (permission not granted, or the attempt failed).
+ * `usePushRegistration` needs that distinction to know whether a later retry
+ * could still produce anything — a no-op unsubscribe is indistinguishable from
+ * a real one. Every failure is swallowed: notifications are an enhancement,
+ * and a denied permission or an offline token write must never surface on a
+ * working screen.
  */
-export async function registerPushToken(uid: string): Promise<() => void> {
+export async function registerPushToken(
+  uid: string,
+): Promise<(() => void) | null> {
   try {
     await ensureChannel();
 
@@ -99,7 +137,9 @@ export async function registerPushToken(uid: string): Promise<() => void> {
       existing.status === "undetermined"
         ? (await Notifications.requestPermissionsAsync()).status
         : existing.status;
-    if (toPermission(status) !== "granted") return () => {};
+    // Announce what the prompt returned: the Settings tab is already mounted
+    // and cannot see this answer any other way.
+    if (publishPermission(toPermission(status)) !== "granted") return null;
 
     const deviceId = await getDeviceId();
     const platform = Platform.OS === "ios" ? "ios" : "android";
@@ -152,9 +192,16 @@ export async function registerPushToken(uid: string): Promise<() => void> {
     return unsubscribe;
   } catch (error) {
     console.error("Push registration failed", error);
-    return () => {};
+    return null;
   }
 }
+
+/**
+ * How long the sign-out path waits for the token delete before giving up on
+ * it. Much shorter than `WRITE_TIMEOUT_MS`: nothing depends on the result, and
+ * this sits directly under a button the user is waiting on.
+ */
+const UNREGISTER_TIMEOUT_MS = 3000;
 
 /** Drop this device's row so a signed-out account stops receiving pushes. */
 export async function unregisterPushToken(uid: string): Promise<void> {
@@ -163,7 +210,23 @@ export async function unregisterPushToken(uid: string): Promise<void> {
     // see the `activeSubscription` comment above for why the usual
     // effect-cleanup teardown is too late to close this window.
     if (activeSubscription?.uid === uid) activeSubscription.unsubscribe();
-    await deleteDoc(pushTokenDoc(uid, await getDeviceId()));
+    // Bounded, because `signOut` awaits this: offline, Firestore *buffers* a
+    // write it cannot reach the server with, so a bare `deleteDoc` neither
+    // resolves nor rejects (see `writeWithTimeout`) and the "Se déconnecter"
+    // button - wrapped in `useAsyncAction` - would spin forever with no error
+    // and no escape.
+    //
+    // The ordering requirement is still honoured: the delete is *issued*
+    // before `fbSignOut` revokes the credential the owner-only rule checks, so
+    // a buffered delete that flushes later still carries a valid auth context.
+    // What the ordering never required is *blocking* on it - this is
+    // best-effort cleanup, and the server-side prune of dead FCM handles in
+    // `send.ts` is the backstop for a row that never goes.
+    //
+    // No compensation on timeout, for the same reason: a delete landing late
+    // is exactly the outcome we want, not one to undo.
+    const ref = pushTokenDoc(uid, await getDeviceId());
+    await writeWithTimeout(() => deleteDoc(ref), () => {}, UNREGISTER_TIMEOUT_MS);
   } catch (error) {
     console.error("Push unregistration failed", error);
   }
