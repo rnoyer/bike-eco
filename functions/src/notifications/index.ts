@@ -138,7 +138,15 @@ export const onDossierUpdated = onDocumentUpdated(
     };
 
     if (before.status !== after.status) {
-      await emit({ kind: "statusChanged", ...shared, status: after.status as DossierStatus });
+      // Both ends of the transition: `resolveDeliveries` needs them to work out
+      // which roles the change is actually visible to (a_traiter <-> en_cours is
+      // invisible to b2b).
+      await emit({
+        kind: "statusChanged",
+        ...shared,
+        previousStatus: before.status as DossierStatus,
+        status: after.status as DossierStatus,
+      });
     }
     if (before.validatedPrice !== after.validatedPrice) {
       await emit({

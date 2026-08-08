@@ -15,7 +15,7 @@ presentation).
 | Company created | back-office where `notificationRegion ∈ {company.region, null}` |
 | Dossier created | back-office where `notificationRegion ∈ {dossier.region, null}` |
 | Message created | back-office in the dossier's région, **plus** — only when the sender is back-office — the active users of `dossier.companyId`; minus the sender, minus mutes |
-| `status` changed | back-office in the dossier's région **+** active users of `dossier.companyId`; minus `updatedBy`, minus mutes |
+| `status` changed | back-office in the dossier's région **+** active users of `dossier.companyId`; minus `updatedBy`, minus mutes, minus anyone the change is invisible to (see below) |
 | `validatedPrice` changed | same candidate set as `status` |
 
 "Active" means `users/{uid}.status === "active"`; a pending account is never a recipient.
@@ -29,12 +29,21 @@ Two resolved readings of the original spec:
   *back-office* messages. A b2b colleague's message notifies the back-office but not
   their own teammates — otherwise a teammate's message would falsely read as coming from
   Bike-eco.
-- **Status copy is role-dependent, like the chat copy.** The label goes through
-  `viewerStatus`, so a b2b recipient is never told "À traiter" — the back office's own
-  working state, which their dossier screen renders as "En cours". The management
-  dropdown can move a dossier back to "À traiter", so this is reachable, and without the
-  projection the notification would contradict the screen it links to. `dispatch` groups
-  by rendered content, so the two variants split into two multicasts on their own.
+- **Status is role-dependent in both the copy *and* the audience.** The label goes
+  through `viewerStatus`, so a b2b recipient is never told "À traiter" — the back
+  office's own working state, which their dossier screen renders as "En cours". The
+  management dropdown can move a dossier back to "À traiter", so this is reachable, and
+  without the projection the notification would contradict the screen it links to.
+  `dispatch` groups by rendered content, so the two variants split into two multicasts on
+  their own.
+
+  The same projection decides **whether to notify at all**: `a_traiter` and `en_cours`
+  both render as "En cours" for a dealer, so moving between them — in either direction —
+  is invisible on their screen, and `resolveDeliveries` drops the b2b recipients rather
+  than paging them about a change they cannot see. Back-office members see the real
+  states, so every transition reaches them. A dealer still hears about `a_traiter` when
+  it *is* visible to them, e.g. reopening a `cloture` dossier. This is why the
+  `statusChanged` event carries `previousStatus` as well as `status`.
 - **"Subscribed by default" is scoped to the dossiers you manage.** Back-office dossier
   notifications respect `notificationRegion`; without that, every back-office user would
   be paged about every chat message in the country. B2B users are unaffected — they only

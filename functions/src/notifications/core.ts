@@ -8,7 +8,7 @@ import {
   type NotificationContent,
   type NotificationTarget,
 } from "./copy";
-import type { DossierStatus, Region, UserRole } from "./labels";
+import { viewerStatus, type DossierStatus, type Region, type UserRole } from "./labels";
 
 /** The subset of a `users/{uid}` document fan-out needs. */
 export interface Recipient {
@@ -59,6 +59,8 @@ export type NotificationEvent =
       companyId: string;
       actorUid: string;
       moto: string;
+      /** Needed to tell who the change is *visible* to — see `resolveDeliveries`. */
+      previousStatus: DossierStatus;
       status: DossierStatus;
     }
   | {
@@ -190,11 +192,27 @@ export async function resolveDeliveries(
         event.kind === "statusChanged"
           ? statusChangedContent({ ...event, recipientRole })
           : priceChangedContent(event);
-      return exclude(audience, skip).map((u) => ({
-        uid: u.uid,
-        content: contentFor(u.role),
-        target,
-      }));
+      // A status change nobody in that role can see is not an event for them.
+      // `viewerStatus` collapses `a_traiter` into `en_cours` for b2b, so moving
+      // a dossier between those two is invisible to a dealer: the screen said
+      // "En cours" before and says "En cours" after, and a push claiming "Le
+      // statut a évolué" contradicts it. Back-office members see the real
+      // states, so for them every transition is a change.
+      //
+      // The projection has to gate delivery and not only copy - fixing the copy
+      // alone (which is what `statusChangedContent`'s `recipientRole` does)
+      // still sends the dealer a notification about nothing.
+      const isVisibleTo = (role: UserRole): boolean =>
+        event.kind !== "statusChanged" ||
+        viewerStatus(event.previousStatus, role) !==
+          viewerStatus(event.status, role);
+      return exclude(audience, skip)
+        .filter((u) => isVisibleTo(u.role))
+        .map((u) => ({
+          uid: u.uid,
+          content: contentFor(u.role),
+          target,
+        }));
     }
   }
 }

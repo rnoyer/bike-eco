@@ -197,6 +197,7 @@ test("a status change reaches the company and the région, minus the actor", asy
       companyId: "comp_1",
       actorUid: "bo_north",
       moto: "Yamaha MT-07",
+      previousStatus: "en_cours",
       status: "cloture",
     },
     deps(),
@@ -218,6 +219,7 @@ test("a status change reads the same for both roles", async () => {
       companyId: "comp_1",
       actorUid: "bo_north",
       moto: "Yamaha MT-07",
+      previousStatus: "cloture",
       status: "en_cours",
     },
     deps(),
@@ -226,7 +228,47 @@ test("a status change reads the same for both roles", async () => {
   expect([...bodies]).toEqual(["Nouveau statut: En cours"]);
 });
 
-test("a regression to 'à traiter' is projected per role, never leaked to b2b", async () => {
+// `viewerStatus` collapses `a_traiter` into `en_cours` for b2b, so both
+// directions of this transition leave the dealer's screen reading "En cours".
+// Notifying them would announce a change they cannot see — and, going back to
+// `a_traiter`, would do it with copy that contradicts the screen.
+test("moving between 'à traiter' and 'en cours' notifies only the back office", async () => {
+  const forward = await resolveDeliveries(
+    {
+      kind: "statusChanged",
+      dossierId: "dos_1",
+      region: "NORTH",
+      companyId: "comp_1",
+      actorUid: "bo_north",
+      moto: "Yamaha MT-07",
+      previousStatus: "a_traiter",
+      status: "en_cours",
+    },
+    deps(),
+  );
+  expect(uids(forward)).toEqual(["bo_all"]);
+  expect(forward[0].content.body).toBe("Nouveau statut: En cours");
+
+  const back = await resolveDeliveries(
+    {
+      kind: "statusChanged",
+      dossierId: "dos_1",
+      region: "NORTH",
+      companyId: "comp_1",
+      actorUid: "bo_north",
+      moto: "Yamaha MT-07",
+      previousStatus: "en_cours",
+      status: "a_traiter",
+    },
+    deps(),
+  );
+  expect(uids(back)).toEqual(["bo_all"]);
+  expect(back[0].content.body).toBe("Nouveau statut: À traiter");
+});
+
+// A dealer *does* hear about `a_traiter` when it is a change they can see:
+// reopening a clôturé dossier reads as "En cours" on their screen.
+test("reopening a clôturé dossier to 'à traiter' reaches b2b, projected", async () => {
   const out = await resolveDeliveries(
     {
       kind: "statusChanged",
@@ -235,6 +277,7 @@ test("a regression to 'à traiter' is projected per role, never leaked to b2b", 
       companyId: "comp_1",
       actorUid: "bo_north",
       moto: "Yamaha MT-07",
+      previousStatus: "cloture",
       status: "a_traiter",
     },
     deps(),
@@ -257,6 +300,7 @@ test("a muted uid is dropped from a status change, even though it isn't the acto
       companyId: "comp_1",
       actorUid: "bo_north",
       moto: "Yamaha MT-07",
+      previousStatus: "en_cours",
       status: "cloture",
     },
     deps({ mutedUids: async () => ["dealer_1"] }),
