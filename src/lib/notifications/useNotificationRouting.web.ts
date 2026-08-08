@@ -1,2 +1,2 @@
 /** Web build: no notifications to be tapped. */
-export function useNotificationRouting(): void {}
+export function useNotificationRouting(_guardSettled: boolean): void {}

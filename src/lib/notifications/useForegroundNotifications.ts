@@ -4,7 +4,7 @@ import { usePathname } from "expo-router";
 import { useEffect, useRef } from "react";
 
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { resolveRoute } from "./notificationRouting";
+import { isRemoteNotification, resolveRoute } from "./notificationRouting";
 
 /**
  * FCM hands a foreground message straight to the app without drawing anything,
@@ -27,12 +27,34 @@ export function useForegroundNotifications(): void {
 
   useEffect(() => {
     Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      }),
+      // This handler governs REMOTE notifications too, not just the local copy
+      // scheduled below. Our FCM payload carries both a `notification` and a
+      // `data` block (`functions/src/notifications/send.ts`), so on iOS the
+      // push also reaches expo-notifications' UNUserNotificationCenter
+      // delegate: answering `shouldShowBanner: true` for it would have the OS
+      // present the push AND leave the local copy to present a second banner.
+      // Worse, the "don't ping me for the thread I'm reading" check below only
+      // guards the local copy, so the OS banner would defeat the one
+      // foreground behaviour this feature specifies. Suppress the remote
+      // presentation; keep the local one, which is the one that can be
+      // suppressed intelligently.
+      //
+      // Android never takes the `isRemote` branch — expo's
+      // `ExpoFirebaseMessagingService` declares `android:priority="-1"` for
+      // the `MESSAGING_EVENT` intent filter versus RNFB's default, so RNFB
+      // wins the service race and expo-notifications never sees the remote
+      // message at all. Noting it because a platform-conditional-looking check
+      // with no `Platform.OS` reads as arbitrary otherwise: this makes iOS
+      // behave the way Android already does, it does not change Android.
+      handleNotification: async (notification) => {
+        const isRemote = isRemoteNotification(notification.request.trigger);
+        return {
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+          shouldShowBanner: !isRemote,
+          shouldShowList: !isRemote,
+        };
+      },
     });
 
     return onMessage(getMessaging(), async (message) => {

@@ -1,4 +1,27 @@
+import type { NotificationTrigger } from "expo-notifications";
+
 import type { UserRole } from "@/lib/firestore/schema";
+
+/**
+ * True when the OS delivered this notification straight from FCM, false when
+ * this app scheduled it locally (`scheduleNotificationAsync`).
+ *
+ * `expo-notifications` tags a push-delivered notification's trigger with
+ * `type: "push"` (`PushNotificationTrigger`); a locally scheduled one carries a
+ * date/interval/channel trigger or `null`, none of which has that type — and
+ * `ChannelAwareTriggerInput` has no `type` field at all, hence the `in` guard
+ * rather than a plain property read.
+ *
+ * Two call sites need the distinction, and both would misbehave without it:
+ * the foreground handler must not let the OS present a remote message it is
+ * about to re-present locally, and the response listener must not route a
+ * remote tap that `onNotificationOpenedApp` already owns.
+ */
+export function isRemoteNotification(
+  trigger: NotificationTrigger | null | undefined,
+): boolean {
+  return !!trigger && "type" in trigger && trigger.type === "push";
+}
 
 /**
  * Turn an FCM `data` block into an in-app route.

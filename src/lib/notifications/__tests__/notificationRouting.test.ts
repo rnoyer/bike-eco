@@ -1,5 +1,9 @@
 import { expect, test } from "@jest/globals";
-import { resolveRoute } from "@/lib/notifications/notificationRouting";
+import type { NotificationTrigger } from "expo-notifications";
+import {
+  isRemoteNotification,
+  resolveRoute,
+} from "@/lib/notifications/notificationRouting";
 
 test("a dossier target routes into the viewer's own group", () => {
   expect(resolveRoute({ kind: "dossier", dossierId: "dos_1" }, "b2b")).toBe(
@@ -38,4 +42,32 @@ test("an unknown or malformed payload is ignored rather than throwing", () => {
 
 test("an empty id is treated as missing", () => {
   expect(resolveRoute({ kind: "dossier", dossierId: "" }, "b2b")).toBeNull();
+});
+
+// ─── remote vs. locally scheduled ────────────────────────────────────────────
+// Both call sites of `isRemoteNotification` are otherwise untestable listener
+// wrappers, so the predicate they share carries the coverage: the iOS double
+// banner (F2) and the double-routed tap both hinge on getting this right.
+
+test("an FCM-delivered notification is remote", () => {
+  expect(isRemoteNotification({ type: "push", payload: {} })).toBe(true);
+});
+
+test("a locally scheduled notification is not remote", () => {
+  // `scheduleNotificationAsync({ trigger: null })` — what
+  // `useForegroundNotifications` posts — plus the other shapes the union can
+  // legally take on receipt. None of them may be mistaken for a push.
+  expect(isRemoteNotification(null)).toBe(false);
+  expect(isRemoteNotification(undefined)).toBe(false);
+  expect(isRemoteNotification({ channelId: "default" })).toBe(false);
+  expect(isRemoteNotification({ type: "unknown" })).toBe(false);
+  // A schedulable trigger's `type` is an enum whose value is the same string;
+  // cast rather than import the runtime enum from a native module into a test.
+  expect(
+    isRemoteNotification({
+      type: "timeInterval",
+      repeats: false,
+      seconds: 1,
+    } as unknown as NotificationTrigger),
+  ).toBe(false);
 });
