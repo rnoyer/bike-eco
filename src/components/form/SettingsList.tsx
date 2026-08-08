@@ -10,6 +10,8 @@ import {
   fromRegion,
   toRegion,
 } from "@/lib/navigation/regionOptions";
+import { usePushPermission } from "@/lib/notifications/usePushRegistration";
+import { Linking } from "react-native";
 
 const REGION_LABELS = REGION_OPTIONS.map((o) => o.label);
 
@@ -31,6 +33,7 @@ export default function SettingsList({
   onManageColleague,
 }: Props) {
   const { region, setRegion } = useRegionFilter();
+  const { status: pushStatus } = usePushPermission();
   const currentLabel =
     REGION_OPTIONS.find((o) => o.value === fromRegion(region))?.label ?? null;
 
@@ -46,6 +49,15 @@ export default function SettingsList({
             if (option) setRegion(toRegion(option.value));
           }}
         />
+      ) : null}
+      {pushStatus === "denied" ? (
+        <Section title="Notifications désactivées">
+          <Button
+            variant="outlined"
+            label="Ouvrir les réglages"
+            onPress={() => void Linking.openSettings()}
+          />
+        </Section>
       ) : null}
       {role === "backoffice" ? (
         <Section title="Gérer les entreprises et les vendeurs">

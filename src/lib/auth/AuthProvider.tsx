@@ -18,6 +18,7 @@ import {
 import { auth } from "../../../firebaseConfig";
 import { userDoc } from "@/lib/firestore/collections";
 import type { AppUser, UserStatus } from "@/lib/firestore/schema";
+import { unregisterPushToken } from "@/lib/notifications/pushRegistration";
 import { buildSessionUser, parseClaims, type SessionUser } from "./session";
 
 interface AuthState {
@@ -116,7 +117,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status: session?.status ?? null,
       loading,
       initializing,
-      signOut: () => fbSignOut(auth),
+      // Before `fbSignOut`: once the credential is gone the owner-only rule
+      // rejects the delete, and this device would keep receiving pushes for an
+      // account that is no longer signed in on it.
+      signOut: async () => {
+        if (firebaseUser) await unregisterPushToken(firebaseUser.uid);
+        await fbSignOut(auth);
+      },
       refreshSession,
     }),
     [firebaseUser, session, loading, initializing, refreshSession],
