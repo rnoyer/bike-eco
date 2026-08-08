@@ -1,98 +1,110 @@
 import { beforeEach, expect, jest, test } from "@jest/globals";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
-import Storage from "expo-sqlite/kv-store";
-import {
-  __resetRegionFilterForTests,
-  useRegionFilter,
-} from "@/lib/data/useRegionFilter";
+import { useRegionFilter } from "@/lib/data/useRegionFilter";
 
-beforeEach(() => {
-  // The hook is a module-level shared store; reset it so each test hydrates
-  // from its own fresh mock instead of inheriting the previous test's state.
-  __resetRegionFilterForTests();
-  (Storage.getItem as jest.Mock<any>).mockResolvedValue(null);
-  (Storage.setItem as jest.Mock<any>).mockClear();
+const mockUpdateDoc = jest.fn<(...args: any[]) => Promise<void>>();
+const mockUseAuth = jest.fn<() => any>();
+
+jest.mock("firebase/firestore", () => ({
+  updateDoc: (...args: any[]) => mockUpdateDoc(...args),
+}));
+jest.mock("@/lib/firestore/collections", () => ({
+  userDoc: (uid: string) => ({ path: `users/${uid}` }),
+}));
+jest.mock("@/lib/auth/AuthProvider", () => ({
+  useAuth: () => mockUseAuth(),
+}));
+
+const session = (over: Record<string, unknown> = {}) => ({
+  id: "bo_1",
+  role: "backoffice",
+  notificationRegion: null,
+  ...over,
 });
 
-test("defaults to null (Toute la France) and becomes ready", async () => {
+beforeEach(() => {
+  mockUpdateDoc.mockReset();
+  mockUpdateDoc.mockResolvedValue(undefined);
+  mockUseAuth.mockReturnValue({ session: session(), loading: false });
+});
+
+test("defaults to null (Toute la France) once the session has loaded", async () => {
   const { result } = await renderHook(() => useRegionFilter());
   await waitFor(() => expect(result.current.ready).toBe(true));
   expect(result.current.region).toBeNull();
 });
 
-test("setRegion persists 'NORTH' to kv-store", async () => {
-  const { result } = await renderHook(() => useRegionFilter());
-  await waitFor(() => expect(result.current.ready).toBe(true));
-  await act(async () => result.current.setRegion("NORTH"));
-  expect(result.current.region).toBe("NORTH");
-  expect(Storage.setItem).toHaveBeenCalledWith("bo.regionFilter", "NORTH");
-});
-
-test("restores a persisted 'SOUTH' value on mount", async () => {
-  (Storage.getItem as jest.Mock<any>).mockResolvedValue("SOUTH");
+test("reads a persisted 'SOUTH' off the session", async () => {
+  mockUseAuth.mockReturnValue({
+    session: session({ notificationRegion: "SOUTH" }),
+    loading: false,
+  });
   const { result } = await renderHook(() => useRegionFilter());
   await waitFor(() => expect(result.current.region).toBe("SOUTH"));
 });
 
-test("kv-store rejection still marks ready and region stays null", async () => {
-  (Storage.getItem as jest.Mock<any>).mockRejectedValue(new Error("kv down"));
-  const { result } = await renderHook(() => useRegionFilter());
-  await waitFor(() => expect(result.current.ready).toBe(true));
-  expect(result.current.region).toBeNull();
-});
-
-test("a région picked before hydration lands is not overwritten by it", async () => {
-  // The window between first subscribe and kv-store resolving is short but
-  // real, and the dropdown is on screen for all of it.
-  let releaseStorage!: (value: string | null) => void;
-  (Storage.getItem as jest.Mock<any>).mockReturnValue(
-    new Promise((resolve) => {
-      releaseStorage = resolve;
-    }),
-  );
-
+test("is not ready while the session is still loading", async () => {
+  mockUseAuth.mockReturnValue({ session: null, loading: true });
   const { result } = await renderHook(() => useRegionFilter());
   expect(result.current.ready).toBe(false);
+});
 
-  await act(async () => result.current.setRegion("NORTH"));
-  expect(result.current.region).toBe("NORTH");
-
-  // The stored value arrives afterwards — it must not clobber the user's pick.
-  await act(async () => {
-    releaseStorage("SOUTH");
-  });
+test("setRegion writes notificationRegion to the user doc", async () => {
+  const { result } = await renderHook(() => useRegionFilter());
   await waitFor(() => expect(result.current.ready).toBe(true));
-  expect(result.current.region).toBe("NORTH");
+  await act(async () => result.current.setRegion("NORTH"));
+  expect(mockUpdateDoc).toHaveBeenCalledWith(
+    { path: "users/bo_1" },
+    { notificationRegion: "NORTH" },
+  );
 });
 
-test("a wedged kv-store still becomes ready, via the hydration timeout", async () => {
-  // `ready` gates whole back-office screens, so a read that never settles would
-  // spin the dashboard forever with no error state and no retry.
-  jest.useFakeTimers();
-  try {
-    (Storage.getItem as jest.Mock<any>).mockReturnValue(new Promise(() => {}));
-
-    const { result } = await renderHook(() => useRegionFilter());
-    expect(result.current.ready).toBe(false);
-
-    await act(async () => {
-      jest.advanceTimersByTime(3000);
-    });
-
-    expect(result.current.ready).toBe(true);
-    expect(result.current.region).toBeNull();
-  } finally {
-    jest.useRealTimers();
-  }
+test("setRegion(null) persists null rather than omitting the field", async () => {
+  mockUseAuth.mockReturnValue({
+    session: session({ notificationRegion: "NORTH" }),
+    loading: false,
+  });
+  const { result } = await renderHook(() => useRegionFilter());
+  await waitFor(() => expect(result.current.ready).toBe(true));
+  await act(async () => result.current.setRegion(null));
+  expect(mockUpdateDoc).toHaveBeenCalledWith(
+    { path: "users/bo_1" },
+    { notificationRegion: null },
+  );
 });
 
-test("a change in one consumer is observed by another (shared store)", async () => {
-  const a = await renderHook(() => useRegionFilter());
-  const b = await renderHook(() => useRegionFilter());
-  await waitFor(() => expect(a.result.current.ready).toBe(true));
+test("the pick shows immediately and survives a failed write", async () => {
+  // Optimistic: the dropdown must not sit on the old value waiting for the
+  // network, and a rejected write must not throw out of the handler.
+  mockUpdateDoc.mockRejectedValue(new Error("offline"));
+  const { result } = await renderHook(() => useRegionFilter());
+  await waitFor(() => expect(result.current.ready).toBe(true));
+  await act(async () => result.current.setRegion("SOUTH"));
+  expect(result.current.region).toBe("SOUTH");
+});
 
-  await act(async () => a.result.current.setRegion("SOUTH"));
+test("a session value arriving later wins over the stale default", async () => {
+  const { result, rerender } = await renderHook(() => useRegionFilter());
+  await waitFor(() => expect(result.current.ready).toBe(true));
+  mockUseAuth.mockReturnValue({
+    session: session({ notificationRegion: "SOUTH" }),
+    loading: false,
+  });
+  await rerender({});
+  await waitFor(() => expect(result.current.region).toBe("SOUTH"));
+});
 
-  expect(a.result.current.region).toBe("SOUTH");
-  expect(b.result.current.region).toBe("SOUTH");
+test("a pick is dropped once the session reports the same value", async () => {
+  // Otherwise the local override would mask a later change made on another
+  // device — the session would say SOUTH and the dropdown would still show it
+  // as a "pending" pick forever.
+  const { result, rerender } = await renderHook(() => useRegionFilter());
+  await waitFor(() => expect(result.current.ready).toBe(true));
+  await act(async () => result.current.setRegion("SOUTH"));
+  mockUseAuth.mockReturnValue({
+    session: session({ notificationRegion: "SOUTH" }),
+    loading: false,
+  });
+  await rerender({});
+  await waitFor(() => expect(result.current.region).toBe("SOUTH"));
 });
