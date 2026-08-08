@@ -130,6 +130,18 @@ test("a b2b message does NOT reach the sender's own teammates", async () => {
   expect(uids(out)).toEqual(["bo_all", "bo_north"]);
 });
 
+test("a back-office recipient of a b2b message sees the sender's name, never Bike-eco", async () => {
+  // Task 5's copy.ts asserts this invariant in a comment but cannot enforce
+  // it — only the resolver's role routing can, so pin it here explicitly.
+  const out = await resolveDeliveries(
+    messageEvent({ senderUid: "dealer_1", senderRole: "b2b", senderName: "Camille Durand - Garage du Nord" }),
+    deps(),
+  );
+  const toBackoffice = out.find((d) => d.uid === "bo_north")!;
+  expect(toBackoffice.content.title).toBe("1 nouveau message de Camille Durand");
+  expect(toBackoffice.content.title).not.toContain("Bike-eco");
+});
+
 test("copy differs by recipient role on the same message", async () => {
   const out = await resolveDeliveries(messageEvent(), deps());
   const toBackoffice = out.find((d) => d.uid === "bo_all")!;
@@ -214,6 +226,22 @@ test("a status change reads the same for both roles", async () => {
   expect(titles.size).toBe(1);
 });
 
+test("a muted uid is dropped from a status change, even though it isn't the actor", async () => {
+  const out = await resolveDeliveries(
+    {
+      kind: "statusChanged",
+      dossierId: "dos_1",
+      region: "NORTH",
+      companyId: "comp_1",
+      actorUid: "bo_north",
+      moto: "Yamaha MT-07",
+      status: "cloture",
+    },
+    deps({ mutedUids: async () => ["dealer_1"] }),
+  );
+  expect(uids(out)).toEqual(["bo_all", "dealer_2"]);
+});
+
 test("a price change reaches the same set and formats euros", async () => {
   const out = await resolveDeliveries(
     {
@@ -229,6 +257,22 @@ test("a price change reaches the same set and formats euros", async () => {
   );
   expect(uids(out)).toEqual(["bo_all", "dealer_1", "dealer_2"]);
   expect(out[0].content.body).toBe("Prix validé: 4200 €");
+});
+
+test("a muted uid is dropped from a price change, even though it isn't the actor", async () => {
+  const out = await resolveDeliveries(
+    {
+      kind: "priceChanged",
+      dossierId: "dos_1",
+      region: "SOUTH",
+      companyId: "comp_1",
+      actorUid: "bo_south",
+      moto: "Yamaha MT-07",
+      validatedPrice: 4200,
+    },
+    deps({ mutedUids: async () => ["dealer_2"] }),
+  );
+  expect(uids(out)).toEqual(["bo_all", "dealer_1"]);
 });
 
 test("no recipients yields no deliveries rather than throwing", async () => {
