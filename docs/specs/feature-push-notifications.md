@@ -76,3 +76,11 @@ const moto = (v: DossierVehicle) =>
   notification has no compensating action.
 - `STATUS_LABELS` and `euros` are duplicated in `functions/src/notifications/labels.ts`
   and must be kept in sync with `src/lib/ui/format.ts`.
+- `messaging/invalid-argument` must **not** be added to `DEAD_TOKEN_CODES` in
+  `send.ts`, even though it looks like an obviously-dead-token code.
+  `sendEachForMulticast` sends one message per token but validates the shared
+  payload once, so a payload-level `INVALID_ARGUMENT` (an over-long body, an empty
+  title from a copy regression) returns on **every** response in the batch —
+  pruning on it would delete every token row at once, silencing every back-office
+  device simultaneously. A regression test in `send.test.ts` pins this; re-adding
+  the code will turn it red.
