@@ -114,6 +114,17 @@ const moto = (v: DossierVehicle) =>
   so a plain `.delete()` on the profile leaves device tokens behind as personal data.
   `deleteColleague`/`deleteAccount`, the company cascade, and both ops scripts use
   `recursiveDelete`.
+- **`dispatch` sends per token, not per row.** Several `pushTokens` rows can carry the
+  same FCM token, and each one would be a separate banner on the same device. The way
+  it happens in practice: the client loses the `push.deviceId` it keeps in
+  `expo-sqlite/kv-store` (app data cleared, a reinstall, a restore) and re-registers
+  under a fresh id, while FCM hands the device back the *same* token. Nothing prunes
+  the leftover row — its token is alive, so every send to it succeeds — so the
+  duplicate is permanent until the token finally rotates. Two accounts on one phone,
+  and a uid appearing twice in `deliveries`, land in the same place. `dispatch` groups
+  the batch's rows by token and sends each token once; a dead-token response prunes
+  *every* row carrying that token, since the ones left out of the batch will never be
+  sent to again and would otherwise never be collected.
 - `messaging/invalid-argument` must **not** be added to `DEAD_TOKEN_CODES` in
   `send.ts`, even though it looks like an obviously-dead-token code.
   `sendEachForMulticast` sends one message per token but validates the shared

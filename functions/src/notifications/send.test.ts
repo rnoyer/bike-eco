@@ -205,6 +205,77 @@ test("dispatch: an invalid-argument response deletes NOTHING (Fix 1 regression p
   expect(deleteCalls).toHaveLength(0);
 });
 
+test("dispatch: one device with two rows carrying the same token is sent to once", async () => {
+  // A client whose stored `deviceId` is lost (app data cleared, reinstall)
+  // re-registers under a fresh id while FCM hands it back the SAME token, so
+  // the user ends up with two rows pointing at one device. The stale row is
+  // un-prunable — its token is alive, so every send to it succeeds — and
+  // without this dedup the device shows every notification twice, forever.
+  const { deps, sendCalls } = fakeDeps({
+    tokens: {
+      u1: [
+        { deviceId: "old", token: "t1" },
+        { deviceId: "new", token: "t1" },
+      ],
+    },
+  });
+  await dispatch([delivery("u1")], deps);
+
+  expect(sendCalls).toHaveLength(1);
+  expect(sendCalls[0].tokens).toEqual(["t1"]);
+});
+
+test("dispatch: two recipients sharing a device (same token, same copy) get one send", async () => {
+  // Two accounts signed in on the same phone, the second without the first's
+  // sign-out having cleared its row.
+  const { deps, sendCalls } = fakeDeps({
+    tokens: {
+      u1: [{ deviceId: "d1", token: "shared" }],
+      u2: [{ deviceId: "d2", token: "shared" }],
+    },
+  });
+  await dispatch([delivery("u1", CONTENT_A), delivery("u2", CONTENT_A)], deps);
+
+  expect(sendCalls).toHaveLength(1);
+  expect(sendCalls[0].tokens).toEqual(["shared"]);
+});
+
+test("dispatch: a dead token prunes EVERY row carrying it, not just one", async () => {
+  // The flip side of the dedup: only one of the duplicate rows is in the
+  // batch, so pruning by batch position alone would leave the others behind
+  // holding a handle FCM has already rejected — and they would never be sent
+  // to again, so nothing would ever prune them.
+  const { deps, deleteCalls } = fakeDeps({
+    tokens: {
+      u1: [
+        { deviceId: "old", token: "t1" },
+        { deviceId: "new", token: "t1" },
+      ],
+    },
+    responses: (tokens) =>
+      tokens.map(() => ({
+        success: false,
+        errorCode: "messaging/registration-token-not-registered",
+      })),
+  });
+  await dispatch([delivery("u1")], deps);
+
+  expect(deleteCalls.map((r) => r.deviceId).sort()).toEqual(["new", "old"]);
+});
+
+test("dispatch: the same uid delivered twice with identical copy sends once", async () => {
+  // `resolveDeliveries` builds its audience by concatenating two queries
+  // (back-office + company members), so a uid that ever satisfies both would
+  // arrive twice — and the grouping merge would append its tokens twice.
+  const { deps, sendCalls } = fakeDeps({
+    tokens: { u1: [{ deviceId: "d1", token: "t1" }] },
+  });
+  await dispatch([delivery("u1", CONTENT_A), delivery("u1", CONTENT_A)], deps);
+
+  expect(sendCalls).toHaveLength(1);
+  expect(sendCalls[0].tokens).toEqual(["t1"]);
+});
+
 test("dispatch: batching splits at the 500-token cap", async () => {
   const uids = Array.from({ length: 501 }, (_, i) => `u${i}`);
   const tokens = Object.fromEntries(

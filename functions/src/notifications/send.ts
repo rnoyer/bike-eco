@@ -160,11 +160,34 @@ export async function dispatch(deliveries: Delivery[], deps: DispatchDeps = fire
   }
 
   for (const { delivery, rows: groupRows } of groups.values()) {
-    for (const batch of chunk(groupRows, FCM_BATCH_SIZE)) {
+    // The unit of delivery is the TOKEN, not the row: one token is one device,
+    // and a device must never be handed the same notification twice. Several
+    // rows can carry one token —
+    //
+    //  - a client that loses its stored `deviceId` (app data cleared, a
+    //    reinstall, a restore) re-registers under a fresh id while FCM hands
+    //    it back the same handle, leaving a stale row behind. Nothing ever
+    //    prunes that row: its token is alive, so every send to it *succeeds*,
+    //    and the device buzzes twice for every notification from then on;
+    //  - two accounts signed in on one phone, if the first's sign-out delete
+    //    never landed;
+    //  - the same uid appearing twice in `deliveries`, since the audience is
+    //    built by concatenating two queries and the merge above appends that
+    //    uid's rows once per delivery.
+    //
+    // Grouped rather than deduped so a dead-token response can still prune
+    // every row that carried the handle — the ones left out of the batch are
+    // never sent to again, so this is their only chance to be collected.
+    const byToken = new Map<string, TokenRow[]>();
+    for (const row of groupRows) {
+      byToken.set(row.token, [...(byToken.get(row.token) ?? []), row]);
+    }
+
+    for (const batch of chunk([...byToken.keys()], FCM_BATCH_SIZE)) {
       if (batch.length === 0) continue;
       try {
         const responses = await deps.sendMulticast({
-          tokens: batch.map((r) => r.token),
+          tokens: batch,
           content: delivery.content,
           target: delivery.target,
         });
@@ -172,8 +195,12 @@ export async function dispatch(deliveries: Delivery[], deps: DispatchDeps = fire
           responses.map(async (response, i) => {
             if (response.success) return;
             const code = response.errorCode ?? "";
-            if (DEAD_TOKEN_CODES.has(code)) await deps.deleteToken(batch[i]);
-            else logger.warn("Push send failed", { code, uid: batch[i].uid });
+            const rows = byToken.get(batch[i]) ?? [];
+            if (DEAD_TOKEN_CODES.has(code)) {
+              await Promise.all(rows.map((row) => deps.deleteToken(row)));
+            } else {
+              logger.warn("Push send failed", { code, uid: rows[0]?.uid });
+            }
           }),
         );
       } catch (e) {
