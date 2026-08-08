@@ -215,7 +215,12 @@ later milestone. Only the Zod schemas are unit-tested; step/route UI is gated by
   server fans push notifications out by this same field, so a device preference would let
   a member watch NORTH on screen while being paged about SOUTH.
 - `regionOptions.ts` holds the UI options (`Moitié Nord` / `Moitié sud` / `Toute la
-  France`) and the `toRegion`/`fromRegion` mapping between the stored value and `Region | null`.
+  France`) and the `toRegion`/`fromRegion`/`regionFromLabel` mapping between the stored
+  value and `Region | null`.
+- Seeded at account creation, not only in Paramètres: the invited-registration funnel adds
+  an optional "Région gérée" dropdown for a back-office invitation (`regionFromLabel` maps
+  the picked label to the `acceptInvite` payload), and `scripts/grant-backoffice.js` takes
+  `--region north|south|all`. Both leave `null` when nothing is chosen.
 - The BO settings picker writes it with `updateDoc`; every reader goes through `useUser`'s
   live `onSnapshot`, so the settings picker, the dashboard's three sections and any other
   signed-in device observe the same value without shared state or manual invalidation —

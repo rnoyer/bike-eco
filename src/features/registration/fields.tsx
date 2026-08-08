@@ -1,12 +1,15 @@
+import type { ReactNode } from "react";
 import { useFormContext } from "react-hook-form";
 import { StyleSheet, Text } from "react-native";
 
+import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
 import type { B2bCompanyRegistrationForm } from "@/features/b2b-registration/schema";
 import { frenchAuthMessage } from "@/lib/auth/authErrors";
 import { signInWithGoogle } from "@/lib/auth/googleSignIn";
 import { digitsOnly } from "@/lib/forms/transforms";
+import { REGION_OPTIONS } from "@/lib/navigation/regionOptions";
 import { alertDialog } from "@/lib/ui/dialog";
 import { useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { tokens } from "@/theme/tokens";
@@ -89,8 +92,10 @@ export function AccountFields({
   );
 }
 
-/** Step "Vos coordonnées": shared by company + invited registration. */
-export function CoordonneesFields() {
+/** Step "Vos coordonnées": shared by company + invited registration.
+ *  `children` renders between the last field and the mandatory-fields note, for
+ *  the flows that add one (the back-office invitee's "Région gérée"). */
+export function CoordonneesFields({ children }: { children?: ReactNode }) {
   return (
     <>
       <ControlledField
@@ -117,8 +122,25 @@ export function CoordonneesFields() {
         autoComplete="tel"
         transform={digitsOnly(10)}
       />
+      {children}
       <Text style={styles.note}>* Champs obligatoires</Text>
     </>
+  );
+}
+
+/** Optional "Région gérée", back-office invitees only: the moitié of France the
+ *  new member follows. It is the same choice Paramètres exposes later, and it
+ *  scopes push notifications as well as the dashboard — so leaving it unset must
+ *  read as the explicit "Toute la France" option, which is what the placeholder
+ *  announces and what `submit.ts` sends (`notificationRegion: null`). */
+export function RegionGereeField() {
+  return (
+    <ControlledDropdown
+      name="regionGeree"
+      label="Région gérée"
+      placeholder="Toute la France"
+      options={REGION_OPTIONS.map((o) => o.label)}
+    />
   );
 }
 

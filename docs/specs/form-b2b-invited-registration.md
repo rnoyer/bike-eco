@@ -121,6 +121,24 @@ type : Input phone number
 validation : 10 digits
 mandatory : yes
 
+---
+
+label : "Région gérée"
+placeholder : "Toute la France"
+default value : null
+type : dropdown — "Moitié Nord" / "Moitié sud" / "Toute la France"
+mandatory : no
+visible : invitation back-office uniquement (le rôle vient de la résolution du
+code) ; un invité b2b n'a pas de région, le champ est absent — et `acceptInvite`
+refuse de l'enregistrer pour lui même si la requête en porte une.
+
+Ce champ écrit `users/{uid}.notificationRegion` : il filtre le dashboard
+back-office **et** cadre les notifications push (voir
+[`feature-push-notifications.md`](feature-push-notifications.md)). Ne rien
+choisir vaut exactement l'option "Toute la France" (`null`) — d'où le
+placeholder. Le membre peut le changer ensuite dans Paramètres → "Région gérée"
+(voir [`page-settings.md`](page-settings.md)).
+
 Texte d'information : "\* Champs obligatoires"
 
 ---
@@ -129,8 +147,8 @@ Form : step 3
 slider : 100%
 title : "Votre inscription est terminée !"
 
-Un invité back-office suit exactement le même parcours (compte, coordonnées,
-confirmation) et son compte est actif immédiatement — il n'y a pas d'étape de
+Un invité back-office suit le même parcours (compte, coordonnées — plus le champ
+optionnel "Région gérée" —, confirmation) et son compte est actif immédiatement — il n'y a pas d'étape de
 validation, comme pour un invité b2b. Il n'est pas administrateur.
 
 ---

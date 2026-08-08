@@ -46,11 +46,20 @@ node grant-backoffice.js \
   --email  admin@bike-eco.fr \
   --prenom Alex \
   --nom    Martin \
-  --tel    0605060708
+  --tel    0605060708 \
+  --region all
 ```
 
 `--password` est optionnel : sans lui le script génère un mot de passe aléatoire et l'affiche —
 il n'est que temporaire, l'étape 4 le remplace.
+
+`--region north|south|all` est optionnel : il pose la **région gérée**
+(`users/{uid}.notificationRegion`), qui filtre le dashboard back-office **et** cadre les
+notifications push (voir `docs/specs/feature-push-notifications.md`). `all` = "Toute la
+France" (`null`), ce qui est aussi le comportement quand le champ n'a jamais été posé.
+Sans le drapeau, le script **ne touche pas** au champ — un passage de réparation
+n'efface donc pas un choix fait depuis Paramètres → "Région gérée". Le titulaire peut le
+changer à tout moment depuis cet écran.
 
 Le compte créé est **administrateur** (`isAdmin: true`) par défaut — c'est l'équipe
 fondatrice, et seul un administrateur peut gérer (ou supprimer) les membres de l'équipe
@@ -144,6 +153,7 @@ voir [Comptes back-office suivants](#comptes-back-office-suivants) ci-dessous.
 Ce script ne sert qu'au **premier** compte back-office. Une fois qu'il existe et
 qu'il est administrateur, les membres suivants s'invitent depuis l'application :
 Paramètres → "Inviter un membre de l'équipe Bike-eco". L'invité reçoit un code à
-usage unique valable 1 heure, suit le parcours d'inscription invité, et obtient un
+usage unique valable 1 heure, suit le parcours d'inscription invité — où il choisit
+sa **région gérée** (champ optionnel, "Toute la France" par défaut) —, et obtient un
 compte back-office **actif** et **non administrateur** — à promouvoir ensuite depuis
 la page Collaborateur si besoin.

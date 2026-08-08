@@ -52,4 +52,19 @@ describe("b2bInvitedRegistrationSchema", () => {
   test("rejects a phone that is not 10 digits", () => {
     expect(b2bInvitedRegistrationSchema.safeParse({ ...valid, telephone: "061234" }).success).toBe(false);
   });
+
+  test("regionGeree is optional and defaults to null (Toute la France)", () => {
+    // A b2b invitee never sees the field, and a back-office invitee may skip
+    // it — neither may be blocked on "Suivant" for it.
+    expect("regionGeree" in valid).toBe(false);
+    const result = b2bInvitedRegistrationSchema.safeParse(valid);
+    expect(result.success).toBe(true);
+    expect(result.data!.regionGeree).toBeNull();
+  });
+
+  test("regionGeree keeps the picked dropdown label", () => {
+    const result = b2bInvitedRegistrationSchema.safeParse({ ...valid, regionGeree: "Moitié sud" });
+    expect(result.success).toBe(true);
+    expect(result.data!.regionGeree).toBe("Moitié sud");
+  });
 });

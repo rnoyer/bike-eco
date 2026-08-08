@@ -1,5 +1,5 @@
 import { call } from "./callable";
-import type { UserRole } from "@/lib/firestore/schema";
+import type { Region, UserRole } from "@/lib/firestore/schema";
 
 export interface RegisterCompanyPayload {
   method: "password" | "google";
@@ -21,6 +21,9 @@ export interface AcceptInvitePayload {
   prenom: string;
   telephone: string;
   password?: string;
+  /** Back-office invitations only: the "région gérée" the new member picks at
+   *  registration. `null` = "Toute la France"; ignored for a b2b invitation. */
+  notificationRegion?: Region | null;
 }
 
 export const callRegisterCompany = (p: RegisterCompanyPayload) =>

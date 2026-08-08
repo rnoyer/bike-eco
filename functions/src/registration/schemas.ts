@@ -39,7 +39,14 @@ export const registerCompanySchema = z
   .and(registerCredential);
 
 export const acceptInviteSchema = z
-  .object({ code: z.string().trim().min(1), ...profile })
+  .object({
+    code: z.string().trim().min(1),
+    // Optional "région gérée", honoured only for a back-office invitation (see
+    // acceptInviteCore). `nullish`, like `tva`: the callable wire format cannot
+    // carry `undefined`, so "Toute la France" arrives as an explicit null.
+    notificationRegion: z.enum(["NORTH", "SOUTH"]).nullish(),
+    ...profile,
+  })
   .and(acceptCredential);
 
 export const sendInviteSchema = z.object({ email: z.email() });

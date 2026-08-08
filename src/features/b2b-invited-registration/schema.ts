@@ -11,6 +11,11 @@ export const b2bInvitedRegistrationSchema = z
     nom: requiredText("Indiquez votre nom"),
     prenom: requiredText("Indiquez votre prénom"),
     telephone: z.string().regex(/^\d{10}$/, "Saisissez un numéro à 10 chiffres"),
+    // Back-office invitees only, and optional: the dropdown holds the label
+    // ("Moitié Nord"…), which `submit.ts` maps to `notificationRegion`. Left
+    // unset it reads as "Toute la France", exactly like the explicit option —
+    // so there is nothing to require here, and a b2b invitee never sees it.
+    regionGeree: z.string().nullable().default(null),
   })
   // See the company schema: the issue goes on `confirmPassword` so the account
   // step gates on it and the message renders under the confirmation box.
@@ -28,4 +33,5 @@ export const B2B_INVITED_REGISTRATION_DEFAULTS: B2bInvitedRegistrationForm = {
   nom: "",
   prenom: "",
   telephone: "",
+  regionGeree: null,
 };

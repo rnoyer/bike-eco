@@ -71,6 +71,17 @@ test("acceptInvite google mode needs neither email nor password", () => {
   expect(acceptInviteSchema.safeParse({ ...rest, method: "google" }).success).toBe(true);
 });
 
+test("acceptInvite notificationRegion is optional, and only NORTH/SOUTH/null", () => {
+  expect(acceptInviteSchema.safeParse({ ...acceptBase, notificationRegion: "NORTH" }).success).toBe(true);
+  expect(acceptInviteSchema.safeParse({ ...acceptBase, notificationRegion: "SOUTH" }).success).toBe(true);
+  // "Toute la France": the SDK encodes the unset field as an explicit null.
+  expect(acceptInviteSchema.safeParse({ ...acceptBase, notificationRegion: null }).success).toBe(true);
+  expect("notificationRegion" in acceptBase).toBe(false);
+  expect(acceptInviteSchema.safeParse(acceptBase).success).toBe(true);
+  expect(acceptInviteSchema.safeParse({ ...acceptBase, notificationRegion: "ALL" }).success).toBe(false);
+  expect(acceptInviteSchema.safeParse({ ...acceptBase, notificationRegion: "Moitié Nord" }).success).toBe(false);
+});
+
 test("a malformed telephone is rejected", () => {
   expect(acceptInviteSchema.safeParse({ ...acceptBase, telephone: "06AB" }).success).toBe(false);
   expect(acceptInviteSchema.safeParse({ ...acceptBase, telephone: "060000000" }).success).toBe(false); // 9 digits

@@ -62,7 +62,12 @@ const moto = (v: DossierVehicle) =>
 
 - `users/{uid}.notificationRegion: Region | null` — back-office only; the "région gérée"
   a member manages, `null` meaning "Toute la France". Drives both the dashboard filter
-  and notification fan-out.
+  and notification fan-out. Set at account creation — the optional "Région gérée" field
+  of the invited-registration form (`form-b2b-invited-registration.md`, back-office
+  invitations only; `acceptInvite` ignores it for a b2b one) or `--region north|south|all`
+  on `scripts/grant-backoffice.js` — and changed afterwards in Paramètres
+  (`page-settings.md`). Absent on accounts created before the field existed, which reads
+  as `null`.
 - `users/{uid}/pushTokens/{deviceId}` — one row per device (`{ token, platform,
   updatedAt }`), keyed by a random device id minted once so a rotated FCM token updates
   in place instead of orphaning a row. Deleted on sign-out.
