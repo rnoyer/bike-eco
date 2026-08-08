@@ -1,5 +1,7 @@
 import { expect, test } from "@jest/globals";
-import { FCM_BATCH_SIZE, chunk, targetData } from "./send";
+import type { NotificationContent, NotificationTarget } from "./copy";
+import type { Delivery } from "./core";
+import { FCM_BATCH_SIZE, chunk, dispatch, targetData, type DispatchDeps, type MulticastResult, type TokenRow } from "./send";
 
 test("chunk splits into batches of at most `size`", () => {
   expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
@@ -39,4 +41,179 @@ test("every targetData value is a string", () => {
   for (const value of Object.values(data)) {
     expect(typeof value).toBe("string");
   }
+});
+
+// ─── dispatch ─────────────────────────────────────────────────────────────
+//
+// `dispatch` is exercised against a fake `DispatchDeps` rather than real
+// Firestore/FCM: it owns the grouping key, the batching, the zero-device
+// short-circuit, the defensive token filter, and the prune-vs-log decision —
+// all places a regression is silent in production (see Fix 1 below).
+
+const DOSSIER_TARGET: NotificationTarget = { kind: "dossier", dossierId: "dos_1" };
+const CONTENT_A: NotificationContent = { title: "A", body: "body A" };
+const CONTENT_B: NotificationContent = { title: "B", body: "body B" };
+
+function delivery(uid: string, content = CONTENT_A, target = DOSSIER_TARGET): Delivery {
+  return { uid, content, target };
+}
+
+interface FakeRow {
+  deviceId: string;
+  token: unknown;
+}
+
+interface SendCall {
+  tokens: string[];
+  content: NotificationContent;
+  target: NotificationTarget;
+}
+
+/**
+ * A fake `DispatchDeps`. `tokens` maps uid -> its raw (unvalidated)
+ * `pushTokens` rows, mirroring what a real Firestore read hands back.
+ * `responses` lets a test script the per-token FCM result; it defaults to
+ * "every token succeeds".
+ */
+function fakeDeps(params: {
+  tokens: Record<string, FakeRow[]>;
+  responses?: (tokens: string[]) => MulticastResult[];
+}): { deps: DispatchDeps; sendCalls: SendCall[]; deleteCalls: TokenRow[] } {
+  const sendCalls: SendCall[] = [];
+  const deleteCalls: TokenRow[] = [];
+  const deps: DispatchDeps = {
+    tokensFor: async (uids) =>
+      uids.flatMap((uid) =>
+        (params.tokens[uid] ?? []).map((r) => ({ uid, deviceId: r.deviceId, token: r.token })),
+      ),
+    deleteToken: async (row) => {
+      deleteCalls.push(row);
+    },
+    sendMulticast: async (input) => {
+      sendCalls.push(input);
+      return params.responses
+        ? params.responses(input.tokens)
+        : input.tokens.map(() => ({ success: true }));
+    },
+  };
+  return { deps, sendCalls, deleteCalls };
+}
+
+test("dispatch: recipients of identical content+target share one multicast", async () => {
+  const { deps, sendCalls } = fakeDeps({
+    tokens: {
+      u1: [{ deviceId: "d1", token: "t1" }],
+      u2: [{ deviceId: "d2", token: "t2" }],
+    },
+  });
+  await dispatch([delivery("u1", CONTENT_A), delivery("u2", CONTENT_A)], deps);
+
+  expect(sendCalls).toHaveLength(1);
+  expect(sendCalls[0].tokens.sort()).toEqual(["t1", "t2"]);
+});
+
+test("dispatch: different content (the message event's two role-dependent variants) sends separate multicasts", async () => {
+  const { deps, sendCalls } = fakeDeps({
+    tokens: {
+      u1: [{ deviceId: "d1", token: "t1" }],
+      u2: [{ deviceId: "d2", token: "t2" }],
+    },
+  });
+  await dispatch([delivery("u1", CONTENT_A), delivery("u2", CONTENT_B)], deps);
+
+  expect(sendCalls).toHaveLength(2);
+  const byTitle = new Map(sendCalls.map((c) => [c.content.title, c.tokens]));
+  expect(byTitle.get("A")).toEqual(["t1"]);
+  expect(byTitle.get("B")).toEqual(["t2"]);
+});
+
+test("dispatch: a recipient with zero registered devices is skipped without an empty-token send", async () => {
+  const { deps, sendCalls } = fakeDeps({
+    tokens: {
+      u1: [{ deviceId: "d1", token: "t1" }],
+      // u2 has no pushTokens rows at all.
+    },
+  });
+  await dispatch([delivery("u1"), delivery("u2")], deps);
+
+  expect(sendCalls).toHaveLength(1);
+  expect(sendCalls[0].tokens).toEqual(["t1"]);
+});
+
+test("dispatch: no send at all when every recipient has zero devices", async () => {
+  const { deps, sendCalls } = fakeDeps({ tokens: {} });
+  await dispatch([delivery("u1"), delivery("u2")], deps);
+
+  expect(sendCalls).toHaveLength(0);
+});
+
+test("dispatch: a row whose token is missing or non-string is filtered out and never reaches the send", async () => {
+  const { deps, sendCalls } = fakeDeps({
+    tokens: {
+      u1: [
+        { deviceId: "d1", token: "t1" },
+        { deviceId: "d2", token: undefined },
+        { deviceId: "d3", token: 42 },
+        { deviceId: "d4", token: "" },
+      ],
+    },
+  });
+  await dispatch([delivery("u1")], deps);
+
+  expect(sendCalls).toHaveLength(1);
+  expect(sendCalls[0].tokens).toEqual(["t1"]);
+});
+
+test("dispatch: a registration-token-not-registered response deletes exactly that row and no other", async () => {
+  const { deps, deleteCalls } = fakeDeps({
+    tokens: {
+      u1: [
+        { deviceId: "d1", token: "t1" },
+        { deviceId: "d2", token: "t2" },
+      ],
+    },
+    responses: (tokens) =>
+      tokens.map((_, i) =>
+        i === 0
+          ? { success: false, errorCode: "messaging/registration-token-not-registered" }
+          : { success: true },
+      ),
+  });
+  await dispatch([delivery("u1")], deps);
+
+  expect(deleteCalls).toHaveLength(1);
+  expect(deleteCalls[0]).toEqual({ uid: "u1", deviceId: "d1", token: "t1" });
+});
+
+test("dispatch: an invalid-argument response deletes NOTHING (Fix 1 regression pin)", async () => {
+  // A payload-level `invalid-argument` (oversized body, empty title) comes
+  // back on every response in the batch — not just one bad token's — so it
+  // must never be treated as a dead-token signal. If `messaging/invalid-argument`
+  // is ever added back to `DEAD_TOKEN_CODES`, this test fails.
+  const { deps, deleteCalls } = fakeDeps({
+    tokens: {
+      u1: [
+        { deviceId: "d1", token: "t1" },
+        { deviceId: "d2", token: "t2" },
+      ],
+    },
+    responses: (tokens) =>
+      tokens.map(() => ({ success: false, errorCode: "messaging/invalid-argument" })),
+  });
+  await dispatch([delivery("u1")], deps);
+
+  expect(deleteCalls).toHaveLength(0);
+});
+
+test("dispatch: batching splits at the 500-token cap", async () => {
+  const uids = Array.from({ length: 501 }, (_, i) => `u${i}`);
+  const tokens = Object.fromEntries(
+    uids.map((uid, i) => [uid, [{ deviceId: `d${i}`, token: `t${i}` }]]),
+  );
+  const { deps, sendCalls } = fakeDeps({ tokens });
+  await dispatch(uids.map((uid) => delivery(uid)), deps);
+
+  expect(sendCalls).toHaveLength(2);
+  expect(sendCalls[0].tokens).toHaveLength(500);
+  expect(sendCalls[1].tokens).toHaveLength(1);
 });

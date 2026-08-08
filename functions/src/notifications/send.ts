@@ -2,17 +2,28 @@ import { getMessaging } from "firebase-admin/messaging";
 import * as logger from "firebase-functions/logger";
 
 import { db } from "../callable";
-import type { NotificationTarget } from "./copy";
+import type { NotificationContent, NotificationTarget } from "./copy";
 import type { Delivery } from "./core";
 
 /** `sendEachForMulticast` accepts at most 500 tokens per call. */
 export const FCM_BATCH_SIZE = 500;
 
-/** Per-token errors that mean the handle is dead and its row should go. */
+/**
+ * Per-token errors that mean the handle is dead and its row should go.
+ *
+ * Deliberately excludes `messaging/invalid-argument`: `sendEachForMulticast`
+ * sends one message per token but validates the *shared* payload (title,
+ * body, data) only once, so a payload-level problem — a `moto` label long
+ * enough to push the body past FCM's 4KB limit, or an empty title from a
+ * copy regression — comes back as `invalid-argument` on EVERY response in
+ * the batch, not just a bad token's. Treating it as a dead-token signal would
+ * prune every registered device in that batch in one shot, instead of the
+ * one device that's actually broken (there usually isn't one). Log it like
+ * any other non-fatal failure and leave the rows alone.
+ */
 const DEAD_TOKEN_CODES = new Set([
   "messaging/registration-token-not-registered",
   "messaging/invalid-registration-token",
-  "messaging/invalid-argument",
 ]);
 
 export function chunk<T>(items: T[], size: number): T[][] {
@@ -28,55 +39,109 @@ export function targetData(target: NotificationTarget): Record<string, string> {
     : { kind: target.kind, dossierId: target.dossierId };
 }
 
-interface TokenRow {
+export interface TokenRow {
   uid: string;
   deviceId: string;
   token: string;
 }
 
-/**
- * Every registered device for these uids.
- *
- * `users/{uid}/pushTokens/{deviceId}` is owner-writable with no schema
- * validation in the security rules (`allow read, write: if request.auth.uid
- * == uid`, nothing else) — a client could write any shape at all. So `token`
- * is read as `unknown` and rows without a non-empty string `token` are
- * dropped here rather than trusted: passing `undefined` into
- * `sendEachForMulticast`'s token list rejects the *entire* batch, turning one
- * malformed row into zero notifications for everyone else in it.
- */
-async function tokensFor(uids: string[]): Promise<TokenRow[]> {
-  const rows = await Promise.all(
-    uids.map(async (uid) => {
-      const snap = await db().collection("users").doc(uid).collection("pushTokens").get();
-      return snap.docs
-        .map((d) => ({ uid, deviceId: d.id, token: d.data().token as unknown }))
-        .filter((row): row is TokenRow => typeof row.token === "string" && row.token.length > 0);
-    }),
-  );
-  return rows.flat();
+/** A `pushTokens` row exactly as Firestore hands it back — `token` unvalidated. */
+interface RawTokenRow {
+  uid: string;
+  deviceId: string;
+  token: unknown;
 }
 
-async function deleteToken(row: TokenRow): Promise<void> {
-  await db()
-    .collection("users").doc(row.uid)
-    .collection("pushTokens").doc(row.deviceId)
-    .delete()
-    .catch((e) => logger.warn("Failed to prune push token", { uid: row.uid, error: String(e) }));
+export interface MulticastResult {
+  success: boolean;
+  /** An FCM error code, e.g. `"messaging/invalid-argument"`. Only set when `!success`. */
+  errorCode?: string;
 }
+
+/**
+ * The Firestore reads/writes and the FCM send that `dispatch` needs, factored
+ * out so its grouping/batching/pruning logic — the part with real behaviour to
+ * get wrong — can be unit tested against a fake, the same pattern used by
+ * `messages/core.ts` and `users/core.ts`.
+ */
+export interface DispatchDeps {
+  /**
+   * Every registered device for these uids, as Firestore actually returns
+   * them — NOT pre-validated. `users/{uid}/pushTokens/{deviceId}` is
+   * owner-writable with no schema validation (`allow read, write: if
+   * request.auth.uid == uid`, nothing else) in `firestore.rules`, so a row's
+   * `token` may be missing or any type. `dispatch` does the filtering itself
+   * (see below) rather than trusting this to have done it.
+   */
+  tokensFor(uids: string[]): Promise<RawTokenRow[]>;
+  /** Delete a token row whose FCM handle is confirmed dead. */
+  deleteToken(row: TokenRow): Promise<void>;
+  /** Send one multicast; resolves to one result per token, in the same order as `tokens`. */
+  sendMulticast(input: {
+    tokens: string[];
+    content: NotificationContent;
+    target: NotificationTarget;
+  }): Promise<MulticastResult[]>;
+}
+
+const firestoreDeps: DispatchDeps = {
+  tokensFor: async (uids) => {
+    const rows = await Promise.all(
+      uids.map(async (uid) => {
+        const snap = await db().collection("users").doc(uid).collection("pushTokens").get();
+        return snap.docs.map((d) => ({ uid, deviceId: d.id, token: d.data().token as unknown }));
+      }),
+    );
+    return rows.flat();
+  },
+  deleteToken: async (row) => {
+    await db()
+      .collection("users").doc(row.uid)
+      .collection("pushTokens").doc(row.deviceId)
+      .delete()
+      .catch((e) => logger.warn("Failed to prune push token", { uid: row.uid, error: String(e) }));
+  },
+  sendMulticast: async ({ tokens, content, target }) => {
+    const result = await getMessaging().sendEachForMulticast({
+      tokens,
+      notification: { title: content.title, body: content.body },
+      data: targetData(target),
+      android: {
+        priority: "high",
+        notification: { channelId: "default" },
+      },
+      apns: { payload: { aps: { sound: "default" } } },
+    });
+    return result.responses.map((r) =>
+      r.success ? { success: true } : { success: false, errorCode: r.error?.code ?? "" },
+    );
+  },
+};
 
 /**
  * Fan a resolved delivery list out to every registered device.
  *
- * One `sendEachForMulticast` call per distinct notification body, batched at
- * the 500-token cap. Tokens whose per-token response says the handle is dead
- * are deleted — Apple and Google both ask that you stop sending to them.
+ * One `sendMulticast` call per distinct notification body, batched at the
+ * 500-token cap. Tokens whose per-token response says the handle is dead are
+ * deleted — Apple and Google both ask that you stop sending to them.
+ *
+ * `deps` defaults to the real Firestore/FCM implementation; tests inject a
+ * fake to exercise the grouping, batching and prune-vs-log decisions without
+ * touching either service.
  */
-export async function dispatch(deliveries: Delivery[]): Promise<void> {
+export async function dispatch(deliveries: Delivery[], deps: DispatchDeps = firestoreDeps): Promise<void> {
   if (deliveries.length === 0) return;
 
-  const rows = await tokensFor([...new Set(deliveries.map((d) => d.uid))]);
+  const rawRows = await deps.tokensFor([...new Set(deliveries.map((d) => d.uid))]);
+  // The defensive filter lives here, not inside `tokensFor`: passing
+  // `undefined` into `sendMulticast`'s token list would reject the *whole*
+  // batch, turning one malformed `pushTokens` row into zero notifications for
+  // everyone else batched with it.
+  const rows: TokenRow[] = rawRows.filter(
+    (row): row is TokenRow => typeof row.token === "string" && row.token.length > 0,
+  );
   if (rows.length === 0) return;
+
   const byUid = new Map<string, TokenRow[]>();
   for (const row of rows) {
     byUid.set(row.uid, [...(byUid.get(row.uid) ?? []), row]);
@@ -98,24 +163,16 @@ export async function dispatch(deliveries: Delivery[]): Promise<void> {
     for (const batch of chunk(groupRows, FCM_BATCH_SIZE)) {
       if (batch.length === 0) continue;
       try {
-        const result = await getMessaging().sendEachForMulticast({
+        const responses = await deps.sendMulticast({
           tokens: batch.map((r) => r.token),
-          notification: {
-            title: delivery.content.title,
-            body: delivery.content.body,
-          },
-          data: targetData(delivery.target),
-          android: {
-            priority: "high",
-            notification: { channelId: "default" },
-          },
-          apns: { payload: { aps: { sound: "default" } } },
+          content: delivery.content,
+          target: delivery.target,
         });
         await Promise.all(
-          result.responses.map(async (response, i) => {
+          responses.map(async (response, i) => {
             if (response.success) return;
-            const code = response.error?.code ?? "";
-            if (DEAD_TOKEN_CODES.has(code)) await deleteToken(batch[i]);
+            const code = response.errorCode ?? "";
+            if (DEAD_TOKEN_CODES.has(code)) await deps.deleteToken(batch[i]);
             else logger.warn("Push send failed", { code, uid: batch[i].uid });
           }),
         );
