@@ -176,16 +176,25 @@ export async function resolveDeliveries(
         kind: "dossier",
         dossierId: event.dossierId,
       };
-      const content =
-        event.kind === "statusChanged"
-          ? statusChangedContent(event)
-          : priceChangedContent(event);
       const [audience, muted] = await Promise.all([
         dossierAudience(event, deps),
         deps.mutedUids(event.dossierId),
       ]);
       const skip = new Set([event.actorUid, ...muted]);
-      return exclude(audience, skip).map((u) => ({ uid: u.uid, content, target }));
+      // Per recipient, not once for the audience: the status label is
+      // role-dependent (a b2b user never sees "À traiter"). The price copy has
+      // no such projection, but building it in the same place keeps the arm
+      // shared. `dispatch` groups by the rendered content, so the two status
+      // variants become two multicasts and the identical price copy stays one.
+      const contentFor = (recipientRole: UserRole): NotificationContent =>
+        event.kind === "statusChanged"
+          ? statusChangedContent({ ...event, recipientRole })
+          : priceChangedContent(event);
+      return exclude(audience, skip).map((u) => ({
+        uid: u.uid,
+        content: contentFor(u.role),
+        target,
+      }));
     }
   }
 }

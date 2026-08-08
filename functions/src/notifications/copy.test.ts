@@ -84,11 +84,47 @@ test("a b2b recipient always sees Bike-eco as the sender", () => {
 });
 
 test("status change copy uses the French label", () => {
-  expect(statusChangedContent({ moto: "Yamaha MT-07", status: "cloture" })).toEqual({
+  expect(
+    statusChangedContent({
+      recipientRole: "backoffice",
+      moto: "Yamaha MT-07",
+      status: "cloture",
+    }),
+  ).toEqual({
     title: "Le statut de la Yamaha MT-07 a évolué",
     body: "Nouveau statut: Clôturé",
   });
 });
+
+test("a b2b recipient is never told 'À traiter' — the back office's own state", () => {
+  expect(
+    statusChangedContent({
+      recipientRole: "b2b",
+      moto: "Yamaha MT-07",
+      status: "a_traiter",
+    }).body,
+  ).toBe("Nouveau statut: En cours");
+});
+
+test("a back-office recipient does see 'À traiter'", () => {
+  expect(
+    statusChangedContent({
+      recipientRole: "backoffice",
+      moto: "Yamaha MT-07",
+      status: "a_traiter",
+    }).body,
+  ).toBe("Nouveau statut: À traiter");
+});
+
+test.each(["en_cours", "cloture"] as const)(
+  "both roles read the same label for %s",
+  (status) => {
+    const moto = "Yamaha MT-07";
+    expect(statusChangedContent({ recipientRole: "b2b", moto, status })).toEqual(
+      statusChangedContent({ recipientRole: "backoffice", moto, status }),
+    );
+  },
+);
 
 test("price change copy formats euros", () => {
   expect(
@@ -110,7 +146,10 @@ test("a cleared price reads as a dash, never as 'null €'", () => {
 
 test("an unfilled vehicle still produces the fallback in every dossier string", () => {
   const moto = motoLabel({ marque: "", modele: "" });
-  expect(statusChangedContent({ moto, status: "en_cours" }).title).toBe(
+  expect(
+    statusChangedContent({ recipientRole: "backoffice", moto, status: "en_cours" })
+      .title,
+  ).toBe(
     "Le statut de la Moto non renseignée a évolué",
   );
 });

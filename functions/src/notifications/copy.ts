@@ -1,4 +1,10 @@
-import { STATUS_LABELS, euros, type DossierStatus, type UserRole } from "./labels";
+import {
+  STATUS_LABELS,
+  euros,
+  viewerStatus,
+  type DossierStatus,
+  type UserRole,
+} from "./labels";
 
 /** Line 1 becomes the FCM `title`; the rest become the `\n`-joined `body`. */
 export interface NotificationContent {
@@ -70,13 +76,22 @@ export function newMessageContent(input: {
   return lines(`1 nouveau message de ${from}`, `Pour la ${input.moto}`);
 }
 
+/**
+ * Role-dependent, like {@link newMessageContent}: the label is projected
+ * through `viewerStatus` so a b2b recipient is never told "À traiter", a state
+ * the app deliberately never shows them (their dossier screen says "En cours").
+ * The two variants split into separate multicasts on their own — `dispatch`
+ * groups by the rendered content.
+ */
 export function statusChangedContent(input: {
+  recipientRole: UserRole;
   moto: string;
   status: DossierStatus;
 }): NotificationContent {
+  const status = viewerStatus(input.status, input.recipientRole);
   return lines(
     `Le statut de la ${input.moto} a évolué`,
-    `Nouveau statut: ${STATUS_LABELS[input.status]}`,
+    `Nouveau statut: ${STATUS_LABELS[status]}`,
   );
 }
 

@@ -222,8 +222,30 @@ test("a status change reads the same for both roles", async () => {
     },
     deps(),
   );
-  const titles = new Set(out.map((d) => d.content.title));
-  expect(titles.size).toBe(1);
+  const bodies = new Set(out.map((d) => d.content.body));
+  expect([...bodies]).toEqual(["Nouveau statut: En cours"]);
+});
+
+test("a regression to 'à traiter' is projected per role, never leaked to b2b", async () => {
+  const out = await resolveDeliveries(
+    {
+      kind: "statusChanged",
+      dossierId: "dos_1",
+      region: "NORTH",
+      companyId: "comp_1",
+      actorUid: "bo_north",
+      moto: "Yamaha MT-07",
+      status: "a_traiter",
+    },
+    deps(),
+  );
+  const bodyFor = (uid: string) =>
+    out.find((d) => d.uid === uid)?.content.body;
+  // The dealer's phone must not contradict the dealer's screen, which shows
+  // "En cours" for `a_traiter` (`viewerStatus`).
+  expect(bodyFor("dealer_1")).toBe("Nouveau statut: En cours");
+  expect(bodyFor("dealer_2")).toBe("Nouveau statut: En cours");
+  expect(bodyFor("bo_all")).toBe("Nouveau statut: À traiter");
 });
 
 test("a muted uid is dropped from a status change, even though it isn't the actor", async () => {
