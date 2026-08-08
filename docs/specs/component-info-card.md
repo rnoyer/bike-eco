@@ -88,10 +88,8 @@ be reachable by a screen reader at all.
   resolves `openURL` unconditionally (`window.open` never throws), and the iOS simulator
   resolves `NO` for `tel:` rather than rejecting. Both are dev/browser-only degradations.
 - An empty value renders `"—"` and no button.
-- The button is a 22px icon inside `space.sm` padding on a **filled `brand` background**
-  with a `radius.sm` corner, tinting to `brandPressed` while pressed. Filled, not outlined:
-  the previous hairline box around a dark glyph read as a disabled placeholder rather than
-  as the row's one action, and its `surfaceAlt` pressed state was a ~1.02:1 change. The
+- The button is a 22px icon inside `space.md` padding on a **`brandTint` fill with a
+  hairline `border`**, a `radius.sm` corner, tinting to `brandPressed` while pressed. The
   glyph stays `primary` — charcoal on green is the logo's own pairing, at 6.3:1.
 - The button itself is the shared `IconButton` (`src/components/ui/IconButton.tsx`) —
   icon, accessibility label, `onPress`, `disabled` — so this row and the dossier
