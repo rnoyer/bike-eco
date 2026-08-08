@@ -15,7 +15,7 @@
  * Removed:
  *   1. invitations this account sent, and any pending one addressed to it
  *   2. the Auth user
- *   3. the `users/{uid}` document
+ *   3. the `users/{uid}` document and its `pushTokens` subcollection
  *
  * Two things it refuses to do, because they are silent, hard-to-diagnose damage:
  *
@@ -214,7 +214,10 @@ async function main() {
   await auth.deleteUser(uid).catch((err) => {
     if (err?.code !== "auth/user-not-found") throw err;
   });
-  if (profile) await db.collection("users").doc(uid).delete();
+  // Recursive: the profile owns a `pushTokens` subcollection, and a plain
+  // document delete would leave the device tokens behind as personal data
+  // no product path can reach again.
+  if (profile) await db.recursiveDelete(db.collection("users").doc(uid));
 
   console.log(
     `\nBack-office account ${email} (uid ${uid}) fully deleted, along with ` +

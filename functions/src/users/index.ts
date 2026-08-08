@@ -45,7 +45,11 @@ function usersDeps(): UsersDeps {
       });
     },
     deleteUserDoc: async (uid) => {
-      await db().collection("users").doc(uid).delete();
+      // `recursiveDelete`, not `delete()`: a plain document delete leaves
+      // subcollections behind, and `users/{uid}/pushTokens` would survive the
+      // account as personal data (the device token) that no product path can
+      // ever reach again.
+      await db().recursiveDelete(db().collection("users").doc(uid));
     },
   };
 }

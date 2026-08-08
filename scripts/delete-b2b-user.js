@@ -13,10 +13,10 @@
  * mid-run can never orphan files no document points at):
  *
  *   1. Storage under `dossiers/{companyId}/{dossierId}/` for each dossier
- *   2. those dossiers and their `messages` subcollection
+ *   2. those dossiers and their `messages` and `mutes` subcollections
  *   3. invitations they sent (`invitedBy`) and any pending invite to their email
  *   4. the Auth user
- *   5. the `users/{uid}` document
+ *   5. the `users/{uid}` document and its `pushTokens` subcollection
  *
  * Self-contained on purpose: single file, one dependency, no repo checkout
  * needed. Run it from Cloud Shell — see docs/ops/manage-accounts.md.
@@ -197,7 +197,8 @@ async function main() {
       await auth.deleteUser(doc.id).catch((err) => {
         if (err?.code !== "auth/user-not-found") throw err;
       });
-      await doc.ref.delete();
+      // Recursive: `users/{uid}/pushTokens` would otherwise outlive the account.
+      await db.recursiveDelete(doc.ref);
     }));
     const invites = await db.collection("invitations").where("companyId", "==", companyId).get();
     await Promise.all(invites.docs.map((d) => d.ref.delete()));
@@ -213,7 +214,7 @@ async function main() {
         // wrong prefix would silently leave the files behind.
         const prefix = `dossiers/${doc.data().companyId}/${doc.id}/`;
         await bucket.deleteFiles({ prefix });
-        await db.recursiveDelete(doc.ref); // dossier + its `messages` subcollection
+        await db.recursiveDelete(doc.ref); // dossier + its `messages` and `mutes` subcollections
         console.log(`Deleted dossier ${doc.id} and ${prefix}*`);
       }
     }
@@ -227,7 +228,10 @@ async function main() {
   await auth.deleteUser(uid).catch((err) => {
     if (err?.code !== "auth/user-not-found") throw err;
   });
-  if (profile) await db.collection("users").doc(uid).delete();
+  // Recursive: the profile owns a `pushTokens` subcollection, and a plain
+  // document delete would leave this device's token behind as personal data
+  // no product path can reach again.
+  if (profile) await db.recursiveDelete(db.collection("users").doc(uid));
 
   console.log(`\nAccount ${email} (uid ${uid}) fully deleted.`);
   console.log(
