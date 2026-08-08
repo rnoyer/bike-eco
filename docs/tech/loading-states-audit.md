@@ -111,7 +111,7 @@ re-render · **DIM** = button dims via `disabled` · **SPIN** = spinner shown.
 | `lib/data/useCompanies.ts:30` | `onSnapshot(companies query)` | back-office list, `PendingCompaniesBanner` | SPIN via `Section`; the banner ignores `loading` |
 | `lib/data/useCompanies.ts:58` | `onSnapshot(companyDoc)` | `companies/[id].tsx:25`, `AccountScreen:20` | SPIN in `companies/[id].tsx:30`; unused in `AccountScreen` |
 | `lib/data/useCompanies.ts:82` | `onSnapshot(users where companyId)` | `companies/[id].tsx:26` | SPIN |
-| `lib/data/useRegionFilter.ts` → `useUser` | `onSnapshot(userDoc)` — `users/{uid}.notificationRegion` | first `useRegionFilter()` | **`ready` exposed but no consumer reads it** — `DashboardScreen:25`, `SettingsList:26`, `companies/index.tsx:14`, `PendingCompaniesBanner:8` all take only `{ region }`. First render queries "Toute la France", then re-queries |
+| `lib/data/useRegionFilter.ts` → `useUser` | `onSnapshot(userDoc)` — `users/{uid}.notificationRegion` | first `useRegionFilter()` | **Was:** `ready` exposed but no consumer read it — `DashboardScreen`, `SettingsList`, `companies/index.tsx`, `PendingCompaniesBanner` all took only `{ region }`, so the first render queried "Toute la France" and re-queried once hydration landed. **Fixed** (see §5): `DashboardScreen.tsx:29` now destructures `ready` and derives `hydrating` from it, and `ready` gates whole screens in the other three consumers too. |
 | `lib/data/useRegionFilter.ts` (`setRegion`) | `updateDoc` (fire-and-forget) | région dropdown | **NONE** — intentionally optimistic; a local `pending` override covers the snapshot round-trip |
 | `lib/data/useAccount.ts` | passthrough of `useAuth()` | `AccountScreen:19` | `loading` returned, but `AccountScreen:55` renders `null` — blank screen |
 

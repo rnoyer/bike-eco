@@ -49,7 +49,16 @@ export function useForegroundNotifications(): void {
       handleNotification: async (notification) => {
         const isRemote = isRemoteNotification(notification.request.trigger);
         return {
-          shouldPlaySound: true,
+          // Paired with `sound: true` on the local copy scheduled below - the
+          // two only work together. The server sets
+          // `apns.payload.aps.sound = "default"`, so an unconditional `true`
+          // here would leave the remote copy free to chime even though its
+          // banner/list are suppressed, defeating "don't ping me for the
+          // thread I'm reading". But the local copy is built with no `sound`
+          // of its own, so silencing this half for the remote copy without
+          // adding one to the local content would mute iOS entirely. Change
+          // one, change the other.
+          shouldPlaySound: !isRemote,
           shouldSetBadge: false,
           shouldShowBanner: !isRemote,
           shouldShowList: !isRemote,
@@ -70,6 +79,10 @@ export function useForegroundNotifications(): void {
           title: message.notification?.title ?? "",
           body: message.notification?.body ?? "",
           data: message.data ?? {},
+          // Paired with `shouldPlaySound: !isRemote` in the handler above:
+          // that gate silences the remote copy's sound, so the local copy
+          // needs one of its own or a foregrounded iOS user hears nothing.
+          sound: true,
         },
         trigger: null,
       });

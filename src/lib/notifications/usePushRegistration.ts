@@ -39,22 +39,39 @@ export function usePushRegistration(): void {
     if (!uid || status !== "active") return;
     let cancelled = false;
     let unsubscribe: (() => void) | null = null;
+    // `unsubscribe` is only assigned once `registerPushToken` resolves, so it
+    // cannot tell the AppState listener below "an attempt is already running"
+    // while one is still in flight. On iOS the permission alert itself
+    // triggers that exact window: it backgrounds the app (`inactive`) and
+    // foregrounds it again (`active`) while the mount-time attempt is still
+    // awaiting `getFcmToken` + `setDoc`, so without this flag the foreground
+    // event re-reads "granted" and starts a second, concurrent attempt. Set
+    // synchronously at the top of `attempt()` - before anything async runs -
+    // and always cleared in `finally`, so a thrown/rejected attempt can never
+    // leave it stuck `true` and permanently block registration.
+    let attempting = false;
 
     const attempt = () => {
-      void registerPushToken(uid).then((off) => {
-        if (!off) return;
-        // The effect may have been torn down while this was in flight; tearing
-        // the fresh listener straight back down is the only correct answer.
-        if (cancelled) off();
-        else unsubscribe = off;
-      });
+      attempting = true;
+      void registerPushToken(uid)
+        .then((off) => {
+          if (!off) return;
+          // The effect may have been torn down while this was in flight; tearing
+          // the fresh listener straight back down is the only correct answer.
+          if (cancelled) off();
+          else unsubscribe = off;
+        })
+        .finally(() => {
+          attempting = false;
+        });
     };
     attempt();
 
     const subscription = AppState.addEventListener("change", (next) => {
-      if (next !== "active" || cancelled || unsubscribe) return;
+      if (next !== "active" || cancelled || unsubscribe || attempting) return;
       void getPushPermission().then((permission) => {
-        if (!cancelled && !unsubscribe && permission === "granted") attempt();
+        if (!cancelled && !unsubscribe && !attempting && permission === "granted")
+          attempt();
       });
     });
 

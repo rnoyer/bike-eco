@@ -9,6 +9,15 @@ import type { PushPermission } from "./pushRegistration";
  */
 export type { PushPermission };
 
+// Mirrors the native module's `permissionListeners` / `publishPermission`
+// pair (`pushRegistration.ts`). `usePushPermission` never reads
+// `getPushPermission`'s return value directly - it learns the answer only
+// through this publisher (subscribe, then the mount-time `getPushPermission()`
+// call delivers the first announcement). Without a web-side publisher too,
+// the subscription is permanently inert and the hook sits on "loading"
+// forever, even though the true answer ("unsupported") is known immediately.
+const permissionListeners = new Set<(permission: PushPermission) => void>();
+
 export async function getPushPermission(): Promise<PushPermission> {
   // "denied" would be dishonest (nothing was denied - there's no OS
   // permission on web to deny) and, worse, would make `SettingsList` render
@@ -16,14 +25,22 @@ export async function getPushPermission(): Promise<PushPermission> {
   // `Linking.openSettings()` - a method react-native-web does not implement
   // and which throws if reached. "unsupported" is a value `SettingsList`'s
   // `denied`-only gate never matches, so the row simply never renders here.
+  for (const listener of permissionListeners) listener("unsupported");
   return "unsupported";
 }
 
 export function subscribeToPushPermission(
-  _listener: (permission: PushPermission) => void,
+  listener: (permission: PushPermission) => void,
 ): () => void {
-  // "unsupported" never changes, so there is nothing to ever publish.
-  return () => {};
+  // "unsupported" never changes once announced, but a listener that
+  // subscribes needs that first announcement to arrive - it comes from the
+  // next `getPushPermission()` call (the hook makes one right after
+  // subscribing), not from this call itself, matching the native module's
+  // subscribe-then-read ordering exactly.
+  permissionListeners.add(listener);
+  return () => {
+    permissionListeners.delete(listener);
+  };
 }
 
 export async function registerPushToken(
