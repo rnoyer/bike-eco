@@ -9,8 +9,22 @@ import { Platform } from "react-native";
 
 import { pushTokenDoc } from "@/lib/firestore/collections";
 import { getDeviceId } from "./deviceId";
+import { isStaleTokenRefresh } from "./staleRegistration";
 
-export type PushPermission = "granted" | "denied" | "undetermined";
+/**
+ * `"unsupported"` is what the web build (`pushRegistration.web.ts`) reports.
+ * Reusing `"denied"` there would be dishonest - nothing was denied, there is
+ * no OS permission to deny - and it would make `SettingsList`'s `denied`
+ * gate render a "Notifications désactivées" row whose button calls
+ * `Linking.openSettings()`, which react-native-web does not implement. A
+ * fourth state that native code never produces keeps that gate correct on
+ * both platforms without an extra platform check at the call site.
+ */
+export type PushPermission =
+  | "granted"
+  | "denied"
+  | "undetermined"
+  | "unsupported";
 
 /**
  * Android 13+ will not show the runtime prompt until at least one notification
@@ -32,9 +46,41 @@ function toPermission(status: Notifications.PermissionStatus): PushPermission {
 }
 
 export async function getPushPermission(): Promise<PushPermission> {
-  const { status } = await Notifications.getPermissionsAsync();
-  return toPermission(status);
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    return toPermission(status);
+  } catch (error) {
+    // The one entry point here with a single caller and no existing
+    // try/catch: `usePushPermission` does `void getPushPermission().then(...)`
+    // with no `.catch()`, so an uncaught rejection would be an unhandled
+    // promise rejection rather than the swallowed, logged failure this whole
+    // feature promises. "undetermined" is the safe fallback value: like
+    // "unsupported" above, it does not satisfy `SettingsList`'s `denied`
+    // gate, so a failed permission check never renders a broken row.
+    console.error("Push permission check failed", error);
+    return "undetermined";
+  }
 }
+
+/**
+ * The token-refresh listener currently live for this device, if any, and the
+ * uid it belongs to.
+ *
+ * Exists so `unregisterPushToken` can tear the listener down *before*
+ * deleting the Firestore row. Without this, the only teardown path is
+ * `usePushRegistration`'s effect cleanup - which runs after React re-renders
+ * in response to the auth-state change that `signOut` triggers, i.e. *after*
+ * the delete has already happened. A token-refresh event landing in that
+ * window would call `write()` and recreate the row under the uid that was
+ * just signed out, defeating the delete-before-signout ordering in
+ * `AuthProvider.signOut`.
+ *
+ * Also lets a late callback recognize it's stale (see `isStaleTokenRefresh`)
+ * and lets a fresh `registerPushToken` call replace an old listener instead
+ * of leaking it - e.g. a second user signing in on the same device.
+ */
+let activeSubscription: { uid: string; unsubscribe: () => void } | null =
+  null;
 
 /**
  * Ask once (if never asked), then store this device's FCM token under the
@@ -67,12 +113,43 @@ export async function registerPushToken(uid: string): Promise<() => void> {
       });
 
     await write(await getFcmToken(messagingInstance));
+
+    // A fresh registration supersedes whatever listener is currently active -
+    // most often its own predecessor from a prior mount that hasn't been
+    // cleaned up yet, but on a shared device it can be a different uid
+    // entirely. Either way there must be at most one live listener.
+    activeSubscription?.unsubscribe();
+
     // FCM rotates tokens on reinstall, restore and its own schedule. Without
     // this the row goes stale and every send to it fails until FCM reports the
     // handle dead.
-    return onTokenRefresh(messagingInstance, (token) => {
+    const rawUnsubscribe = onTokenRefresh(messagingInstance, (token) => {
+      // The callback closes over `uid`, but `uid` alone can't tell a live
+      // callback from one whose registration has since been torn down or
+      // superseded - only the module record can. See `activeSubscription`.
+      if (isStaleTokenRefresh(activeSubscription?.uid ?? null, uid)) return;
       void write(token).catch(console.error);
     });
+
+    let unsubscribed = false;
+    const unsubscribe = () => {
+      // Idempotent: both `unregisterPushToken` and the effect cleanup in
+      // `usePushRegistration` may call this same function, and the native
+      // listener's own tolerance for a repeat call is not something to rely
+      // on.
+      if (unsubscribed) return;
+      unsubscribed = true;
+      rawUnsubscribe();
+      // Only clear the module record if it's still this registration's -
+      // a newer `registerPushToken` call (or `unregisterPushToken`) may have
+      // already replaced or cleared it, and this stale cleanup must not
+      // clobber that.
+      if (activeSubscription?.unsubscribe === unsubscribe) {
+        activeSubscription = null;
+      }
+    };
+    activeSubscription = { uid, unsubscribe };
+    return unsubscribe;
   } catch (error) {
     console.error("Push registration failed", error);
     return () => {};
@@ -82,6 +159,10 @@ export async function registerPushToken(uid: string): Promise<() => void> {
 /** Drop this device's row so a signed-out account stops receiving pushes. */
 export async function unregisterPushToken(uid: string): Promise<void> {
   try {
+    // Tear down the token-refresh listener before the delete, not after -
+    // see the `activeSubscription` comment above for why the usual
+    // effect-cleanup teardown is too late to close this window.
+    if (activeSubscription?.uid === uid) activeSubscription.unsubscribe();
     await deleteDoc(pushTokenDoc(uid, await getDeviceId()));
   } catch (error) {
     console.error("Push unregistration failed", error);
