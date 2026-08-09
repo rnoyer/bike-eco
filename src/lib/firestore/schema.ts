@@ -16,7 +16,10 @@ import type { Timestamp } from "firebase/firestore";
 // ─── shared enums ────────────────────────────────────────────────────────────
 
 export type OuiNon = "oui" | "non";
-export type Region = "NORTH" | "SOUTH";
+
+export const REGIONS = ["NORTH", "SOUTH"] as const;
+export type Region = (typeof REGIONS)[number];
+
 export type UserRole = "b2b" | "backoffice";
 
 // Decline hard-deletes the applicant (frees the SIRET), so a company only ever

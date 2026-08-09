@@ -6,29 +6,24 @@ import { z } from "zod";
 import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
 import Button from "@/components/ui/Button";
-import type { DossierStatus, Region } from "@/lib/firestore/schema";
+import { digitsOnly } from "@/lib/forms/transforms";
+import {
+  DOSSIER_STATUSES,
+  REGIONS,
+  type DossierStatus,
+  type Region,
+} from "@/lib/firestore/schema";
+import {
+  labelledOptions,
+  REGION_LABELS,
+  STATUS_LABELS,
+} from "@/lib/ui/format";
 import { tokens } from "@/theme/tokens";
 
-const STATUS_OPTIONS: { label: string; value: DossierStatus }[] = [
-  { label: "À traiter", value: "a_traiter" },
-  { label: "En cours", value: "en_cours" },
-  { label: "Clôturé", value: "cloture" },
-];
-const STATUS_LABELS = STATUS_OPTIONS.map((o) => o.label);
-const statusLabelOf = (value: DossierStatus) =>
-  STATUS_OPTIONS.find((o) => o.value === value)!.label;
-const statusValueOf = (label: string) =>
-  STATUS_OPTIONS.find((o) => o.label === label)!.value;
-
-const REGION_OPTIONS: { label: string; value: Region }[] = [
-  { label: "Nord", value: "NORTH" },
-  { label: "Sud", value: "SOUTH" },
-];
-const REGION_LABELS = REGION_OPTIONS.map((o) => o.label);
-const regionLabelOf = (value: Region) =>
-  REGION_OPTIONS.find((o) => o.value === value)!.label;
-const regionValueOf = (label: string) =>
-  REGION_OPTIONS.find((o) => o.label === label)!.value;
+// Derived from the one label table each, so this screen's dropdowns cannot
+// drift from the badge and the "Statut" info row that read the same tables.
+const STATUS = labelledOptions(DOSSIER_STATUSES, STATUS_LABELS);
+const REGION = labelledOptions(REGIONS, REGION_LABELS);
 
 const schema = z.object({
   region: z.string().min(1),
@@ -36,8 +31,6 @@ const schema = z.object({
   price: z.string(),
 });
 type FormValues = z.infer<typeof schema>;
-
-const digitsOnly = (text: string) => text.replace(/\D/g, "");
 
 interface Props {
   initialRegion: Region;
@@ -67,8 +60,8 @@ export default function DossierManagementForm({
     // mount. `keepDirtyValues` preserves any field the back-office has already
     // started editing, so a background update never clobbers work in progress.
     values: {
-      region: regionLabelOf(initialRegion),
-      status: statusLabelOf(initialStatus),
+      region: REGION_LABELS[initialRegion],
+      status: STATUS_LABELS[initialStatus],
       price: initialPrice != null ? String(initialPrice) : "",
     },
     resetOptions: { keepDirtyValues: true },
@@ -80,12 +73,12 @@ export default function DossierManagementForm({
         <ControlledDropdown
           name="region"
           label="Région attribuée"
-          options={REGION_LABELS}
+          options={REGION.labels}
         />
         <ControlledDropdown
           name="status"
           label="Statut du dossier"
-          options={STATUS_LABELS}
+          options={STATUS.labels}
         />
         <ControlledField
           name="price"
@@ -93,15 +86,15 @@ export default function DossierManagementForm({
           placeholder="€"
           keyboardType="numeric"
           suffix="€"
-          transform={digitsOnly}
+          transform={digitsOnly()}
         />
         <Button
           label="Mettre à jour"
           loading={busy}
           onPress={form.handleSubmit((v) =>
             onSubmit(
-              regionValueOf(v.region),
-              statusValueOf(v.status),
+              REGION.valueOf(v.region),
+              STATUS.valueOf(v.status),
               v.price ? Number(v.price) : null,
             ),
           )}

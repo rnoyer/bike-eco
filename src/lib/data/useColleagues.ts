@@ -1,11 +1,10 @@
-import { onSnapshot, query, where, type FirestoreError } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { query, where } from "firebase/firestore";
 
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { usersRef, type WithId } from "@/lib/firestore/collections";
+import { usersRef } from "@/lib/firestore/collections";
 import type { AppUser } from "@/lib/firestore/schema";
 import { colleagueScope, sortByName } from "./colleagues";
-import { mapDataError } from "./dataErrors";
+import { useLiveQuery } from "./useLive";
 
 /**
  * Live colleagues of the signed-in user — their company for a b2b account, the
@@ -17,46 +16,24 @@ export function useColleagues() {
   const scope = colleagueScope(session);
   const uid = session?.id ?? "";
   // A primitive key, so the effect does not re-subscribe on every session
-  // object identity change.
-  const key = scope ? (scope.kind === "backoffice" ? "backoffice" : scope.companyId) : "";
+  // object identity change. No scope — no session yet, or a b2b account without
+  // a company — cannot drive a legal query, and a scopeless session is a
+  // durable state (e.g. an orphaned b2b account) rather than a transient one
+  // like `useDossier`'s not-yet-resolved route param: resolve to empty (`null`),
+  // don't spin.
+  const scopeKey = scope
+    ? scope.kind === "backoffice"
+      ? "backoffice"
+      : scope.companyId
+    : "";
+  const key = scopeKey && uid ? scopeKey : null;
 
-  const [resolved, setResolved] = useState<{
-    key: string;
-    data: WithId<AppUser>[];
-    error: string | null;
-  } | null>(null);
-
-  useEffect(() => {
-    // No scope — no session yet, or a b2b account without a company — can't
-    // drive a legal query; don't subscribe. Leave `resolved` unset so the
-    // hook reports empty/not-loading below instead of spinning forever: a
-    // scopeless session is a durable state (e.g. an orphaned b2b account),
-    // not a transient one like `useDossier`'s not-yet-resolved route param.
-    if (!key || !uid) return;
-    const q =
-      key === "backoffice"
+  return useLiveQuery<AppUser>(
+    key,
+    () =>
+      scopeKey === "backoffice"
         ? query(usersRef, where("role", "==", "backoffice"))
-        : query(usersRef, where("companyId", "==", key));
-    return onSnapshot(
-      q,
-      (snap) =>
-        setResolved({
-          key,
-          data: sortByName(
-            snap.docs.map((d) => ({ ...d.data(), id: d.id })).filter((u) => u.id !== uid),
-          ),
-          error: null,
-        }),
-      (err: FirestoreError) =>
-        setResolved({ key, data: [], error: mapDataError(err.code) }),
-    );
-  }, [key, uid]);
-
-  const noScope = !key || !uid;
-  const loading = !noScope && resolved?.key !== key;
-  return {
-    data: loading || noScope ? [] : resolved!.data,
-    loading,
-    error: loading || noScope ? null : resolved!.error,
-  };
+        : query(usersRef, where("companyId", "==", scopeKey)),
+    (rows) => sortByName(rows.filter((u) => u.id !== uid)),
+  );
 }

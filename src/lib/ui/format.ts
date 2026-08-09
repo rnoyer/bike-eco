@@ -49,6 +49,25 @@ export const STATUS_LABELS: Record<DossierStatus, string> = {
 export const statusLabel = (status: DossierStatus): string =>
   STATUS_LABELS[status];
 
+/**
+ * Dropdown options for a label table, plus the inverse lookup.
+ *
+ * `Dropdown` works in labels: it displays them and hands back the one the user
+ * picked. Without this a screen ends up keeping its own copy of the French copy
+ * just to map the answer home — which is exactly how a third copy of
+ * `STATUS_LABELS` came to exist. `valueOf` is total over the labels it just
+ * produced, so the assertion cannot fire for a value the dropdown returned.
+ */
+export function labelledOptions<T extends string>(
+  values: readonly T[],
+  labels: Record<T, string>,
+): { labels: string[]; valueOf: (label: string) => T } {
+  return {
+    labels: values.map((v) => labels[v]),
+    valueOf: (label) => values.find((v) => labels[v] === label)!,
+  };
+}
+
 /** The status as a given role is allowed to see it. `a_traiter` is the back
  *  office's own working state — a b2b user only ever sees "En cours" until the
  *  dossier is clôturé. Project once at the screen, then the badge and the

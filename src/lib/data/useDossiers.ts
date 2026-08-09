@@ -1,17 +1,9 @@
-import { useEffect, useState } from "react";
-import {
-  onSnapshot,
-  orderBy,
-  query,
-  where,
-  type FirestoreError,
-  type QueryConstraint,
-} from "firebase/firestore";
+import { orderBy, query, where, type QueryConstraint } from "firebase/firestore";
 
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { dossiersRef, type WithId } from "@/lib/firestore/collections";
+import { dossiersRef } from "@/lib/firestore/collections";
 import type { Dossier, DossierStatus, Region } from "@/lib/firestore/schema";
-import { mapDataError } from "./dataErrors";
+import { useLiveQuery } from "./useLive";
 
 /**
  * Live dossier list scoped to the session's claims.
@@ -30,48 +22,22 @@ export function useDossiers(statuses: DossierStatus[], region?: Region | null) {
 
   // Identity of the query being observed. `statuses` is a fresh array on every
   // render, so key on its contents; role/companyId change the query too.
-  const key = `${statuses.join(",")}|${region ?? "ALL"}|${role ?? ""}|${companyId ?? ""}`;
+  // No role yet means the session is still resolving — wait (`""`). A b2b user
+  // with no company can never form a legal query — resolve to empty (`null`).
+  const key =
+    role === null
+      ? ""
+      : role === "b2b" && !companyId
+        ? null
+        : `${statuses.join(",")}|${region ?? "ALL"}|${role}|${companyId ?? ""}`;
 
-  const [resolved, setResolved] = useState<{
-    key: string;
-    data: WithId<Dossier>[];
-    error: string | null;
-  } | null>(null);
-
-  useEffect(() => {
-    if (!role) return;
-    // A b2b user with no company cannot form a legal query; `noCompany` below
-    // resolves them to empty rather than leaving them to spin.
-    if (role === "b2b" && !companyId) return;
-
+  return useLiveQuery<Dossier>(key, () => {
     const constraints: QueryConstraint[] =
       role === "b2b"
         ? [where("companyId", "==", companyId), where("status", "in", statuses)]
         : region
           ? [where("region", "==", region), where("status", "in", statuses)]
           : [where("status", "in", statuses)];
-
-    return onSnapshot(
-      query(dossiersRef, ...constraints, orderBy("createdAt")),
-      (snap) =>
-        setResolved({
-          key,
-          data: snap.docs.map((d) => ({ ...d.data(), id: d.id })),
-          error: null,
-        }),
-      (err: FirestoreError) =>
-        setResolved({ key, data: [], error: mapDataError(err.code) }),
-    );
-    // `statuses` and `region` are captured by `key`.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role, companyId, key]);
-
-  const noCompany = role === "b2b" && !companyId;
-  const loading = !noCompany && resolved?.key !== key;
-
-  return {
-    data: loading || noCompany ? [] : resolved!.data,
-    loading,
-    error: loading || noCompany ? null : resolved!.error,
-  };
+    return query(dossiersRef, ...constraints, orderBy("createdAt"));
+  });
 }

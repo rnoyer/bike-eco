@@ -1,23 +1,18 @@
 import { tokens } from "@/theme/tokens";
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 interface Props {
   /** Already-French copy — a mapped hook error, or a "…introuvable." line. */
   message: string;
   /** `danger` for a failed read, `muted` for an expected empty/not-found. */
   tone?: "muted" | "danger";
-  style?: StyleProp<ViewStyle>;
 }
 
 /** Screen-level counterpart to `Section`'s error/empty states: the whole screen
  *  has nothing to show, and says why. Pairs with `ScreenLoader`. */
-export default function ScreenMessage({
-  message,
-  tone = "muted",
-  style,
-}: Props) {
+export default function ScreenMessage({ message, tone = "muted" }: Props) {
   return (
-    <View style={[styles.screen, style]}>
+    <View style={styles.screen}>
       <Text style={[styles.message, tone === "danger" && styles.danger]}>
         {message}
       </Text>

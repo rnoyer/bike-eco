@@ -18,7 +18,6 @@ interface Props {
   children: React.ReactNode;
   onPrev: () => void;
   onNext: () => void;
-  canGoBack?: boolean;
   nextLabel?: string;
   /** The submit is in flight: the primary button spins and both nav buttons
    *  lock. Feed it `useStepForm`'s `submitting` — without it the funnel's
@@ -33,7 +32,6 @@ export default function FormLayout({
   children,
   onPrev,
   onNext,
-  canGoBack = true,
   nextLabel = "Suivant",
   busy = false,
 }: Props) {
@@ -70,7 +68,7 @@ export default function FormLayout({
           variant="outlined"
           label="Précédent"
           onPress={onPrev}
-          disabled={!canGoBack || busy}
+          disabled={busy}
           style={styles.btn}
         />
         <Button

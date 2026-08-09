@@ -7,6 +7,14 @@ import {
   useSegments,
 } from "expo-router";
 
+import {
+  B2B_TABS,
+  BACKOFFICE_TABS,
+  b2bDossierTabs,
+  backofficeDossierTabs,
+  type TabConfig,
+} from "./tabs";
+
 /**
  * Header config for the screens that are themselves `NativeTabs` navigators nested
  * inside a group `Stack` (the main `(tabs)` and each `dossier/[id]`). A native tab
@@ -16,6 +24,12 @@ import {
  */
 type Group = "(b2b)" | "(backoffice)";
 
+/**
+ * Header titles. Deliberately *not* derived from the tab labels in `tabs.ts`:
+ * the specs give the header and the tab different copy for the same screen
+ * ("Mon Compte" in `page-my-account.md` / `component-navbar.md` versus
+ * "Mon compte" in `component-tab-bar.md`). Keep the two tables apart.
+ */
 const TABS_TITLES: Record<string, string> = {
   dashboard: "Dashboard",
   account: "Mon Compte",
@@ -28,14 +42,18 @@ const DOSSIER_TITLES: Record<string, string> = {
   management: "Statut dossier",
 };
 
+/** Destinations come from the tab configs, so a moved route updates both. */
+const hrefOf = (tabs: TabConfig[], name: string): Href =>
+  tabs.find((t) => t.name === name)!.href;
+
 const DASHBOARD_HREF: Record<Group, Href> = {
-  "(b2b)": "/(b2b)/(tabs)/dashboard",
-  "(backoffice)": "/(backoffice)/(tabs)/dashboard",
+  "(b2b)": hrefOf(B2B_TABS, "dashboard"),
+  "(backoffice)": hrefOf(BACKOFFICE_TABS, "dashboard"),
 };
 
 const DOSSIER_HREF: Record<Group, (id: string) => Href> = {
-  "(b2b)": (id) => `/(b2b)/dossier/${id}`,
-  "(backoffice)": (id) => `/(backoffice)/dossier/${id}`,
+  "(b2b)": (id) => hrefOf(b2bDossierTabs(id), "index"),
+  "(backoffice)": (id) => hrefOf(backofficeDossierTabs(id), "index"),
 };
 
 interface GroupHeaders {
