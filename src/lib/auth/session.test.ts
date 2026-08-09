@@ -1,6 +1,6 @@
 import { expect, test } from "@jest/globals";
 import { Timestamp } from "firebase/firestore";
-import { buildSessionUser } from "./session";
+import { buildSessionUser, isAccountDeleted } from "./session";
 import type { AppUser } from "@/lib/firestore/schema";
 
 const profile: AppUser = {
@@ -19,4 +19,17 @@ test("merges uid + claims + profile, with claims authoritative for role/status",
   expect(user.role).toBe("b2b");     // from claims, not the stale profile
   expect(user.status).toBe("active"); // from claims
   expect(user.nom).toBe("Durand");   // from profile
+});
+
+test("a server snapshot with no profile doc means the account was deleted", () => {
+  expect(isAccountDeleted({ exists: false, fromCache: false })).toBe(true);
+});
+
+test("a profile that still exists is not a deletion", () => {
+  expect(isAccountDeleted({ exists: true, fromCache: false })).toBe(false);
+  expect(isAccountDeleted({ exists: true, fromCache: true })).toBe(false);
+});
+
+test("a cache-only miss is not a deletion — offline, absent means unknown", () => {
+  expect(isAccountDeleted({ exists: false, fromCache: true })).toBe(false);
 });

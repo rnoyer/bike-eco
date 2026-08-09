@@ -40,6 +40,13 @@ Management mode only :
     kept**: they carry the submitter's and sender's identity denormalized, and
     Storage is company-prefixed.
 
+    If the deleted colleague is signed in on a device at that moment, that
+    session ends **immediately**: the app watches its own `users/{uid}` document
+    live and signs out as soon as it disappears, so the guard routes the device
+    back to sign-in. Deleting the Auth user alone would not do this — the ID
+    token already on the device stays valid for up to an hour, and every rule
+    authorizes on that token.
+
 ## Loading and error states
 
 Centered spinner while the user document is read; the mapped French error on a failed
