@@ -225,28 +225,48 @@ export async function registerPushToken(
       });
 
     const token = await getFcmToken(messagingInstance);
+
     // Bounded, for the reason `unregisterPushToken` is: offline, Firestore
     // *buffers* a write it cannot reach the server with, so a bare `setDoc`
     // neither resolves nor rejects. An unbounded one here never lets
     // `registerPushToken` settle, which leaves `usePushRegistration`'s
     // `attempting` flag stuck true — blocking every foreground retry — and
     // means `onTokenRefresh` is never installed for the whole offline window.
-    // Failing fast instead makes the attempt retryable, which is exactly what
-    // the hook's foreground retry already expects.
-    await writeWithTimeout(() => write(token), () => {}, WRITE_TIMEOUT_MS);
-    await pruneOrphanRows(uid, deviceId, token);
+    //
+    // A *timeout* is not treated as a failed registration, though. The write
+    // stays buffered and lands on reconnect, so aborting here would skip the
+    // token-refresh listener for a device that ends up registered after all —
+    // and the hook only retries on a background→foreground transition, which a
+    // phone left in the foreground through the outage never produces. If the
+    // process dies before the buffer flushes, the next launch re-registers
+    // from scratch anyway. Any *other* rejection (a denied write) is real:
+    // rethrow it so the attempt is reported as failed.
+    let acknowledged = true;
+    try {
+      await writeWithTimeout(() => write(token), () => {}, WRITE_TIMEOUT_MS);
+    } catch (error) {
+      if ((error as { code?: string } | null)?.code !== "unavailable") throw error;
+      acknowledged = false;
+      console.warn("Push token write not acknowledged yet; still buffered");
+    }
+    // Only meaningful once the write is on the server: it queries for rows
+    // carrying this token, and would not see an unacknowledged one.
+    if (acknowledged) await pruneOrphanRows(uid, deviceId, token);
 
-    // A newer attempt has started while this one was in flight; it owns the
-    // listener now. Returning null (rather than superseding it) is what keeps
-    // `activeSubscription` from being torn down by a stale attempt — see
-    // `registrationEpoch`.
-    if (epoch !== registrationEpoch) return null;
+    // A newer attempt started while this one was in flight, and it owns the
+    // listener. Never tear down what it installed — that one-directional rule
+    // is the whole point of `registrationEpoch`. But if nothing is installed
+    // (the newer attempt failed, or has not got there yet) then installing is
+    // still better than leaving the device with no listener at all: a newer
+    // attempt that later succeeds will simply replace this one.
+    const superseded = epoch !== registrationEpoch;
+    if (superseded && activeSubscription) return null;
 
     // A fresh registration supersedes whatever listener is currently active -
     // most often its own predecessor from a prior mount that hasn't been
     // cleaned up yet, but on a shared device it can be a different uid
     // entirely. Either way there must be at most one live listener.
-    activeSubscription?.unsubscribe();
+    if (!superseded) activeSubscription?.unsubscribe();
 
     // FCM rotates tokens on reinstall, restore and its own schedule. Without
     // this the row goes stale and every send to it fails until FCM reports the

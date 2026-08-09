@@ -56,6 +56,11 @@ service cloud.firestore {
                && request.resource.data.token.size() > 0
                && request.resource.data.token.size() <= 4096
                && request.resource.data.platform in ['ios', 'android']
+               // Typed too, or it is the hole the other two clauses close:
+               // an allowed *key* with no type check still accepts a
+               // megabyte-long string, and `tokensFor` reads every field of
+               // every row on each fan-out.
+               && request.resource.data.updatedAt is timestamp
              ));
       }
     }

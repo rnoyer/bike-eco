@@ -463,6 +463,15 @@ test("a push token row must carry a plausible token and a known platform", async
       payload: "x".repeat(500),
     }),
   );
+  // An allowed key with an unchecked type is the same hole as an extra key:
+  // the blob just moves into `updatedAt`.
+  await assertFails(
+    setDoc(ref, {
+      token: "tok",
+      platform: "ios",
+      updatedAt: "x".repeat(5000),
+    }),
+  );
 });
 
 test("a user may delete their own push token row", async () => {

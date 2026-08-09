@@ -120,7 +120,12 @@ owner-dependent (console setup).
 `NODE_ENV="production"`, so the block is skipped in prod — don't add a manual flag.
 
 ```bash
-JAVA_HOME=/usr/local/jdk-26.0.1 npx firebase-tools@latest emulators:start
+# Both lines: firebase-tools resolves `java` from PATH, so JAVA_HOME alone
+# still fails with "no longer supports Java version before 21".
+export JAVA_HOME=/usr/local/jdk-26.0.1
+export PATH="$JAVA_HOME/bin:$PATH"
+
+npx firebase-tools@latest emulators:start
 npm run test:rules          # rules tests, emulator-backed
 ```
 
