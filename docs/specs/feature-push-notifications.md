@@ -81,7 +81,10 @@ const moto = (v: DossierVehicle) =>
   updatedAt }`), keyed by a random device id minted once so a rotated FCM token updates
   in place instead of orphaning a row. Deleted on sign-out, and any of this account's
   *other* rows carrying the same token are deleted at the next registration
-  (`pruneOrphanRows`).
+  (`pruneOrphanRows`). Those three keys are the **only** ones the rules accept, with
+  `token` a non-empty string ≤ 4096 chars and `platform` one of `ios` / `android` — the
+  owner-only rule alone would let a signed-in user pack the subcollection that `tokensFor`
+  reads on every fan-out.
 - `dossiers/{dossierId}/mutes/{uid}` — presence means muted, absence means subscribed
   (`{ createdAt }`); this makes "subscribed by default" free, with no backfill and no
   write at dossier creation.
