@@ -10,10 +10,10 @@
 export const TVA_LENGTH = 13;
 
 /** The shape a filled TVA number must have, once normalized. */
-export const TVA_PATTERN = /^FR[0-9A-Z]{2}\d{9}$/;
+const TVA_PATTERN = /^FR[0-9A-Z]{2}\d{9}$/;
 
 /** Uppercases and strips separators — the canonical form of a typed value. */
-export const stripTva = (text: string): string =>
+const stripTva = (text: string): string =>
   text.toUpperCase().replace(/[^0-9A-Z]/g, "");
 
 /** `stripTva` capped at 13 characters — for the input transform. */

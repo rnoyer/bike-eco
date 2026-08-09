@@ -11,6 +11,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  serverTimestamp,
   setDoc,
   updateDoc,
 } from "firebase/firestore";
@@ -63,6 +64,10 @@ beforeAll(async () => {
       status: "a_traiter",
       region: "NORTH",
       validatedPrice: null,
+      // Seeded so a test asserting on some *other* clause is not silently
+      // denied by the missing-`updatedBy` one — the update rule requires it on
+      // every write.
+      updatedBy: "user_b2b_nord",
     });
     await setDoc(doc(db, "dossiers/dos_2"), {
       companyId: "comp_2",
@@ -253,13 +258,34 @@ test("backoffice cannot move a dossier between companies", async () => {
 
 test("backoffice cannot write an out-of-domain status, region or price", async () => {
   const db = env.authenticatedContext("bo_1", boClaims).firestore();
-  await assertFails(updateDoc(doc(db, "dossiers/dos_1"), { status: "banana" }));
-  await assertFails(updateDoc(doc(db, "dossiers/dos_1"), { region: "MARS" }));
+  // Every payload carries a valid `updatedBy`, so the *only* clause left that
+  // can deny it is the value domain under test. Without it these assertions
+  // are vacuous: they pass on the `updatedBy == request.auth.uid` clause
+  // instead, and deleting the domain checks from firestore.rules would not
+  // turn a single one of them red. (They passed for the right reason only by
+  // accident of test order — the update test above happens to stamp
+  // `updatedBy` onto the shared `dos_1` seed first, and nothing clears
+  // Firestore between tests.)
   await assertFails(
-    updateDoc(doc(db, "dossiers/dos_1"), { validatedPrice: -50 }),
+    updateDoc(doc(db, "dossiers/dos_1"), {
+      status: "banana",
+      updatedBy: "bo_1",
+    }),
   );
   await assertFails(
-    updateDoc(doc(db, "dossiers/dos_1"), { validatedPrice: "cher" }),
+    updateDoc(doc(db, "dossiers/dos_1"), { region: "MARS", updatedBy: "bo_1" }),
+  );
+  await assertFails(
+    updateDoc(doc(db, "dossiers/dos_1"), {
+      validatedPrice: -50,
+      updatedBy: "bo_1",
+    }),
+  );
+  await assertFails(
+    updateDoc(doc(db, "dossiers/dos_1"), {
+      validatedPrice: "cher",
+      updatedBy: "bo_1",
+    }),
   );
 });
 
@@ -414,6 +440,61 @@ test("a user writes and reads their own push token", async () => {
     setDoc(ref, { token: "tok", platform: "android", updatedAt: new Date() }),
   );
   await assertSucceeds(getDoc(ref));
+});
+
+test("a push token row must carry a plausible token and a known platform", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  const ref = doc(db, "users/user_b2b_nord/pushTokens/device_3");
+  // Owning the row is not enough: the values are pinned so the subcollection
+  // `tokensFor` reads on every fan-out cannot be packed with junk.
+  await assertFails(
+    setDoc(ref, { token: 42, platform: "android", updatedAt: new Date() }),
+  );
+  await assertFails(
+    setDoc(ref, { token: "", platform: "android", updatedAt: new Date() }),
+  );
+  await assertFails(
+    setDoc(ref, { token: "tok", platform: "windows", updatedAt: new Date() }),
+  );
+  await assertFails(
+    setDoc(ref, {
+      token: "tok",
+      platform: "ios",
+      updatedAt: new Date(),
+      payload: "x".repeat(500),
+    }),
+  );
+  // An allowed key with an unchecked type is the same hole as an extra key:
+  // the blob just moves into `updatedAt`.
+  await assertFails(
+    setDoc(ref, {
+      token: "tok",
+      platform: "ios",
+      updatedAt: "x".repeat(5000),
+    }),
+  );
+});
+
+test("the exact row registerPushToken writes is accepted", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  // Mirrors `registerPushToken` byte for byte. The other happy-path test uses
+  // `new Date()`, which would still pass `is timestamp` even if the sentinel
+  // did not — so without this the rule could reject every real registration
+  // while the suite stayed green.
+  await assertSucceeds(
+    setDoc(doc(db, "users/user_b2b_nord/pushTokens/device_4"), {
+      token: "fcm-token-value",
+      platform: "android",
+      updatedAt: serverTimestamp(),
+    }),
+  );
+});
+
+test("a user may delete their own push token row", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertSucceeds(
+    deleteDoc(doc(db, "users/user_b2b_nord/pushTokens/device_1")),
+  );
 });
 
 test("push tokens are private — even the back office cannot read them", async () => {

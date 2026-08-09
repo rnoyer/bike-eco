@@ -28,9 +28,9 @@ export default function Spinner({
  *  padding to read as "this area is loading" rather than as a stray dot. Use it
  *  wherever a screen would otherwise `return null` while its hook resolves —
  *  `null` renders as a blank screen, which reads as a bug. */
-export function ScreenLoader({ style }: { style?: StyleProp<ViewStyle> }) {
+export function ScreenLoader() {
   return (
-    <View style={[styles.screen, style]}>
+    <View style={styles.screen}>
       <Spinner size="large" />
     </View>
   );

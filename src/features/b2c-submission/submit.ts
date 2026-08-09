@@ -1,6 +1,7 @@
 import { File as DeviceFile } from "expo-file-system";
 import { Platform } from "react-native";
 
+import { emulatorHost, USE_EMULATORS } from "../../../firebase.core";
 import type { B2cSubmissionForm } from "./schema";
 
 const PROJECT_ID = "bike-eco-43a84";
@@ -8,19 +9,26 @@ const REGION = "us-central1";
 const FUNCTION = "sendB2cSubmission";
 
 /**
- * Resolve the function endpoint. Defaults to the local emulator in dev and the
- * deployed URL in production. Override with EXPO_PUBLIC_FUNCTIONS_URL (the base
- * up to, but excluding, the function name) — e.g. to reach the emulator from a
- * physical device over the LAN: `http://192.168.1.x:5001/<project>/<region>`.
+ * Resolve the function endpoint. Points at the local emulator only when the
+ * rest of the app does, and at the deployed URL otherwise. Override with
+ * EXPO_PUBLIC_FUNCTIONS_URL (the base up to, but excluding, the function name)
+ * — e.g. to reach the emulator from a physical device over the LAN:
+ * `http://192.168.1.x:5001/<project>/<region>`.
+ *
+ * Gated on `USE_EMULATORS`, not on `__DEV__`: this is an HTTP function called
+ * with a bare `fetch`, so it is the one endpoint that does not go through the
+ * SDK's `connectFunctionsEmulator` wiring and has to reproduce the decision
+ * itself. Keying it off `__DEV__` alone made it the only part of the app that
+ * ignored the `EXPO_PUBLIC_USE_EMULATORS` opt-in, so a dev build pointed at
+ * production — the normal way this app is tested on a device — sent every B2C
+ * submission to `10.0.2.2:5001` and failed with "Connexion impossible" while
+ * Firestore, Auth and Storage all worked.
  */
 function functionUrl(): string {
   const base = process.env.EXPO_PUBLIC_FUNCTIONS_URL;
   if (base) return `${base.replace(/\/$/, "")}/${FUNCTION}`;
-  if (__DEV__) {
-    // The Android emulator's `localhost` is its own loopback, not the host
-    // machine; `10.0.2.2` is the emulator's alias for the host's 127.0.0.1.
-    const host = Platform.OS === "android" ? "10.0.2.2" : "localhost";
-    return `http://${host}:5001/${PROJECT_ID}/${REGION}/${FUNCTION}`;
+  if (USE_EMULATORS) {
+    return `http://${emulatorHost()}:5001/${PROJECT_ID}/${REGION}/${FUNCTION}`;
   }
   return `https://${REGION}-${PROJECT_ID}.cloudfunctions.net/${FUNCTION}`;
 }

@@ -46,8 +46,13 @@ npm run test:rules
 The emulator needs a JDK newer than the system default (17). If it fails to start:
 
 ```bash
-JAVA_HOME=/usr/local/jdk-26.0.1 npm run test:rules
+export JAVA_HOME=/usr/local/jdk-26.0.1
+export PATH="$JAVA_HOME/bin:$PATH"   # required: firebase-tools resolves `java` from PATH
+npm run test:rules
 ```
+
+`JAVA_HOME` alone is **not** enough — `firebase-tools` looks up `java` on `PATH`, so
+setting only `JAVA_HOME` still fails with "no longer supports Java version before 21".
 
 Use `firebase-tools@latest` via `npx`; do not pin an older major to work around a JDK
 error — raise `JAVA_HOME` instead.

@@ -14,6 +14,13 @@ import { dispatch } from "./send";
  *
  * `retry: false` on all four: a notification has no compensating action, and a
  * duplicate push is worse than a missed one.
+ *
+ * No `region` on purpose. A 2nd-gen Firestore trigger must be co-located with
+ * its database, and naming `database` is enough for the SDK to resolve that:
+ * `bike-eco-db` lives in `europe-west9`, and all four functions are deployed
+ * there (`firebase functions:list`) even though `setGlobalOptions` sets no
+ * region and the callables default to `us-central1`. Adding an explicit region
+ * here would be redundant, and pinning the wrong one would break the trigger.
  */
 const TRIGGER = { database: "bike-eco-db", retry: false } as const;
 

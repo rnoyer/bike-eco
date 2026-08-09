@@ -15,7 +15,10 @@ import {
 import { Platform } from "react-native";
 
 import { pushTokenDoc, pushTokensRef } from "@/lib/firestore/collections";
-import { writeWithTimeout } from "@/lib/firestore/writeWithTimeout";
+import {
+  WRITE_TIMEOUT_MS,
+  writeWithTimeout,
+} from "@/lib/firestore/writeWithTimeout";
 import { getDeviceId } from "./deviceId";
 import { isStaleTokenRefresh } from "./staleRegistration";
 
@@ -122,6 +125,27 @@ let activeSubscription: { uid: string; unsubscribe: () => void } | null =
   null;
 
 /**
+ * Attempt counter, so a *later-resolving older* attempt cannot supersede a
+ * newer one's listener.
+ *
+ * Two `registerPushToken` calls genuinely overlap: `usePushRegistration`'s
+ * `attempting` flag is a per-effect closure variable, so it does not span a
+ * remount, and an in-flight attempt is not cancelled when its effect is torn
+ * down (see the `getDeviceId` comment for the same window). If attempt #2 wins
+ * the race and installs its listener, attempt #1 arriving afterwards would call
+ * `activeSubscription.unsubscribe()` — tearing down the *live* listener — then
+ * install its own, which its own cancelled effect immediately tears down again.
+ * The device is left with **zero** token-refresh listeners while the hook still
+ * holds a non-null unsubscribe and so never retries: the next FCM rotation is
+ * silently never persisted and pushes stop until the app restarts.
+ *
+ * Comparing the epoch captured at the start of an attempt against the latest
+ * one makes "supersede" strictly one-directional — only a newer attempt may
+ * replace an older listener, never the reverse.
+ */
+let registrationEpoch = 0;
+
+/**
  * Delete this account's other rows that carry the FCM handle we just wrote.
  *
  * One token is one device, so any row other than `deviceId` holding it is an
@@ -176,6 +200,7 @@ async function pruneOrphanRows(
 export async function registerPushToken(
   uid: string,
 ): Promise<(() => void) | null> {
+  const epoch = ++registrationEpoch;
   try {
     await ensureChannel();
 
@@ -200,14 +225,48 @@ export async function registerPushToken(
       });
 
     const token = await getFcmToken(messagingInstance);
-    await write(token);
-    await pruneOrphanRows(uid, deviceId, token);
+
+    // Bounded, for the reason `unregisterPushToken` is: offline, Firestore
+    // *buffers* a write it cannot reach the server with, so a bare `setDoc`
+    // neither resolves nor rejects. An unbounded one here never lets
+    // `registerPushToken` settle, which leaves `usePushRegistration`'s
+    // `attempting` flag stuck true — blocking every foreground retry — and
+    // means `onTokenRefresh` is never installed for the whole offline window.
+    //
+    // A *timeout* is not treated as a failed registration, though. The write
+    // stays buffered and lands on reconnect, so aborting here would skip the
+    // token-refresh listener for a device that ends up registered after all —
+    // and the hook only retries on a background→foreground transition, which a
+    // phone left in the foreground through the outage never produces. If the
+    // process dies before the buffer flushes, the next launch re-registers
+    // from scratch anyway. Any *other* rejection (a denied write) is real:
+    // rethrow it so the attempt is reported as failed.
+    let acknowledged = true;
+    try {
+      await writeWithTimeout(() => write(token), () => {}, WRITE_TIMEOUT_MS);
+    } catch (error) {
+      if ((error as { code?: string } | null)?.code !== "unavailable") throw error;
+      acknowledged = false;
+      console.warn("Push token write not acknowledged yet; still buffered");
+    }
+    // Only meaningful once the write is on the server: it queries for rows
+    // carrying this token, and would not see an unacknowledged one.
+    if (acknowledged) await pruneOrphanRows(uid, deviceId, token);
+
+    // A newer attempt started while this one was in flight, and it owns the
+    // listener. Never tear down what it installed — that one-directional rule
+    // is the whole point of `registrationEpoch`. But if nothing is installed
+    // (the newer attempt failed, or has not got there yet) then installing is
+    // still better than leaving the device with no listener at all: a newer
+    // attempt that later succeeds will simply replace this one.
+    const superseded = epoch !== registrationEpoch;
+    if (superseded && activeSubscription) return null;
 
     // A fresh registration supersedes whatever listener is currently active -
     // most often its own predecessor from a prior mount that hasn't been
     // cleaned up yet, but on a shared device it can be a different uid
     // entirely. Either way there must be at most one live listener.
-    activeSubscription?.unsubscribe();
+    if (!superseded) activeSubscription?.unsubscribe();
 
     // FCM rotates tokens on reinstall, restore and its own schedule. Without
     // this the row goes stale and every send to it fails until FCM reports the
@@ -217,6 +276,10 @@ export async function registerPushToken(
       // callback from one whose registration has since been torn down or
       // superseded - only the module record can. See `activeSubscription`.
       if (isStaleTokenRefresh(activeSubscription?.uid ?? null, uid)) return;
+      // Deliberately *not* bounded, unlike the registration write above: no
+      // one awaits this and nothing is blocked on it, so letting Firestore
+      // buffer it and flush on reconnect persists the rotated token, where a
+      // timeout would discard it until the next registration.
       void write(token).catch(console.error);
     });
 
@@ -279,8 +342,21 @@ export async function unregisterPushToken(uid: string): Promise<void> {
     //
     // Hence no compensation either - there is nothing to undo, and a delete
     // that does land late is the outcome we wanted.
-    const ref = pushTokenDoc(uid, await getDeviceId());
-    await writeWithTimeout(() => deleteDoc(ref), () => {}, UNREGISTER_TIMEOUT_MS);
+    // `getDeviceId` is inside the bound, not before it: it is a read-modify-
+    // write over kv storage whose promise is cached and shared, so a wedged
+    // native side (a locked database, a mid-migration read) would hang here
+    // just as surely as a buffered delete — and with the same consequence,
+    // since `signOut` awaits this before `fbSignOut`. Bounding only the delete
+    // left the slower half of the work unbounded under a button the user is
+    // waiting on.
+    await writeWithTimeout(
+      async () => {
+        const ref = pushTokenDoc(uid, await getDeviceId());
+        await deleteDoc(ref);
+      },
+      () => {},
+      UNREGISTER_TIMEOUT_MS,
+    );
   } catch (error) {
     console.error("Push unregistration failed", error);
   }

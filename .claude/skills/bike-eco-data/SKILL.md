@@ -31,8 +31,13 @@ dossiers/{dossierId}                          (B2B only — B2C is email-only, n
 dossiers/{dossierId}/messages/{messageId}
 ```
 
-- Refs: `companiesRef`, `usersRef`, `invitationsRef`, `dossiersRef`, `messagesRef(dossierId)`.
-- Docs: `companyDoc(id)`, `userDoc(uid)`, `invitationDoc(id)`, `dossierDoc(id)`, `messageDoc(dossierId, messageId)`.
+- Refs: `companiesRef`, `usersRef`, `dossiersRef`, `messagesRef(dossierId)`,
+  `pushTokensRef(uid)`, `dossierMutesRef(dossierId)`.
+- Docs: `companyDoc(id)`, `userDoc(uid)`, `dossierDoc(id)`,
+  `pushTokenDoc(uid, deviceId)`, `dossierMuteDoc(dossierId, uid)`.
+- **`invitations` has no client ref.** It is written and read only by the registration
+  Cloud Functions; the client reaches it through the `resolveInvite` callable. Don't add
+  one back unless a screen genuinely reads the collection.
 - `WithId<T>` = the doc type plus its `id` — Firestore docs don't carry their own id, so
   every read that needs one spreads `{ ...d.data(), id: d.id }`.
 - The converter is an **identity** converter with one deliberate twist: it reads with
@@ -80,18 +85,28 @@ tested by `npm run test:rules` — see `docs/tech/verification.md`.
 
 ## The `use*` hook contract
 
-Live-list hooks (`useDossiers`, `useMessages`, `useCompanies`, `useDossier`) share one
-shape. Copy it rather than inventing a variant.
+**The shape is implemented once, in `src/lib/data/useLive.ts`.** Build a live hook on
+`useLiveDoc(key, ref)` or `useLiveQuery(key, build, select?)` — do not hand-roll the
+state machine again. `key` carries query identity and encodes the idle behaviour:
+
+| `key` | Meaning |
+|---|---|
+| a non-empty string | subscribe; loading until a snapshot with this key lands |
+| `""` | **stay loading** — the inputs aren't known yet but will be (a route param) |
+| `null` | **resolve to empty** — no legal query exists and none is coming (a b2b account with no `companyId`) |
+
+The contract those helpers implement, and which any hook built on them inherits:
 
 1. Build a `key` string capturing **query identity** — every input that changes the query
    (`statuses.join(",")`, region, role, companyId). `statuses` is a fresh array each
    render, so key on contents, not identity.
-2. Hold `{ key, data, error }` in one state object, and derive
-   `loading = resolved?.key !== key`. A snapshot that arrives for a superseded query is
-   therefore never rendered as if it answered the current one.
-3. Subscribe with `onSnapshot`, returning its unsubscribe from the effect.
-4. Map the error through `mapDataError(err.code)` — hooks return **French copy**, never a
-   raw Firebase code.
+2. `{ key, data, error }` is held in one state object and `loading` derived from a key
+   match, so a snapshot arriving for a superseded query is never rendered as if it
+   answered the current one.
+3. `onSnapshot` is subscribed in an effect keyed on `key` alone; the build closure is
+   read through a ref, so a fresh closure each render does not resubscribe.
+4. Errors are mapped through `mapDataError(err.code)` — hooks return **French copy**,
+   never a raw Firebase code.
 5. Return `{ data, loading, error }` — and expect all three to be consumed. A screen that
    destructures only `{ data }` renders an offline or denied read as an empty list.
    `Section` takes `loading` + `error`; `ScreenLoader` / `ScreenMessage` do the same for a

@@ -38,16 +38,29 @@ and `index.ts` supplies a `realDeps()` built from the admin SDK. Tests pass fake
 
 ## Callable boilerplate
 
+Two wrappers in `functions/src/callable.ts` own the whole sequence — auth guard, schema
+parse, core call, `toHttps` funnel. **Use them; do not hand-write `onCall`.**
+
 ```ts
-export const doThing = onCall(async (req) => {
-  if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
-  try {
-    const input = doThingSchema.parse(req.data);
-    await doThingCore(input, callerFrom(req), realDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+// signed-in callers only — `caller` is CallerClaims from the verified token
+export const doThing = authedCall(doThingSchema, (input, caller) =>
+  doThingCore(input, caller, realDeps()),
+);
+
+// reachable while signed out (registration / invitations)
+export const acceptInvite = publicCall(acceptInviteSchema, (input, who) =>
+  acceptInviteCore(input, who.uid, who.email, realDeps()),
+);
+
+// options (e.g. secrets) are the third argument
+export const sendInvite = authedCall(sendInviteSchema, run, { secrets: B2C_EMAIL_SECRETS });
+
+// no payload: NO_PAYLOAD ignores req.data rather than trusting it
+export const deleteMyAccount = authedCall(NO_PAYLOAD, (_i, caller) => ...);
 ```
+
+A `core` resolving to nothing gets the `{ ok: true }` acknowledgement the client's
+`call()` expects; one resolving to a value returns it verbatim.
 
 From `functions/src/callable.ts`:
 
@@ -88,9 +101,11 @@ so it caps file size (8 MB), file count (12) and field size before buffering.
 
 `email.ts` owns sending and region routing (NORTH/SOUTH mailboxes; `regions.ts`).
 
-**`DEV_EMAIL_OVERRIDE` is `true`** — every email is redirected to the dev mailbox. It is a
-module constant, not an env var. Flipping it to `false` is a required launch step; until
-then no real recipient receives anything.
+**`DEV_EMAIL_OVERRIDE` is `false`** — real recipients now receive mail. It is a module
+constant, not an env var, so with it `false` the dev-redirect branches are statically
+dead; they are kept as the switch back for local testing. `NORTH_MAILBOX` and
+`SOUTH_MAILBOX` are still both the dev address, so `resolveRegion` routing has no
+observable effect until those are set to the real mailboxes.
 
 ## App Check
 
@@ -105,7 +120,12 @@ owner-dependent (console setup).
 `NODE_ENV="production"`, so the block is skipped in prod — don't add a manual flag.
 
 ```bash
-JAVA_HOME=/usr/local/jdk-26.0.1 npx firebase-tools@latest emulators:start
+# Both lines: firebase-tools resolves `java` from PATH, so JAVA_HOME alone
+# still fails with "no longer supports Java version before 21".
+export JAVA_HOME=/usr/local/jdk-26.0.1
+export PATH="$JAVA_HOME/bin:$PATH"
+
+npx firebase-tools@latest emulators:start
 npm run test:rules          # rules tests, emulator-backed
 ```
 
@@ -125,5 +145,5 @@ buffering uploads in memory also sets its own `memory` and `concurrency`.
 | `onCall` without an explicit `req.auth` check | Unauthenticated callers reach the core |
 | Throwing raw errors instead of `toHttps` | Internal details leak; client shows the generic fallback |
 | Sending email without `{ secrets: B2C_EMAIL_SECRETS }` | Runtime failure — credentials unavailable |
-| Shipping with `DEV_EMAIL_OVERRIDE = true` | No real recipient ever gets an email |
+| Flipping `DEV_EMAIL_OVERRIDE` back to `true` and shipping | No real recipient gets an email |
 | Substring-matching a URL for validation | Bypassable; parse the URL and check host + path |

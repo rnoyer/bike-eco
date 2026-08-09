@@ -99,10 +99,19 @@ async function dossierAudience(
   deps: ResolveDeps,
 ): Promise<Recipient[]> {
   const [backoffice, members] = await Promise.all([
-    deps.backofficeUsers(),
+    backofficeInRegion(event.region, deps),
     deps.companyMembers(event.companyId),
   ]);
-  return [...backoffice.filter((u) => inRegion(u, event.region)), ...members];
+  return [...backoffice, ...members];
+}
+
+/** The back-office users who manage a région — the audience for everything that
+ *  is routed geographically rather than by dealership. */
+async function backofficeInRegion(
+  region: Region,
+  deps: ResolveDeps,
+): Promise<Recipient[]> {
+  return (await deps.backofficeUsers()).filter((u) => inRegion(u, region));
 }
 
 function exclude(users: Recipient[], uids: Set<string>): Recipient[] {
@@ -114,29 +123,19 @@ export async function resolveDeliveries(
   deps: ResolveDeps,
 ): Promise<Delivery[]> {
   switch (event.kind) {
-    case "companyRegistered": {
-      const target: NotificationTarget = {
-        kind: "company",
-        companyId: event.companyId,
-      };
-      const content = companyRegisteredContent(event);
-      const users = (await deps.backofficeUsers()).filter((u) =>
-        inRegion(u, event.region),
-      );
-      return users.map((u) => ({ uid: u.uid, content, target }));
-    }
-
+    // Both are "something new arrived in your région": the audience is the
+    // back office alone, and neither can be muted — a company has no mutes and
+    // a one-write-old dossier cannot have a `mutes` subcollection yet.
+    case "companyRegistered":
     case "dossierCreated": {
-      // No mute lookup: the dossier is one write old, so its `mutes`
-      // subcollection cannot exist yet.
-      const target: NotificationTarget = {
-        kind: "dossier",
-        dossierId: event.dossierId,
-      };
-      const content = dossierCreatedContent(event);
-      const users = (await deps.backofficeUsers()).filter((u) =>
-        inRegion(u, event.region),
-      );
+      const isCompany = event.kind === "companyRegistered";
+      const target: NotificationTarget = isCompany
+        ? { kind: "company", companyId: event.companyId }
+        : { kind: "dossier", dossierId: event.dossierId };
+      const content = isCompany
+        ? companyRegisteredContent(event)
+        : dossierCreatedContent(event);
+      const users = await backofficeInRegion(event.region, deps);
       return users.map((u) => ({ uid: u.uid, content, target }));
     }
 
@@ -146,7 +145,7 @@ export async function resolveDeliveries(
         dossierId: event.dossierId,
       };
       const [backoffice, members, muted] = await Promise.all([
-        deps.backofficeUsers(),
+        backofficeInRegion(event.region, deps),
         // A b2b message is not relayed to the sender's own teammates: the b2b
         // copy is fixed to "de Bike-eco", so it would misattribute a
         // colleague's message to the Bike-eco team.
@@ -155,10 +154,7 @@ export async function resolveDeliveries(
           : Promise.resolve<Recipient[]>([]),
         deps.mutedUids(event.dossierId),
       ]);
-      const audience = [
-        ...backoffice.filter((u) => inRegion(u, event.region)),
-        ...members,
-      ];
+      const audience = [...backoffice, ...members];
       const skip = new Set([event.senderUid, ...muted]);
       const senderPerson = personFromSenderName(event.senderName);
       return exclude(audience, skip).map((u) => ({

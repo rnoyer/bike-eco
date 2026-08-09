@@ -10,7 +10,7 @@ For the function's design and request contract, see
 ## What you'll verify
 
 A single submission produces **two emails**, both routed to
-`romain.noyer@gmail.com` while `DEV_EMAIL_OVERRIDE` is `true`:
+`romain.noyer@gmail.com` when `DEV_EMAIL_OVERRIDE` is flipped to `true` (it is `false` today):
 
 1. **Team notification** — _Nouvelle demande B2C — SOUTH — Jean Dupont_, all form
    fields, with the photo(s) **attached**.

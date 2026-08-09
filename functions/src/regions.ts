@@ -24,7 +24,7 @@ const SOUTH_CODES = new Set([
   "69", "73", "74", "79", "81", "82", "83", "84", "86", "87", "2A", "2B",
 ]);
 
-export type Region = "NORTH" | "SOUTH";
+type Region = "NORTH" | "SOUTH";
 
 /** Extract the département code from a "33 - Gironde" style label. */
 function getCode(departement: string): string {

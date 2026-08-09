@@ -9,7 +9,7 @@ const member: CallerClaims = { uid: "mem1", role: "b2b", status: "active", compa
 const boAdmin: CallerClaims = { uid: "bo1", role: "backoffice", status: "active", companyId: null };
 
 const user = (over: Partial<TargetUser> & { uid: string }): TargetUser => ({
-  role: "b2b", companyId: "comp_1", isAdmin: false, nom: "Durand", prenom: "Camille", ...over,
+  role: "b2b", companyId: "comp_1", isAdmin: false, ...over,
 });
 
 const USERS: Record<string, TargetUser> = {

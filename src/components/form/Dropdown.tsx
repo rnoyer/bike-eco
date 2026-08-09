@@ -110,30 +110,10 @@ export default function Dropdown({
 }
 
 const styles = StyleSheet.create({
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: tokens.colors.primary,
-    marginBottom: tokens.space.sm,
-  },
-  trigger: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: tokens.button.height,
-    borderWidth: 1.5,
-    borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.md,
-    backgroundColor: tokens.colors.surfaceAlt,
-    paddingHorizontal: 16,
-  },
-  triggerError: {
-    borderColor: tokens.colors.danger,
-  },
-  triggerText: {
-    flex: 1,
-    fontSize: 16,
-    color: tokens.colors.primary,
-  },
+  label: tokens.text.fieldLabel,
+  trigger: tokens.control.base,
+  triggerError: tokens.control.error,
+  triggerText: tokens.control.text,
   placeholderText: {
     color: tokens.colors.disabled,
   },
@@ -142,11 +122,7 @@ const styles = StyleSheet.create({
     color: tokens.colors.muted,
     transform: [{ rotate: "90deg" }],
   },
-  error: {
-    fontSize: 12,
-    color: tokens.colors.danger,
-    marginTop: tokens.space.xs,
-  },
+  error: tokens.text.fieldError,
   modal: {
     flex: 1,
     backgroundColor: tokens.colors.surface,

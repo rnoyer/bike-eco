@@ -15,7 +15,7 @@ import { hasPasswordProvider } from "@/lib/auth/passwordProvider";
 import { useAccount } from "@/lib/data/useAccount";
 import { useCompany } from "@/lib/data/useCompanies";
 import { useSession } from "@/lib/data/useSession";
-import { useUser } from "@/lib/data/useUser";
+import { useIsAdmin } from "@/lib/data/useIsAdmin";
 import { callDeleteMyAccount } from "@/lib/data/users";
 import { alertDialog, confirmDialog } from "@/lib/ui/dialog";
 import { useAsyncAction } from "@/lib/ui/useAsyncAction";
@@ -31,15 +31,7 @@ export default function AccountScreen() {
   const { signOut } = useSession();
   const { firebaseUser } = useAuth();
 
-  // Live rather than the AuthProvider snapshot taken at sign-in: a demoted
-  // admin who already transferred the role must see the delete button enable
-  // itself without restarting the app. Falls back to the session's value
-  // while the live read is loading, so nothing flickers into a
-  // more-permissive state.
-  const { data: viewer, loading: viewerLoading } = useUser(data?.id ?? "");
-  const isAdmin = viewerLoading
-    ? data?.isAdmin === true
-    : viewer?.isAdmin === true;
+  const isAdmin = useIsAdmin();
 
   const email = firebaseUser?.email ?? null;
 

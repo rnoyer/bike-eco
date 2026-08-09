@@ -209,12 +209,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: tokens.colors.primary,
   },
-  registerLink: {
-    fontSize: 14,
-    color: tokens.colors.primary,
-    textAlign: "center",
-    textDecorationLine: "underline",
-  },
   dividerRow: {
     flexDirection: "row",
     alignItems: "center",

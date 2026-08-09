@@ -1,7 +1,5 @@
 import { FieldValue } from "firebase-admin/firestore";
-import { HttpsError, onCall } from "firebase-functions/https";
-
-import { callerFrom, db, toHttps } from "../callable";
+import { authedCall, db } from "../callable";
 import { sendMessageCore, type SendMessageDeps } from "./core";
 import { sendMessageSchema } from "./schemas";
 
@@ -33,11 +31,6 @@ function messageDeps(): SendMessageDeps {
   };
 }
 
-export const sendMessage = onCall(async (req) => {
-  if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
-  try {
-    const input = sendMessageSchema.parse(req.data);
-    await sendMessageCore(input, callerFrom(req), messageDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+export const sendMessage = authedCall(sendMessageSchema, (input, caller) =>
+  sendMessageCore(input, caller, messageDeps()),
+);

@@ -40,8 +40,28 @@ service cloud.firestore {
 
       // Device handles. Owner-only: nothing in the app reads another user's
       // tokens, and the back office has no reason to enumerate devices.
+      //
+      // Values are pinned for the same reason `notificationRegion` is above: an
+      // owner-only rule with no shape check accepts any fields, of any type, in
+      // any quantity, and `tokensFor` reads every row of this subcollection on
+      // each fan-out. `dispatch` already skips a non-string token, so this is
+      // about not letting a signed-in user pack their own subcollection with
+      // arbitrary or oversized rows, not about the delivery path.
       match /pushTokens/{deviceId} {
-        allow read, write: if request.auth.uid == uid;
+        allow read: if request.auth.uid == uid;
+        allow write: if request.auth.uid == uid
+          && (request.method == 'delete' || (
+               request.resource.data.keys().hasOnly(['token', 'platform', 'updatedAt'])
+               && request.resource.data.token is string
+               && request.resource.data.token.size() > 0
+               && request.resource.data.token.size() <= 4096
+               && request.resource.data.platform in ['ios', 'android']
+               // Typed too, or it is the hole the other two clauses close:
+               // an allowed *key* with no type check still accepts a
+               // megabyte-long string, and `tokensFor` reads every field of
+               // every row on each fan-out.
+               && request.resource.data.updatedAt is timestamp
+             ));
       }
     }
 

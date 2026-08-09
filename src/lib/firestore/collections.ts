@@ -12,7 +12,6 @@ import type {
   Company,
   Dossier,
   DossierMute,
-  Invitation,
   Message,
   PushToken,
 } from "./schema";
@@ -52,10 +51,8 @@ export const companiesRef = collection(db, COLLECTIONS.companies).withConverter(
 export const usersRef = collection(db, COLLECTIONS.users).withConverter(
   typed<AppUser>(),
 );
-export const invitationsRef = collection(
-  db,
-  COLLECTIONS.invitations,
-).withConverter(typed<Invitation>());
+// `invitations` has no client-side ref: it is written and read only by the
+// registration Cloud Functions (the client reaches it through `resolveInvite`).
 export const dossiersRef = collection(db, COLLECTIONS.dossiers).withConverter(
   typed<Dossier>(),
 );
@@ -65,8 +62,6 @@ export const dossiersRef = collection(db, COLLECTIONS.dossiers).withConverter(
 export const companyDoc = (companyId: string) =>
   doc(companiesRef, companyId);
 export const userDoc = (uid: string) => doc(usersRef, uid);
-export const invitationDoc = (invitationId: string) =>
-  doc(invitationsRef, invitationId);
 export const dossierDoc = (dossierId: string) => doc(dossiersRef, dossierId);
 
 // ─── messages subcollection ──────────────────────────────────────────────────
@@ -75,9 +70,6 @@ export const messagesRef = (dossierId: string) =>
   collection(dossierDoc(dossierId), COLLECTIONS.messages).withConverter(
     typed<Message>(),
   );
-
-export const messageDoc = (dossierId: string, messageId: string) =>
-  doc(messagesRef(dossierId), messageId);
 
 // ─── pushTokens subcollection ────────────────────────────────────────────────
 

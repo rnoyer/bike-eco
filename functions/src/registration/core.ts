@@ -9,7 +9,7 @@ import type {
 import { RegError, type CallerClaims } from "../errors";
 
 /** The organisation an invitee joins when the invitation grants back-office access. */
-export const BIKE_ECO_ORGANISATION = "Bike-eco";
+const BIKE_ECO_ORGANISATION = "Bike-eco";
 
 /** The role an invitation grants. A back-office invitation carries no company. */
 export type InviteRole = "b2b" | "backoffice";
@@ -127,7 +127,7 @@ export async function sendInviteCore(
 }
 
 /** The name shown to an invitee: their future company, or Bike-eco itself. */
-export function organisationNameOf(inv: StoredInvitation): string {
+function organisationNameOf(inv: StoredInvitation): string {
   return inv.role === "backoffice" ? BIKE_ECO_ORGANISATION : (inv.companyName ?? "");
 }
 
