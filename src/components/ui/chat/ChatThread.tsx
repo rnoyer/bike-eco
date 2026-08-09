@@ -5,10 +5,11 @@ import type { PendingMessage } from "@/lib/data/useSendMessage";
 import type { WithId } from "@/lib/firestore/collections";
 import type { Message, MessageAttachment } from "@/lib/firestore/schema";
 import { storageUrl } from "@/lib/storage/displayUrl";
+import { isNearBottom } from "@/lib/ui/chatScroll";
 import { alertDialog } from "@/lib/ui/dialog";
 import { tokens } from "@/theme/tokens";
 import { Image } from "expo-image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Linking,
   Pressable,
@@ -16,6 +17,8 @@ import {
   StyleSheet,
   Text,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from "react-native";
 
 function timeLabel(m: Message): string {
@@ -158,12 +161,59 @@ export default function ChatThread({
 }) {
   const [viewerUri, setViewerUri] = useState<string | null>(null);
 
+  // A `ScrollView` opens at offset 0 and stays there. The thread is oldest-first
+  // (`useMessages` orders by `createdAt`), so without this the screen opens on
+  // the *oldest* messages and every new bubble lands below the fold — which is
+  // what made a notification tap look like it had dropped the user above the
+  // composer.
+  const scrollRef = useRef<ScrollView>(null);
+  // Whether a new bubble is allowed to move the view. Starts true so the first
+  // layout pins to the bottom; goes false as soon as the user scrolls up to read
+  // history, so an arriving message never yanks them away from what they read.
+  const followingRef = useRef(true);
+  // The first scroll must not animate: the user asked for this thread, and
+  // watching it fly past its history is not an arrival, it is a glitch.
+  const arrivedRef = useRef(false);
+
+  function stickToBottom() {
+    if (!followingRef.current) return;
+    scrollRef.current?.scrollToEnd({ animated: arrivedRef.current });
+    arrivedRef.current = true;
+  }
+
+  // Sending is the one case that overrides the user's scroll position: the
+  // bubble is theirs and they just created it, so it always pulls the view down.
+  const pendingCount = pending.length;
+  useEffect(() => {
+    if (pendingCount === 0) return;
+    followingRef.current = true;
+    scrollRef.current?.scrollToEnd({ animated: arrivedRef.current });
+    arrivedRef.current = true;
+  }, [pendingCount]);
+
   return (
     <>
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        // Fires on the first layout and on every message, and again when an
+        // image finishes loading and the bubble it sits in grows.
+        onContentSizeChange={stickToBottom}
+        // The content is unchanged but the window shrank — the keyboard opening
+        // under `KeyboardAvoidingView`. Without this the last bubble slides
+        // behind the composer at exactly the moment the user is replying to it.
+        onLayout={stickToBottom}
+        onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+          const { contentSize, contentOffset, layoutMeasurement } = e.nativeEvent;
+          followingRef.current = isNearBottom({
+            contentHeight: contentSize.height,
+            offsetY: contentOffset.y,
+            viewportHeight: layoutMeasurement.height,
+          });
+        }}
+        scrollEventThrottle={16}
       >
         {messages.map((m) => {
           const mine = m.senderId === currentUserId;

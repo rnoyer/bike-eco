@@ -220,6 +220,24 @@ Two rules, both learned from the chat composer being buried under the keyboard:
   `@react-navigation/elements`) and the header is taller on notched devices.
   `DossierChatScreen` is the worked example.
 
+## A chat thread has to be scrolled, deliberately
+
+A `ScrollView` opens at offset 0 and stays there. The thread is oldest-first, so
+`ChatThread` shipped once showing the *oldest* messages with every new bubble landing
+below the fold — which read as "the notification dropped me above the composer". Three
+handlers own it now, and all three are load-bearing:
+
+- `onContentSizeChange` — first layout and every new message (and an image finishing
+  loading inside a bubble);
+- `onLayout` — content unchanged, window shrank: the keyboard opening under
+  `KeyboardAvoidingView`, which would otherwise slide the last bubble behind the composer;
+- `onScroll` — records whether the view is still near the end (`isNearBottom` in
+  `lib/ui/chatScroll.ts`), which is the permission the other two check.
+
+Someone reading history is never yanked down by an arriving message; their **own** send
+overrides that and always scrolls. The first scroll does not animate — flying past the
+history is a glitch, not an arrival.
+
 A bottom bar that pads itself with `insets.bottom` must drop that inset while the
 keyboard is open (`Keyboard.addListener("keyboardDidShow"/"keyboardDidHide")`) — the
 keyboard already covers the home indicator, so keeping it leaves a dead band.

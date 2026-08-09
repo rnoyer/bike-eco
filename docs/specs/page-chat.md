@@ -29,6 +29,22 @@ While the thread is loading, the page shows a centered spinner — never a blank
 view, which would be indistinguishable from an empty conversation. If the read
 fails, it shows the mapped French error instead.
 
+## Scrolling
+
+The thread is oldest-first, so the latest message is at the bottom — and that is
+where the page opens, without animation: arriving from a notification must land
+on the message that was announced, not above it.
+
+After that the view follows new messages down, with one exception each way:
+
+- **A user who has scrolled up to read history is never moved.** An arriving
+  message stays out of sight until they come back to the bottom themselves.
+- **Their own send always wins.** Sending scrolls to the bottom whatever they
+  were reading — the bubble is theirs, and they just created it.
+
+The view also re-pins to the bottom when the keyboard opens, so the last message
+never slides behind the composer at the moment it is being answered.
+
 ## Sending
 
 Sends go through the `sendMessage` Cloud callable: the client uploads any
