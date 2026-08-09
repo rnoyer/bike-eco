@@ -11,6 +11,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  serverTimestamp,
   setDoc,
   updateDoc,
 } from "firebase/firestore";
@@ -470,6 +471,21 @@ test("a push token row must carry a plausible token and a known platform", async
       token: "tok",
       platform: "ios",
       updatedAt: "x".repeat(5000),
+    }),
+  );
+});
+
+test("the exact row registerPushToken writes is accepted", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  // Mirrors `registerPushToken` byte for byte. The other happy-path test uses
+  // `new Date()`, which would still pass `is timestamp` even if the sentinel
+  // did not — so without this the rule could reject every real registration
+  // while the suite stayed green.
+  await assertSucceeds(
+    setDoc(doc(db, "users/user_b2b_nord/pushTokens/device_4"), {
+      token: "fcm-token-value",
+      platform: "android",
+      updatedAt: serverTimestamp(),
     }),
   );
 });
