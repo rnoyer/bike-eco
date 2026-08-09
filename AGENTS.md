@@ -64,6 +64,10 @@ feature. Keep a spec in sync in the same change that alters its feature.
     with its company) and fully erasing one, split by role and dry-run by default:
     `scripts/delete-b2b-user.js` (Auth, profile, dossiers, Storage files, invitations)
     and `scripts/delete-backoffice.js` (Auth + profile; refuses the last active one).
+  - `wipe-prod.md` — erasing **all** data on the live project with
+    `scripts/wipe-prod.js` (whole bucket + every Firestore collection + every Auth
+    user). Dry-run by default; needs `--yes --confirm bike-eco-43a84` to apply, and
+    `--keep-backoffice` to keep a way back in.
 
 # Project skills
 
