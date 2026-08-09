@@ -74,6 +74,32 @@ new path that loads a session must keep that discipline. If a session load throw
 must fail to a **null session** — leaving `loading` stuck true silently kills every
 redirect in the app, and a tap on sign-in appears to do nothing at all.
 
+## Deleting an account does not end its sessions
+
+Server-side deletion (`deleteColleague`, `deleteMyAccount`, the back office's
+`deleteCompany`, the ops scripts) removes the Auth user — and **that alone leaves the
+victim fully signed in**. The ID token already on their device stays valid until it
+expires (up to an hour), every rule in `firestore.rules` authorizes on that token's
+claims and never on `users/{uid}` existing, and `onAuthStateChanged` does not fire until
+the SDK's own proactive refresh eventually fails. Verified on the emulators: after
+`deleteUser`, the client stayed signed in and its reads were still accepted.
+
+What closes it is the **deleted-account watch** in `AuthProvider`: a live `onSnapshot`
+on the signed-in user's own `users/{uid}` doc that calls `signOut()` as soon as the doc
+is gone (`isAccountDeleted` in `session.ts`). The still-valid token is exactly what keeps
+that listener authorized long enough to receive the delete event.
+
+Two things it must keep doing, both load-bearing:
+
+- **Arm on `session?.id`, never on `firebaseUser`.** An authenticated user with no
+  profile doc is the normal mid-registration state (Google sign-in happens *before* the
+  callable creates `users/{uid}`) — watching from sign-in would sign registrants out
+  mid-flow.
+- **Ignore a cache-only miss** (`fromCache`). Offline, "no such document" means "not in
+  this device's cache", and signing a legitimate user out for being offline is worse than
+  the bug being fixed. Likewise the listener's `error` callback must not sign out: the
+  owner-read rule cannot deny a live credential, so an error there is transport.
+
 ## Error copy
 
 Every Firebase Auth failure goes through `mapAuthError(code)`; the fallback is
@@ -127,6 +153,7 @@ validates it server-side, and the screen renders only after it resolves. Tokens 
 | Reading `role`/`status` from the `users` doc instead of the session | Stale profile grants wrong access; claims are authoritative |
 | Setting `role`/`companyId`/`status` from the client | Rejected by rules — these are server-set claims only |
 | Skipping `refreshSession()` after server-set claims | Session keeps the old role until a full app restart |
+| Assuming `deleteUser` ends the victim's session | Their token stays valid ~1h; only the deleted-account watch signs them out |
 | Inline French copy in a screen | Bypasses `mapAuthError`; copy drifts between flows |
 | `updatePassword` without handling `auth/requires-recent-login` | Fails for any session older than a few minutes |
 | Adding a native SDK without a `.web.ts` sibling | Web build breaks |

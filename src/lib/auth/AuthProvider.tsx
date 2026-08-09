@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getDoc } from "firebase/firestore";
+import { getDoc, onSnapshot } from "firebase/firestore";
 import {
   onAuthStateChanged,
   signOut as fbSignOut,
@@ -19,7 +19,12 @@ import { auth } from "../../../firebaseConfig";
 import { userDoc } from "@/lib/firestore/collections";
 import type { AppUser, UserStatus } from "@/lib/firestore/schema";
 import { unregisterPushToken } from "@/lib/notifications/pushRegistration";
-import { buildSessionUser, parseClaims, type SessionUser } from "./session";
+import {
+  buildSessionUser,
+  isAccountDeleted,
+  parseClaims,
+  type SessionUser,
+} from "./session";
 
 interface AuthState {
   firebaseUser: User | null;
@@ -110,6 +115,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (auth.currentUser) await loadSession(auth.currentUser);
   }, []);
 
+  // Reads `auth.currentUser` rather than the `firebaseUser` state so the
+  // identity is stable: the deleted-account watch below depends on it, and a
+  // callback that changed on every auth event would resubscribe that listener.
+  const signOut = useCallback(async () => {
+    // Before `fbSignOut`: once the credential is gone the owner-only rule
+    // rejects the delete, and this device would keep receiving pushes for an
+    // account that is no longer signed in on it.
+    const uid = auth.currentUser?.uid;
+    if (uid) await unregisterPushToken(uid);
+    await fbSignOut(auth);
+  }, []);
+
+  // Deleted-account watch. When someone *else* deletes this account (a company
+  // admin via `deleteColleague`, the back office deleting the whole company, or
+  // an ops script), the server drops the Auth user — but that does not
+  // invalidate the ID token this device already holds. Every rule authorizes on
+  // that token's claims alone, so without this the deleted user keeps reading
+  // and writing everything, dossier submission included, until the SDK's own
+  // proactive token refresh fails, up to an hour later. That still-valid token
+  // is exactly what keeps this listener authorized long enough to receive the
+  // delete event, so the sign-out lands within a snapshot's latency.
+  //
+  // Keyed on the session's uid, not on `firebaseUser`, and so armed only once a
+  // profile has actually been read: an authenticated user with *no* profile doc
+  // is the normal mid-registration state (Google sign-in happens before the
+  // callable creates `users/{uid}`), and signing that user out would break
+  // registration instead of fixing anything.
+  const uid = session?.id;
+  useEffect(() => {
+    if (!uid) return;
+    return onSnapshot(
+      userDoc(uid),
+      (snap) => {
+        if (
+          isAccountDeleted({
+            exists: snap.exists(),
+            fromCache: snap.metadata.fromCache,
+          })
+        ) {
+          // The profile is already gone, so the push-token delete inside
+          // `signOut` is a no-op — it is the FCM listener teardown that matters.
+          void signOut();
+        }
+      },
+      // Not a sign-out trigger: the owner-read rule cannot deny a live
+      // credential, so an error here is transport or an already-expired token,
+      // and the SDK ends that session on its own.
+      (err) => console.warn("[auth] account watch failed", err),
+    );
+  }, [uid, signOut]);
+
   const value = useMemo<AuthState>(
     () => ({
       firebaseUser,
@@ -117,16 +173,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status: session?.status ?? null,
       loading,
       initializing,
-      // Before `fbSignOut`: once the credential is gone the owner-only rule
-      // rejects the delete, and this device would keep receiving pushes for an
-      // account that is no longer signed in on it.
-      signOut: async () => {
-        if (firebaseUser) await unregisterPushToken(firebaseUser.uid);
-        await fbSignOut(auth);
-      },
+      signOut,
       refreshSession,
     }),
-    [firebaseUser, session, loading, initializing, refreshSession],
+    [firebaseUser, session, loading, initializing, signOut, refreshSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
