@@ -1,5 +1,5 @@
 /** Error codes that map 1:1 onto Firebase `HttpsError` codes (see `toHttps`). */
-export type RegErrorCode =
+type RegErrorCode =
   | "unauthenticated" | "permission-denied" | "already-exists"
   | "invalid-argument" | "not-found" | "failed-precondition";
 

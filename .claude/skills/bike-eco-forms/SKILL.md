@@ -85,6 +85,11 @@ All of these exist. Reach for them instead of re-declaring option lists or helpe
 - `@/constants/vehicle` — `OUI_NON`, `COUNT_OPTIONS`, `ETAT_OPTIONS`, …
 - `@/lib/forms/transforms` — `digitsOnly(max?)`.
 - `@/features/registration/fields` — `AccountFields`, `CoordonneesFields`.
+- `@/features/vehicle-submission/fields` — the vehicle steps both submission funnels
+  share (`ElectriqueFields`, `ClesFields`, `EtatFields`, `PapiersFields`, `PhotosFields`,
+  `PrixFields`, `MarqueField`, `AnneeKilometrageFields`) plus `VEHICLE_STEP_FIELDS`, the
+  matching per-step field lists. B2C and B2B keep only what genuinely differs. Copy
+  changed here lands in **both** funnels — update both specs in the same change.
 - `@/components/form/FormConfirmation` — the button-driven terminal screen.
 
 The registration field groups require the schema to use exact field names:

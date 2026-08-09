@@ -81,36 +81,16 @@ export default function FormField({
 }
 
 const styles = StyleSheet.create({
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: tokens.colors.primary,
-    marginBottom: tokens.space.sm,
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: tokens.button.height,
-    borderWidth: 1.5,
-    borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.md,
-    backgroundColor: tokens.colors.surfaceAlt,
-    paddingHorizontal: 16,
-  },
+  label: tokens.text.fieldLabel,
+  inputRow: tokens.control.base,
   inputRowMultiline: {
     height: undefined,
     minHeight: 100,
     alignItems: "flex-start",
     paddingVertical: 14,
   },
-  inputRowError: {
-    borderColor: tokens.colors.danger,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: tokens.colors.primary,
-  },
+  inputRowError: tokens.control.error,
+  input: tokens.control.text,
   inputMultiline: {
     minHeight: 72,
   },
@@ -126,9 +106,5 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
   },
-  error: {
-    fontSize: 12,
-    color: tokens.colors.danger,
-    marginTop: tokens.space.xs,
-  },
+  error: tokens.text.fieldError,
 });

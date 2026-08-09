@@ -42,7 +42,14 @@ colors: primary #2A2933 · primaryText #fff · muted #71727A · border #E5E7EB
 brand:  brand #1FC61B · brandTint #E7F7E6 · brandPressed #17A814
 status: a_traiter (amber) · en_cours (blue) · cloture (green)   // keyed by DossierStatus
 radius: sm 8 · md 12 · lg 16        space: xs 4 · sm 8 · md 12 · lg 24 · xl 28
+text:   title · subtitle · fieldLabel · fieldError
+control: base · error · text        // the input/dropdown box chrome
 ```
+
+`text.fieldLabel` / `text.fieldError` and the `control.*` group are what `FormField`,
+`Dropdown` and `CheckboxGroup` render their label, error and box from. A new form control
+spreads those tokens rather than restating the height/border/fill — that chrome was
+triplicated once and drifted.
 
 `primary` and the `brand*` colours come from the logo (`assets/images/icon.png`): a **BE**
 monogram in `#1FC61B` on a `#2A2933` charcoal disc. `primary` is that charcoal, not a

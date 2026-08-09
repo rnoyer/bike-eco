@@ -1,9 +1,8 @@
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
-import { HttpsError, onCall } from "firebase-functions/https";
 
-import { db, callerFrom, toHttps } from "../callable";
+import { authedCall, db, publicCall } from "../callable";
 import { B2C_EMAIL_SECRETS } from "../email";
 import { approveCompanyCore, deleteCompanyCore, type BackofficeDeps } from "./backoffice";
 import { generateCompanyId } from "./companyId";
@@ -122,52 +121,37 @@ function backofficeDeps(): BackofficeDeps {
   };
 }
 
-export const registerCompany = onCall({ secrets: B2C_EMAIL_SECRETS }, async (req) => {
-  try {
-    const input = registerCompanySchema.parse(req.data);
-    await registerCompanyCore(input, req.auth?.uid ?? null, req.auth?.token.email ?? null, realDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+const EMAIL_SENDING = { secrets: B2C_EMAIL_SECRETS };
 
-export const sendInvite = onCall({ secrets: B2C_EMAIL_SECRETS }, async (req) => {
-  if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
-  try {
-    const input = sendInviteSchema.parse(req.data);
-    await sendInviteCore(input, callerFrom(req), realDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+export const registerCompany = publicCall(
+  registerCompanySchema,
+  (input, who) => registerCompanyCore(input, who.uid, who.email, realDeps()),
+  EMAIL_SENDING,
+);
 
-export const resolveInvite = onCall(async (req) => {
-  try {
-    const input = resolveInviteSchema.parse(req.data);
-    return await resolveInviteCore(input, realDeps());
-  } catch (e) { toHttps(e); }
-});
+export const sendInvite = authedCall(
+  sendInviteSchema,
+  (input, caller) => sendInviteCore(input, caller, realDeps()),
+  EMAIL_SENDING,
+);
 
-export const acceptInvite = onCall(async (req) => {
-  try {
-    const input = acceptInviteSchema.parse(req.data);
-    await acceptInviteCore(input, req.auth?.uid ?? null, req.auth?.token.email ?? null, realDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+export const resolveInvite = publicCall(resolveInviteSchema, (input) =>
+  resolveInviteCore(input, realDeps()),
+);
 
-export const approveCompany = onCall({ secrets: B2C_EMAIL_SECRETS }, async (req) => {
-  if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
-  try {
-    const { companyId } = companyActionSchema.parse(req.data);
-    await approveCompanyCore(companyId, callerFrom(req), backofficeDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+export const acceptInvite = publicCall(acceptInviteSchema, (input, who) =>
+  acceptInviteCore(input, who.uid, who.email, realDeps()),
+);
 
-export const deleteCompany = onCall(async (req) => {
-  if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
-  try {
-    const { companyId } = companyActionSchema.parse(req.data);
-    await deleteCompanyCore(companyId, callerFrom(req), backofficeDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+export const approveCompany = authedCall(
+  companyActionSchema,
+  ({ companyId }, caller) =>
+    approveCompanyCore(companyId, caller, backofficeDeps()),
+  EMAIL_SENDING,
+);
+
+export const deleteCompany = authedCall(
+  companyActionSchema,
+  ({ companyId }, caller) =>
+    deleteCompanyCore(companyId, caller, backofficeDeps()),
+);

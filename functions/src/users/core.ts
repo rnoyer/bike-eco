@@ -12,8 +12,6 @@ export interface TargetUser {
   role: string;
   companyId: string | null;
   isAdmin: boolean;
-  nom: string;
-  prenom: string;
 }
 
 export interface UsersDeps {

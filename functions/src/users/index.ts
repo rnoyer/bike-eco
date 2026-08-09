@@ -1,8 +1,6 @@
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue } from "firebase-admin/firestore";
-import { HttpsError, onCall } from "firebase-functions/https";
-
-import { callerFrom, db, toHttps } from "../callable";
+import { authedCall, db, NO_PAYLOAD } from "../callable";
 import {
   deleteColleagueCore, deleteMyAccountCore, setColleagueAdminCore,
   type Scope, type UsersDeps,
@@ -20,8 +18,6 @@ function usersDeps(): UsersDeps {
         role: d.role as string,
         companyId: (d.companyId as string | null) ?? null,
         isAdmin: d.isAdmin === true,
-        nom: (d.nom as string) ?? "",
-        prenom: (d.prenom as string) ?? "",
       };
     },
     // Counted in memory rather than with a two-equality-filter query: teams are
@@ -54,28 +50,16 @@ function usersDeps(): UsersDeps {
   };
 }
 
-export const setColleagueAdmin = onCall(async (req) => {
-  if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
-  try {
-    const input = colleagueAdminSchema.parse(req.data);
-    await setColleagueAdminCore(input, callerFrom(req), usersDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+export const setColleagueAdmin = authedCall(
+  colleagueAdminSchema,
+  (input, caller) => setColleagueAdminCore(input, caller, usersDeps()),
+);
 
-export const deleteColleague = onCall(async (req) => {
-  if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
-  try {
-    const input = colleagueActionSchema.parse(req.data);
-    await deleteColleagueCore(input, callerFrom(req), usersDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+export const deleteColleague = authedCall(
+  colleagueActionSchema,
+  (input, caller) => deleteColleagueCore(input, caller, usersDeps()),
+);
 
-export const deleteMyAccount = onCall(async (req) => {
-  if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
-  try {
-    await deleteMyAccountCore(callerFrom(req), usersDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+export const deleteMyAccount = authedCall(NO_PAYLOAD, (_input, caller) =>
+  deleteMyAccountCore(caller, usersDeps()),
+);

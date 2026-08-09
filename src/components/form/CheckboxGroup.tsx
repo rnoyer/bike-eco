@@ -52,12 +52,7 @@ export default function CheckboxGroup({
 }
 
 const styles = StyleSheet.create({
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: tokens.colors.primary,
-    marginBottom: tokens.space.sm,
-  },
+  label: tokens.text.fieldLabel,
   options: {
     gap: tokens.space.md,
   },
@@ -89,9 +84,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: tokens.colors.primary,
   },
-  error: {
-    fontSize: 12,
-    color: tokens.colors.danger,
-    marginTop: tokens.space.xs,
-  },
+  error: tokens.text.fieldError,
 });

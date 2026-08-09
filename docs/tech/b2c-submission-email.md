@@ -23,7 +23,7 @@ path), and the funnel spec `docs/specs/form-b2c-vehicule-submission.md`.
     form fields and the **photos attached**. Sent first (operationally critical).
   - **Customer recap** → the submitter, with a summary of relevant fields, no
     attachments.
-- **Dev override.** While `DEV_EMAIL_OVERRIDE` is `true`, both emails route to
+- **Dev override.** When `DEV_EMAIL_OVERRIDE` is flipped to `true` (it is `false` today), both emails route to
   `romain.noyer@gmail.com` regardless of region (per the product spec).
 - **Transport = Nodemailer + SMTP**, pooled and reused across invocations. When
   SMTP secrets are absent (e.g. the local emulator) it falls back to a JSON
@@ -88,7 +88,7 @@ to avoid double-sends.
 `NORTH` (Montargis centre) or `SOUTH` (Vitrolles centre), defaulting to `NORTH`
 for unknown values so a submission is never dropped.
 
-| Recipient | Dev (`DEV_EMAIL_OVERRIDE = true`) | Production                                  |
+| Recipient | Dev (`DEV_EMAIL_OVERRIDE = true`, not the default) | Production                                  |
 | --------- | --------------------------------- | ------------------------------------------- |
 | Team      | `romain.noyer@gmail.com`          | `NORTH_MAILBOX` / `SOUTH_MAILBOX` by region |
 | Customer  | `romain.noyer@gmail.com`          | the submitter's `email`                     |
@@ -125,8 +125,10 @@ Verified cases: valid submission (correct region + attachment), missing photo
 1. **SMTP secrets** — `firebase functions:secrets:set SMTP_HOST` (and
    `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`). For the emulator, put them in
    `functions/.secret.local`. Until set, emails are logged, not sent.
-2. **Real mailboxes** — fill `NORTH_MAILBOX` / `SOUTH_MAILBOX` / `FROM_ADDRESS`
-   in `email.ts` and set `DEV_EMAIL_OVERRIDE = false`.
+2. **Real mailboxes** — `DEV_EMAIL_OVERRIDE` is already `false`, but
+   `NORTH_MAILBOX` / `SOUTH_MAILBOX` in `email.ts` are both still the dev
+   address, so `resolveRegion` routing has no observable effect yet. Fill them
+   (and `FROM_ADDRESS`) with the real mailboxes.
 3. **App Check** — enforce it on this public endpoint as the abuse guard.
 
 ## Tooling

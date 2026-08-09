@@ -58,4 +58,3 @@ export type SendInviteInput = z.infer<typeof sendInviteSchema>;
 export type ResolveInviteInput = z.infer<typeof resolveInviteSchema>;
 
 export const companyActionSchema = z.object({ companyId: z.string().trim().min(1) });
-export type CompanyActionInput = z.infer<typeof companyActionSchema>;

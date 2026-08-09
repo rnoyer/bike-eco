@@ -35,6 +35,33 @@ export const tokens = {
   text: {
     title: { fontSize: 24, fontWeight: "bold" as const, color: "#2A2933" },
     subtitle: { fontSize: 14, fontWeight: "400" as const, color: "#71727A" },
+    /** The label above a form control, and the error message below it. Shared
+     *  by `FormField`, `Dropdown` and `CheckboxGroup` so the three controls
+     *  cannot drift apart. */
+    fieldLabel: {
+      fontSize: 14,
+      fontWeight: "500" as const,
+      color: "#2A2933",
+      marginBottom: 8,
+    },
+    fieldError: { fontSize: 12, color: "#9F0712", marginTop: 4 },
+  },
+  /** The box a text input or a dropdown trigger draws — same height, border and
+   *  fill for both, so a row of mixed controls lines up. */
+  control: {
+    base: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      height: 52,
+      borderWidth: 1.5,
+      borderColor: "#E5E7EB",
+      borderRadius: 12,
+      backgroundColor: "#FAFAFA",
+      paddingHorizontal: 16,
+    },
+    error: { borderColor: "#9F0712" },
+    /** The value or placeholder shown inside the box. */
+    text: { flex: 1, fontSize: 16, color: "#2A2933" },
   },
 } as const;
 

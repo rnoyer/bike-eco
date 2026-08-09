@@ -7,10 +7,12 @@ import { resolveRegion } from "./regions";
 
 // ─── secrets / config ────────────────────────────────────────────────────────
 
-export const SMTP_HOST = defineSecret("SMTP_HOST");
-export const SMTP_PORT = defineSecret("SMTP_PORT");
-export const SMTP_USER = defineSecret("SMTP_USER");
-export const SMTP_PASS = defineSecret("SMTP_PASS");
+// Only the bundle below is imported elsewhere; the individual secrets are
+// read through `.value()` inside this module.
+const SMTP_HOST = defineSecret("SMTP_HOST");
+const SMTP_PORT = defineSecret("SMTP_PORT");
+const SMTP_USER = defineSecret("SMTP_USER");
+const SMTP_PASS = defineSecret("SMTP_PASS");
 
 export const B2C_EMAIL_SECRETS = [SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS];
 
@@ -167,47 +169,86 @@ function shell(title: string, intro: string, body: string): string {
 
 const yesNo = (v: string | null) => (v === "oui" ? "Oui" : v === "non" ? "Non" : v ?? "");
 
+// ─── sections shared by both emails ──────────────────────────────────────────
+//
+// The two emails present the same submission to different audiences: they order
+// their sections differently and address the reader differently, but the État /
+// Demande / Clés / Papiers blocks are the same questions with the same labels.
+// Defining each once is what stops a new form field reaching one email only.
+
+/** "Marque Modèle", or the caller's fallback when the vehicle is unnamed. */
+function vehicleLabel(f: B2cPayload, fallback: string): string {
+  return [f.marque, f.modele].filter(Boolean).join(" ") || fallback;
+}
+
+/** The team email's subject, also used as its heading. */
+function teamSubject(f: B2cPayload): string {
+  return `Nouvelle demande de rachat — ${f.departement} — ${vehicleLabel(f, "Véhicule")}`;
+}
+
+const etatSection = (f: B2cPayload) =>
+  section("État", [
+    ["État", f.etat],
+    ["Nature de la panne", f.naturePanne],
+  ]);
+
+/** `photoCount` is the team-only "Photos jointes" row — the customer's copy of
+ *  this section omits it, since they know what they just uploaded. */
+const demandeSection = (f: B2cPayload, photoCount?: number) =>
+  section("Demande", [
+    ["Prix souhaité", f.prix && `${f.prix} €`],
+    ["Commentaires", f.commentaires],
+    ["Reprise", f.modalite],
+    ...(photoCount === undefined
+      ? []
+      : ([["Photos jointes", String(photoCount)]] as Row[])),
+  ]);
+
+const clesSection = (f: B2cPayload) =>
+  section("Clés et télécommandes", [
+    ["Clés de contact", yesNo(f.aClesContact)],
+    ["Clé noire", f.cleNoire],
+    ["Clé marron", f.cleMarron],
+    ["Clé rouge", f.cleRouge],
+    ["Télécommande / Bip", yesNo(f.aTelecommande)],
+    ["Nb télécommandes", f.telecommande],
+  ]);
+
+const papiersSection = (f: B2cPayload) =>
+  section("Papiers", [
+    ["Carte grise", yesNo(f.carteGrise)],
+    ["Carte grise à son nom", yesNo(f.carteGriseAVotreNom)],
+    ["Contrôle technique", yesNo(f.controleTechnique)],
+    ["CT < 6 mois", yesNo(f.ctMoins6Mois)],
+    ["Résultat CT", f.resultatCT],
+    ["Certificat de non-gage", yesNo(f.certificatNonGage)],
+    ["Carnet d'entretien", yesNo(f.carnetEntretien)],
+    ["Facture d'entretien", yesNo(f.factureEntretien)],
+  ]);
+
+/** Shared tail of the vehicle block. The head differs: the customer sees one
+ *  "Véhicule" line, the team sees Marque and Modèle apart for scanning. */
+const vehicleTailRows = (f: B2cPayload): Row[] => [
+  ["Cylindrée", f.cylindree && `${f.cylindree} cc`],
+  ["Année", f.annee],
+  ["Kilométrage", f.kilometrage && `${f.kilometrage} km`],
+  ["Accessoires", f.accessoires],
+];
+
 // ─── customer recap email ────────────────────────────────────────────────────
 
 function customerHtml(f: B2cPayload): string {
-  const vehicule = [f.marque, f.modele].filter(Boolean).join(" ") || "Votre véhicule";
   const body =
     section("Votre véhicule", [
-      ["Véhicule", vehicule],
+      ["Véhicule", vehicleLabel(f, "Votre véhicule")],
       ["Électrique", yesNo(f.electrique)],
       ["Matériel", f.materiel.join(", ")],
-      ["Cylindrée", f.cylindree && `${f.cylindree} cc`],
-      ["Année", f.annee],
-      ["Kilométrage", f.kilometrage && `${f.kilometrage} km`],
-      ["Accessoires", f.accessoires],
+      ...vehicleTailRows(f),
     ]) +
-    section("État", [
-      ["État", f.etat],
-      ["Nature de la panne", f.naturePanne],
-    ]) +
-    section("Demande", [
-      ["Prix souhaité", f.prix && `${f.prix} €`],
-      ["Commentaires", f.commentaires],
-      ["Reprise", f.modalite],
-    ]) +
-    section("Clés et télécommandes", [
-      ["Clés de contact", yesNo(f.aClesContact)],
-      ["Clé noire", f.cleNoire],
-      ["Clé marron", f.cleMarron],
-      ["Clé rouge", f.cleRouge],
-      ["Télécommande / Bip", yesNo(f.aTelecommande)],
-      ["Nb télécommandes", f.telecommande],
-    ]) +
-    section("Papiers", [
-      ["Carte grise", yesNo(f.carteGrise)],
-      ["Carte grise à son nom", yesNo(f.carteGriseAVotreNom)],
-      ["Contrôle technique", yesNo(f.controleTechnique)],
-      ["CT < 6 mois", yesNo(f.ctMoins6Mois)],
-      ["Résultat CT", f.resultatCT],
-      ["Certificat de non-gage", yesNo(f.certificatNonGage)],
-      ["Carnet d'entretien", yesNo(f.carnetEntretien)],
-      ["Facture d'entretien", yesNo(f.factureEntretien)],
-    ]) +
+    etatSection(f) +
+    demandeSection(f) +
+    clesSection(f) +
+    papiersSection(f) +
     section("Vos coordonnées", [
       ["Nom", `${f.prenom} ${f.nom}`],
       ["Email", f.email],
@@ -224,47 +265,18 @@ function customerHtml(f: B2cPayload): string {
 // ─── team notification email (all fields + attachments) ──────────────────────
 
 function teamHtml(f: B2cPayload, photoCount: number): string {
-  const vehicule = [f.marque, f.modele].filter(Boolean).join(" ") || "Véhicule";
   const body =
-    section("État", [
-      ["État", f.etat],
-      ["Nature de la panne", f.naturePanne],
-    ]) +
-    section("Demande", [
-      ["Prix souhaité", f.prix && `${f.prix} €`],
-      ["Commentaires", f.commentaires],
-      ["Reprise", f.modalite],
-      ["Photos jointes", String(photoCount)],
-    ]) +
+    etatSection(f) +
+    demandeSection(f, photoCount) +
     section("Véhicule", [
       ["Électrique", yesNo(f.electrique)],
       ["Matériel", f.materiel.join(", ")],
       ["Marque", f.marque],
       ["Modèle", f.modele],
-      ["Cylindrée", f.cylindree && `${f.cylindree} cc`],
-      ["Année", f.annee],
-      ["Kilométrage", f.kilometrage && `${f.kilometrage} km`],
-      ["Accessoires", f.accessoires],
+      ...vehicleTailRows(f),
     ]) +
-    section("Clés et télécommandes", [
-      ["Clés de contact", yesNo(f.aClesContact)],
-      ["Clé noire", f.cleNoire],
-      ["Clé marron", f.cleMarron],
-      ["Clé rouge", f.cleRouge],
-      ["Télécommande / Bip", yesNo(f.aTelecommande)],
-      ["Nb télécommandes", f.telecommande],
-    ]) +
-
-    section("Papiers", [
-      ["Carte grise", yesNo(f.carteGrise)],
-      ["Carte grise à son nom", yesNo(f.carteGriseAVotreNom)],
-      ["Contrôle technique", yesNo(f.controleTechnique)],
-      ["CT < 6 mois", yesNo(f.ctMoins6Mois)],
-      ["Résultat CT", f.resultatCT],
-      ["Certificat de non-gage", yesNo(f.certificatNonGage)],
-      ["Carnet d'entretien", yesNo(f.carnetEntretien)],
-      ["Facture d'entretien", yesNo(f.factureEntretien)],
-    ]) +
+    clesSection(f) +
+    papiersSection(f) +
     section("Coordonnées", [
       ["Nom", `${f.prenom} ${f.nom}`],
       ["Email", f.email],
@@ -273,7 +285,7 @@ function teamHtml(f: B2cPayload, photoCount: number): string {
       ["Ville", f.ville],
     ]);
   return shell(
-    `Nouvelle demande de rachat — ${f.departement} — ${vehicule}`,
+    teamSubject(f),
     `${f.prenom} ${f.nom} • ${f.departement} • ${f.telephone}`,
     body
   );
@@ -289,11 +301,9 @@ export async function sendB2cEmails(
   payload: B2cPayload,
   attachments: Attachment[]
 ): Promise<void> {
-  const vehicule = [payload.marque, payload.modele].filter(Boolean).join(" ") || "Véhicule";
-
   await send(
     teamRecipient(payload.departement),
-    `Nouvelle demande de rachat — ${payload.departement} — ${vehicule}`,
+    teamSubject(payload),
     teamHtml(payload, attachments.length),
     attachments
   );
