@@ -8,6 +8,7 @@ import { afterAll, beforeAll, test } from "@jest/globals";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   setDoc,
@@ -28,6 +29,7 @@ const newDossier = (overrides: Record<string, unknown> = {}) => ({
   region: "NORTH",
   companyId: "comp_1",
   submittedBy: "user_b2b_nord",
+  updatedBy: "user_b2b_nord",
   validatedPrice: null,
   photos: [],
   thumbnailUrl: null,
@@ -138,6 +140,36 @@ test("a user cannot make themselves an admin", async () => {
   await assertFails(updateDoc(doc(db, "users/user_b2b_nord"), { isAdmin: true }));
 });
 
+// ── notificationRegion ─────────────────────────────────────────────────────
+
+test("a user sets their own notificationRegion to a real region", async () => {
+  const db = env.authenticatedContext("user_bo", boClaims).firestore();
+  await assertSucceeds(
+    updateDoc(doc(db, "users/user_bo"), { notificationRegion: "NORTH" }),
+  );
+});
+
+test("a user sets their own notificationRegion to null (Toute la France)", async () => {
+  const db = env.authenticatedContext("user_bo", boClaims).firestore();
+  await assertSucceeds(
+    updateDoc(doc(db, "users/user_bo"), { notificationRegion: null }),
+  );
+});
+
+test("a user cannot set notificationRegion to a junk string", async () => {
+  const db = env.authenticatedContext("user_bo", boClaims).firestore();
+  await assertFails(
+    updateDoc(doc(db, "users/user_bo"), { notificationRegion: "MARS" }),
+  );
+});
+
+test("a user cannot set notificationRegion to a non-string value", async () => {
+  const db = env.authenticatedContext("user_bo", boClaims).firestore();
+  await assertFails(
+    updateDoc(doc(db, "users/user_bo"), { notificationRegion: 42 }),
+  );
+});
+
 // ── dossier create ─────────────────────────────────────────────────────────
 
 test("a dealer files a dossier for their own company", async () => {
@@ -205,6 +237,9 @@ test("backoffice updates status, region and validated price", async () => {
       status: "en_cours",
       region: "SOUTH",
       validatedPrice: 4200,
+      // The tightened update rule requires the caller to stamp updatedBy on
+      // every update (see the two updatedBy-specific tests below).
+      updatedBy: "bo_1",
     }),
   );
 });
@@ -299,5 +334,96 @@ test("messages are immutable once sent", async () => {
   const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
   await assertFails(
     updateDoc(doc(db, `dossiers/dos_1/messages/${id}`), { text: "edited" }),
+  );
+});
+
+// ── updatedBy ─────────────────────────────────────────────────────────────
+
+test("a dossier cannot be created with someone else's updatedBy", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertFails(
+    addDoc(collection(db, "dossiers"), newDossier({ updatedBy: "user_bo" })),
+  );
+});
+
+test("the back office stamps updatedBy with its own uid on update", async () => {
+  const db = env.authenticatedContext("user_bo", boClaims).firestore();
+  await assertSucceeds(
+    updateDoc(doc(db, "dossiers/dos_1"), {
+      status: "en_cours",
+      region: "NORTH",
+      validatedPrice: 4200,
+      updatedBy: "user_bo",
+      updatedAt: new Date(),
+    }),
+  );
+});
+
+test("the back office cannot attribute an update to someone else", async () => {
+  const db = env.authenticatedContext("user_bo", boClaims).firestore();
+  await assertFails(
+    updateDoc(doc(db, "dossiers/dos_1"), {
+      status: "en_cours",
+      region: "NORTH",
+      validatedPrice: 4200,
+      updatedBy: "user_b2b_nord",
+      updatedAt: new Date(),
+    }),
+  );
+});
+
+// ── mutes ──────────────────────────────────────────────────────────────────
+
+test("a user writes and deletes their own mute on a dossier they can read", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  const ref = doc(db, "dossiers/dos_1/mutes/user_b2b_nord");
+  await assertSucceeds(setDoc(ref, { createdAt: new Date() }));
+  await assertSucceeds(getDoc(ref));
+  await assertSucceeds(deleteDoc(ref));
+});
+
+test("a user cannot mute a dossier on someone else's behalf", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertFails(
+    setDoc(doc(db, "dossiers/dos_1/mutes/user_mate"), { createdAt: new Date() }),
+  );
+});
+
+test("a dealer cannot mute another company's dossier", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertFails(
+    setDoc(doc(db, "dossiers/dos_2/mutes/user_b2b_nord"), {
+      createdAt: new Date(),
+    }),
+  );
+});
+
+test("a back-office user can mute any dossier, including another company's", async () => {
+  const db = env.authenticatedContext("bo_1", boClaims).firestore();
+  await assertSucceeds(
+    setDoc(doc(db, "dossiers/dos_2/mutes/bo_1"), { createdAt: new Date() }),
+  );
+});
+
+// ── push tokens ────────────────────────────────────────────────────────────
+
+test("a user writes and reads their own push token", async () => {
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  const ref = doc(db, "users/user_b2b_nord/pushTokens/device_1");
+  await assertSucceeds(
+    setDoc(ref, { token: "tok", platform: "android", updatedAt: new Date() }),
+  );
+  await assertSucceeds(getDoc(ref));
+});
+
+test("push tokens are private — even the back office cannot read them", async () => {
+  const db = env.authenticatedContext("user_bo", boClaims).firestore();
+  await assertFails(getDoc(doc(db, "users/user_b2b_nord/pushTokens/device_1")));
+  await assertFails(
+    setDoc(doc(db, "users/user_b2b_nord/pushTokens/device_2"), {
+      token: "tok",
+      platform: "ios",
+      updatedAt: new Date(),
+    }),
   );
 });

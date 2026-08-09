@@ -165,7 +165,17 @@ export async function acceptInviteCore(
     }
     uid = authUid;
   }
-  await deps.writeUser(uid, profileDoc(input, inv.email, inv.role, inv.companyId, "active", false));
+  await deps.writeUser(uid, {
+    ...profileDoc(input, inv.email, inv.role, inv.companyId, "active", false),
+    // Back-office only, and gated on the invitation's role rather than the
+    // payload: a b2b member has no région to manage, so a client sending one
+    // must not create the field on their profile. Absent/null = "Toute la
+    // France", the same reading the app gives a profile written before the
+    // field existed.
+    ...(inv.role === "backoffice"
+      ? { notificationRegion: input.notificationRegion ?? null }
+      : {}),
+  });
   await deps.setClaims(uid, { role: inv.role, companyId: inv.companyId, status: "active" });
   await deps.deleteInvitation(inv.id);
 }

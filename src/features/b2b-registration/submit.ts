@@ -18,7 +18,9 @@ export async function submitCompanyRegistration(
   await callRegisterCompany({
     method: "password",
     siret: values.siret,
-    // Optional field: omitted rather than sent empty, so the server stores null.
+    // Optional field: an empty input is cleared rather than sent as "". The SDK
+    // encodes `undefined` as an explicit null on the wire, which the callable
+    // schema accepts and stores as null.
     tva: values.tva || undefined,
     companyName: values.companyName,
     companyDepartement: values.companyDepartement,

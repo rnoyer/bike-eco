@@ -11,3 +11,10 @@ export const REGION_OPTIONS: { label: string; value: RegionChoice }[] = [
 export const toRegion = (v: RegionChoice): Region | null =>
   v === "ALL" ? null : v;
 export const fromRegion = (r: Region | null): RegionChoice => r ?? "ALL";
+
+/** The `Region` a dropdown label stands for. `null` for "Toute la France" — and
+ *  for no label at all, since an unset optional picker means the same thing. */
+export const regionFromLabel = (label: string | null): Region | null => {
+  const option = REGION_OPTIONS.find((o) => o.label === label);
+  return option ? toRegion(option.value) : null;
+};

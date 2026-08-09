@@ -1,11 +1,11 @@
 import { alertDialog } from "@/lib/ui/dialog";
 import { dash } from "@/lib/ui/format";
 import { tokens } from "@/theme/tokens";
-import { Image } from "expo-image";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, StyleSheet, Text, View } from "react-native";
 
 import mailIcon from "@/assets/images/icons/mail.svg";
 import phoneIcon from "@/assets/images/icons/phone.svg";
+import IconButton from "./IconButton";
 
 type Kind = "phone" | "email";
 
@@ -64,22 +64,11 @@ export default function InfoContactRow({
       <Text style={styles.label}>{label} :</Text>
       <Text style={styles.value}>{dash(value)}</Text>
       {url ? (
-        <Pressable
-          onPress={open}
-          hitSlop={8}
-          accessibilityRole="button"
-          // Icon-only, so without this the button is unreachable by a screen
-          // reader.
+        <IconButton
+          icon={icon}
           accessibilityLabel={a11y(value!)}
-          style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-        >
-          <Image
-            source={icon}
-            style={styles.icon}
-            tintColor={tokens.colors.primary}
-            contentFit="contain"
-          />
-        </Pressable>
+          onPress={open}
+        />
       ) : null}
     </View>
   );
@@ -91,16 +80,4 @@ const styles = StyleSheet.create({
   // Takes the slack so the button sits on the right edge, and wraps rather than
   // pushing the button out of the card.
   value: { fontSize: 14, color: tokens.colors.primary, flex: 1 },
-  // Filled with the brand green, not outlined: a hairline box around a dark
-  // glyph read as a disabled placeholder rather than the row's one action.
-  // Charcoal-on-green is the logo's own pairing, and 6.3:1.
-  button: {
-    padding: tokens.space.md,
-    borderRadius: tokens.radius.sm,
-    backgroundColor: tokens.colors.brandTint,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  pressed: { backgroundColor: tokens.colors.brandPressed },
-  icon: { width: 22, height: 22 },
 });

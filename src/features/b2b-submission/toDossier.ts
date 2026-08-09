@@ -60,6 +60,9 @@ export function toDossierPayload(
     region: regionForDepartement(company.departement),
     companyId: company.id,
     submittedBy: session.id,
+    // Set to submittedBy at creation (see the field's doc comment on Dossier);
+    // the back office becomes the writer on every subsequent management update.
+    updatedBy: session.id,
     validatedPrice: null,
     submitter: {
       nom: session.nom,

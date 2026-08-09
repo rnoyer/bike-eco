@@ -6,6 +6,7 @@ import { useDossiers } from "@/lib/data/useDossiers";
 import { useRegionFilter } from "@/lib/data/useRegionFilter";
 import type { WithId } from "@/lib/firestore/collections";
 import type { Dossier, UserRole } from "@/lib/firestore/schema";
+import { usePushRegistration } from "@/lib/notifications/usePushRegistration";
 import { tokens } from "@/theme/tokens";
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
 
@@ -22,6 +23,9 @@ export default function DashboardScreen({
   onSell,
   onOpenCompanies,
 }: Props) {
+  // Both roles land here first after signing in, so this is where the OS
+  // permission prompt gets its context.
+  usePushRegistration();
   const { region, ready } = useRegionFilter();
   const isBackoffice = role === "backoffice";
   const filter = isBackoffice ? region : undefined;

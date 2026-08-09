@@ -182,6 +182,45 @@ test("acceptInvite creates a non-admin colleague", async () => {
   expect(d.calls.users["uid_new"].isAdmin).toBe(false);
 });
 
+test("acceptInvite stores the back-office invitee's région gérée", async () => {
+  const inv = {
+    id: "inv2", email: "team@bike-eco.fr", role: "backoffice" as const, companyId: null,
+    companyName: null, tokenHash: hashInviteCode("Z9Y8X7"), expiresAt: 2_000_000,
+  };
+  const d = fakeDeps({ findInvitationByHash: async () => inv });
+  await acceptInviteCore(
+    { method: "password", code: "Z9Y8X7", nom: "N", prenom: "P", telephone: "0600000000", password: "password123", notificationRegion: "SOUTH" },
+    null, null, d,
+  );
+  expect(d.calls.users["uid_new"]).toMatchObject({ role: "backoffice", notificationRegion: "SOUTH" });
+});
+
+test("a back-office invitee who picks nothing gets an explicit null (Toute la France)", async () => {
+  const inv = {
+    id: "inv2", email: "team@bike-eco.fr", role: "backoffice" as const, companyId: null,
+    companyName: null, tokenHash: hashInviteCode("Z9Y8X7"), expiresAt: 2_000_000,
+  };
+  const d = fakeDeps({ findInvitationByHash: async () => inv });
+  await acceptInviteCore(
+    { method: "password", code: "Z9Y8X7", nom: "N", prenom: "P", telephone: "0600000000", password: "password123" },
+    null, null, d,
+  );
+  expect(d.calls.users["uid_new"].notificationRegion).toBeNull();
+});
+
+test("a b2b invitee never gets a notificationRegion, even if the payload carries one", async () => {
+  const inv = {
+    id: "inv1", email: "new@x.fr", role: "b2b" as const, companyId: "comp_1", companyName: "G",
+    tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000,
+  };
+  const d = fakeDeps({ findInvitationByHash: async () => inv });
+  await acceptInviteCore(
+    { method: "password", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000", password: "password123", notificationRegion: "NORTH" },
+    null, null, d,
+  );
+  expect(d.calls.users["uid_new"]).not.toHaveProperty("notificationRegion");
+});
+
 test("sendInvite refuses a non-admin caller, before writing or emailing anything", async () => {
   const d = fakeDeps({ getUserIsAdmin: async () => false });
   await expect(

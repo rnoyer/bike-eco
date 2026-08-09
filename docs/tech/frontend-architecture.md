@@ -33,7 +33,10 @@ contracts), `docs/tech/firestore-data-model.md` (data model).
     with an input is a plain-RN screen.)
   - Where no native universal primitive fits (chat bubbles, photo carousel, dossier card,
     landing/sign-in card), plain React Native + `StyleSheet`.
-- **Persistence:** `expo-sqlite/kv-store` (AsyncStorage-compatible) for the region filter.
+- **Persistence:** user preferences live in Firestore on `users/{uid}` (the back-office
+  "Région gérée" is `notificationRegion`, read through `useUser`'s live `onSnapshot`), not
+  on the device. `expo-sqlite/kv-store` (AsyncStorage-compatible) is left for values that
+  are genuinely device-scoped — the push `deviceId` (`lib/notifications/deviceId.ts`).
 - **Icons:** cross-platform via NativeTabs `sf=` (SF Symbols, iOS) + `md=` (Material, Android);
   no extra icon dependency.
 
@@ -74,7 +77,7 @@ src/
       chat/{ChatThread, ChatComposer}
   lib/
     data/                          # mocked data layer (swap to Firestore later)
-      fixtures, filter, region-store, useRegionFilter, useSession,
+      fixtures, filter, useRegionFilter, useSession,
       useDossiers, useDossier, useMessages, useAccount, useDossierMutations
     navigation/
       headerOptions.ts             # native Stack header from { title, back } (direct Stack children)
@@ -207,13 +210,21 @@ later milestone. Only the Zod schemas are unit-tested; step/route UI is gated by
 
 ## Region filter (back office)
 
-- Choice persisted under one kv-store key as `NORTH | SOUTH | ALL`
-  (`region-store.ts` + `useRegionFilter`). `ALL` ⇒ `null` ⇒ no filtering.
+- Choice stored on the user document as `users/{uid}.notificationRegion: Region | null`
+  (`useRegionFilter`), `null` ⇒ "Toute la France" ⇒ no filtering. Not device-local: the
+  server fans push notifications out by this same field, so a device preference would let
+  a member watch NORTH on screen while being paged about SOUTH.
 - `regionOptions.ts` holds the UI options (`Moitié Nord` / `Moitié sud` / `Toute la
-  France`) and the `toRegion`/`fromRegion` mapping between the stored value and `Region | null`.
-- The BO settings picker writes the choice; the BO dashboard reads it and passes it to
-  `useDossiers`, so all three sections filter together and the selection survives an app
-  restart.
+  France`) and the `toRegion`/`fromRegion`/`regionFromLabel` mapping between the stored
+  value and `Region | null`.
+- Seeded at account creation, not only in Paramètres: the invited-registration funnel adds
+  an optional "Région gérée" dropdown for a back-office invitation (`regionFromLabel` maps
+  the picked label to the `acceptInvite` payload), and `scripts/grant-backoffice.js` takes
+  `--region north|south|all`. Both leave `null` when nothing is chosen.
+- The BO settings picker writes it with `updateDoc`; every reader goes through `useUser`'s
+  live `onSnapshot`, so the settings picker, the dashboard's three sections and any other
+  signed-in device observe the same value without shared state or manual invalidation —
+  and the selection follows the account rather than the handset.
 
 ## Conventions
 

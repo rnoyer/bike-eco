@@ -37,14 +37,25 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
     if (!flag.startsWith("--")) continue;
-    args[flag.slice(2)] = argv[i + 1];
+    // Both spellings, and a flag left without a value records "" rather than
+    // `undefined` — that difference is what lets `readRegion` tell "not asked
+    // for" (leave the field alone) apart from "asked for, badly" (refuse).
+    const eq = flag.indexOf("=");
+    if (eq !== -1) {
+      args[flag.slice(2, eq)] = flag.slice(eq + 1);
+      continue;
+    }
+    const value = argv[i + 1];
+    args[flag.slice(2)] =
+      value === undefined || value.startsWith("--") ? "" : value;
   }
   const missing = REQUIRED.filter((k) => !args[k]);
   if (missing.length) {
     console.error(
       `Missing --${missing.join(", --")}\n\n` +
         "Usage: node grant-backoffice.js --email <email> --prenom <prénom> " +
-        "--nom <nom> --tel <téléphone> [--password <mot de passe>] [--no-admin true]",
+        "--nom <nom> --tel <téléphone> [--password <mot de passe>] [--no-admin true] " +
+        "[--region north|south|all]",
     );
     process.exit(1);
   }
@@ -58,9 +69,31 @@ function readIsAdmin(args) {
   return args["no-admin"] !== "true";
 }
 
+// `--region` sets the "région gérée" (users/{uid}.notificationRegion): it filters
+// the back-office dashboard AND scopes push fan-out, so a wrong value would page
+// the holder about the other half of the country. `all` is the explicit null
+// ("Toute la France"), which is also what the app assumes when the field is absent.
+const REGIONS = { north: "NORTH", south: "SOUTH", all: null };
+
+/** `undefined` = flag omitted → leave the field alone. The write below is a
+ *  merge, so a repair run without `--region` must not wipe a choice the holder
+ *  has since made in Paramètres → "Région gérée". */
+function readRegion(args) {
+  if (args.region === undefined) return undefined;
+  const key = args.region.toLowerCase();
+  if (!(key in REGIONS)) {
+    console.error(
+      `Invalid --region "${args.region}". Expected one of: north, south, all.`,
+    );
+    process.exit(1);
+  }
+  return REGIONS[key];
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const isAdmin = readIsAdmin(args);
+  const region = readRegion(args);
   // Generated when not supplied: the holder sets their real password from the
   // reset email, so nobody else ever knows it.
   const password = args.password || randomBytes(24).toString("base64url");
@@ -103,6 +136,7 @@ async function main() {
       email: args.email,
       telephone: args.tel,
       status: "active",
+      ...(region === undefined ? {} : { notificationRegion: region }),
       ...(exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
       updatedAt: FieldValue.serverTimestamp(),
     },
@@ -113,7 +147,12 @@ async function main() {
     `\nBack-office account ready: ${args.email} (uid ${user.uid}).\n` +
       "Next: send a password-reset email from the Firebase console, then sign " +
       "in — you should land on the back-office dashboard.\n" +
-      `Admin: ${isAdmin}.\n`,
+      `Admin: ${isAdmin}.\n` +
+      `Région gérée: ${
+        region === undefined
+          ? "unchanged (defaults to Toute la France when never set)"
+          : (region ?? "Toute la France")
+      }.\n`,
   );
 }
 

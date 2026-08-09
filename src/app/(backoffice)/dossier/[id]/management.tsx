@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet } from "react-native";
 import DossierManagementForm from "@/components/form/DossierManagementForm";
 import ScreenMessage from "@/components/ui/ScreenMessage";
 import { ScreenLoader } from "@/components/ui/Spinner";
+import { useAccount } from "@/lib/data/useAccount";
 import { useDossier } from "@/lib/data/useDossier";
 import { useDossierManagement } from "@/lib/data/useDossierManagement";
 import { alertDialog } from "@/lib/ui/dialog";
@@ -11,6 +12,7 @@ import { tokens } from "@/theme/tokens";
 export default function BackofficeDossierManagement() {
   const { id } = useGlobalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { data: session } = useAccount();
   const { data, loading, error } = useDossier(id);
   const { updateManagement, pending } = useDossierManagement({
     onError: (message) => alertDialog("Mise à jour impossible", message),
@@ -31,7 +33,8 @@ export default function BackofficeDossierManagement() {
           initialPrice={data.validatedPrice}
           busy={pending}
           onSubmit={async (region, status, price) => {
-            if (await updateManagement(id, region, status, price)) {
+            if (!session) return;
+            if (await updateManagement(id, region, status, price, session.id)) {
               router.replace("/(backoffice)/confirmation");
             }
           }}

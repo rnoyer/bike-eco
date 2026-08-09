@@ -109,7 +109,9 @@ function backofficeDeps(): BackofficeDeps {
           // The Auth user may already be gone; anything else is a real failure.
           if ((err as { code?: string })?.code !== "auth/user-not-found") throw err;
         });
-        await doc.ref.delete();
+        // Recursive, for the `pushTokens` subcollection: a plain delete leaves
+        // the device tokens behind as personal data outliving the account.
+        await db().recursiveDelete(doc.ref);
       }));
     },
     deleteInvitations: async (companyId) => {

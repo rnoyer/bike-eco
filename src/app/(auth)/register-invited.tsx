@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FormProvider } from "react-hook-form";
 
 import FormConfirmation from "@/components/form/FormConfirmation";
@@ -10,11 +10,10 @@ import {
   b2bInvitedRegistrationSchema,
   type B2bInvitedRegistrationForm,
 } from "@/features/b2b-invited-registration/schema";
-import { B2B_INVITED_REGISTRATION_STEPS } from "@/features/b2b-invited-registration/steps";
+import { invitedRegistrationSteps } from "@/features/b2b-invited-registration/steps";
 import { submitInvitedRegistration } from "@/features/b2b-invited-registration/submit";
 import { GoogleAuthProvider } from "@/features/registration/googleAuth";
 import { frenchAuthMessage } from "@/lib/auth/authErrors";
-import { callAcceptInvite } from "@/lib/data/registration";
 import { useSession } from "@/lib/data/useSession";
 import { useStepForm } from "@/lib/forms/useStepForm";
 import { alertDialog } from "@/lib/ui/dialog";
@@ -46,10 +45,19 @@ export default function RegisterInvitedScreen() {
     if (!code) router.replace("/(auth)/invite-code");
   }, [code, router]);
 
+  // The invitation's role shapes the funnel (a back-office invitee also picks
+  // their "Région gérée"), so the steps are built, not constant — memoised
+  // because `useStepForm` keys its `next` callback on the array identity.
+  const isBackoffice = role === "backoffice";
+  const steps = useMemo(
+    () => invitedRegistrationSteps(isBackoffice),
+    [isBackoffice],
+  );
+
   const { form, step, isFirst, isLast, meta, next, prev, submitting } =
     useStepForm<B2bInvitedRegistrationForm>({
       schema: b2bInvitedRegistrationSchema,
-      steps: B2B_INVITED_REGISTRATION_STEPS,
+      steps,
       defaultValues: {
         ...B2B_INVITED_REGISTRATION_DEFAULTS,
         email: email ?? "",
@@ -67,13 +75,7 @@ export default function RegisterInvitedScreen() {
           if (usedGoogle.current) {
             // Google mode: already signed in during step 1 (AccountFields); the
             // callable validates the invite + sets claims from that identity.
-            await callAcceptInvite({
-              method: "google",
-              code,
-              nom: values.nom,
-              prenom: values.prenom,
-              telephone: values.telephone,
-            });
+            await submitInvitedRegistration({ ...values, code }, "google");
             completed.current = {
               method: "google",
               email: values.email,
@@ -167,7 +169,7 @@ export default function RegisterInvitedScreen() {
             nextLabel={isLast ? "S'inscrire" : "Suivant"}
             busy={submitting}
           >
-            {B2B_INVITED_REGISTRATION_STEPS[step].render()}
+            {steps[step].render()}
           </FormLayout>
         </FormProvider>
       </GoogleAuthProvider>

@@ -42,6 +42,11 @@ type : dropdown
 
   Primary Button : "Mettre à jour", update dossier region, statut and validated price
 
+The update also writes `updatedBy` with the caller's uid, alongside `region` /
+`status` / `validatedPrice` / `updatedAt`. The status- and price-change notification
+triggers (see [`feature-push-notifications.md`](feature-push-notifications.md)) read it
+to skip the back-office member who made the change.
+
 ## Loading and error states
 
 While the dossier read is in flight the page shows a centered spinner. If the

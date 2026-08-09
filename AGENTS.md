@@ -49,6 +49,13 @@ feature. Keep a spec in sync in the same change that alters its feature.
   - `component-dossiers-section.md` — titled list of dossiers (per-section fetch, loading + empty states).
   - `component-card-colleague.md` — colleague card (title/subtitle/optional action button).
 
+- **Feature specs** (`docs/specs/`) — cross-cutting behaviour that spans the client, the
+  functions and the data model rather than one page or component. Read the matching file
+  before changing any part of the feature:
+  - `feature-push-notifications.md` — the five push events, who receives each,
+    the exact French copy, and the notification data model. Read before touching
+    `functions/src/notifications/` or `src/lib/notifications/`.
+
 - **Runbooks** (`docs/ops/`) — operational procedures against the live project:
   - `first-backoffice-account.md` — creating a `backoffice` account on `bike-eco-43a84`
     with `scripts/grant-backoffice.js` (Auth user + custom claims + `users/{uid}` doc).

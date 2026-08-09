@@ -28,8 +28,21 @@ service cloud.firestore {
       // are server-set and must never be client-writable.
       allow update: if request.auth.uid == uid
         && !request.resource.data.diff(resource.data).affectedKeys()
-             .hasAny(['role', 'companyId', 'status', 'isAdmin', 'createdAt']);
+             .hasAny(['role', 'companyId', 'status', 'isAdmin', 'createdAt'])
+        // A key allow-list alone lets any value through a permitted key (see
+        // the dossier update rule below for the same reasoning) — without
+        // this, a member could write "MARS" or a number into notificationRegion
+        // and silently break their own notification fan-out.
+        && (!('notificationRegion' in request.resource.data)
+            || request.resource.data.notificationRegion == null
+            || request.resource.data.notificationRegion in ['NORTH', 'SOUTH']);
       allow create, delete: if false;
+
+      // Device handles. Owner-only: nothing in the app reads another user's
+      // tokens, and the back office has no reason to enumerate devices.
+      match /pushTokens/{deviceId} {
+        allow read, write: if request.auth.uid == uid;
+      }
     }
 
     match /companies/{companyId} {
@@ -50,6 +63,7 @@ service cloud.firestore {
       allow create: if isActive() && claims().role == 'b2b'
         && request.resource.data.companyId == myCompany()
         && request.resource.data.submittedBy == request.auth.uid
+        && request.resource.data.updatedBy == request.auth.uid
         && request.resource.data.status == 'a_traiter'
         && request.resource.data.validatedPrice == null
         && request.resource.data.region in ['NORTH', 'SOUTH'];
@@ -62,7 +76,11 @@ service cloud.firestore {
       // still passing the key check — a classic create/update inconsistency.
       allow update: if isBackoffice()
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['status', 'region', 'validatedPrice', 'updatedAt'])
+             .hasOnly(['status', 'region', 'validatedPrice', 'updatedAt', 'updatedBy'])
+        // The notification trigger has no auth context and reads `updatedBy`
+        // to skip the person who made the change. Pinning it to the caller is
+        // what stops a member silencing their own change for everyone else.
+        && request.resource.data.updatedBy == request.auth.uid
         && request.resource.data.status in ['a_traiter', 'en_cours', 'cloture']
         && request.resource.data.region in ['NORTH', 'SOUTH']
         && (request.resource.data.validatedPrice == null
@@ -74,6 +92,14 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read: if isDossierParticipant(dossierId);
         allow create, update, delete: if false;
+      }
+
+      // Presence = muted. Only ever your own row, and only on a dossier you
+      // can already read — the document's *existence* is the whole payload,
+      // so its fields are not validated.
+      match /mutes/{uid} {
+        allow read, write: if request.auth.uid == uid
+          && isDossierParticipant(dossierId);
       }
     }
 

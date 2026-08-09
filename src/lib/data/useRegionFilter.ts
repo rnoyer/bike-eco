@@ -1,96 +1,72 @@
-import { useCallback, useSyncExternalStore } from "react";
+import { updateDoc } from "firebase/firestore";
+import { useCallback, useState } from "react";
+
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { userDoc } from "@/lib/firestore/collections";
 import type { Region } from "@/lib/firestore/schema";
-import { loadRegion, saveRegion } from "./region-store";
+import { useUser } from "./useUser";
 
 /**
- * Shared region-filter store. The back-office Settings picker and the dashboard
- * render in sibling NativeTabs that stay mounted together, so the selection must
- * be a single source of truth — a plain per-component `useState` would let the
- * dashboard keep a stale value after the picker changes it. We back the hook
- * with module-level state + `useSyncExternalStore` so every consumer re-renders
- * on any change, while still persisting to (and hydrating from) kv-store.
+ * The back-office member's "région gérée".
+ *
+ * Backed by `users/{uid}.notificationRegion`, not device storage: the server
+ * fans notifications out by this value, so a device-local preference would let
+ * a member watch NORTH on screen while being paged about SOUTH. The write is a
+ * plain `updateDoc` the owner-update rule already allows.
+ *
+ * The read path is `useUser`'s live `onSnapshot`, not the AuthProvider
+ * session — the session is a snapshot taken at sign-in that only refreshes on
+ * sign-in/out or an explicit `refreshSession()`, neither of which happens
+ * after a `setRegion` call. The back-office Settings picker and the dashboard
+ * render in sibling NativeTabs that stay mounted together, so a session-backed
+ * read would let the dashboard keep querying the old région after Settings
+ * changed it — exactly the single-source-of-truth requirement the previous
+ * module-level kv-store version existed to satisfy. The live listener gives
+ * every mounted consumer (this device's sibling tabs, and any other device)
+ * the same document, so they all observe the same change without any
+ * shared/global state or manual invalidation.
+ *
+ * The pick is held in local state as well as written, because a Firestore
+ * write only reaches this hook after the write commits and the listener's
+ * snapshot round-trips. Without the override the dropdown would sit on the
+ * old value for that round-trip. The override is cleared whenever the
+ * snapshot catches up.
  */
-let region: Region | null = null;
-let ready = false;
-let hydrated = false;
-/** Set once the user picks a région themselves. A pick made *inside* the
- *  hydration window has to win: otherwise the stored value lands a moment later
- *  and silently overwrites the choice the user just made. */
-let userSet = false;
-const listeners = new Set<() => void>();
-
-function emit() {
-  for (const listener of listeners) listener();
-}
-
-/** kv-store is local, so this only fires if the native side is wedged — but
- *  `ready` now gates whole screens, so an unsettled read would spin the
- *  back-office dashboard forever with no error state and no retry. Falling
- *  through to "Toute la France" is the right failure. */
-const HYDRATION_TIMEOUT_MS = 3000;
-
-function hydrateOnce() {
-  if (hydrated) return;
-  hydrated = true;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  Promise.race([
-    loadRegion(),
-    new Promise<never>((_, reject) => {
-      timer = setTimeout(
-        () => reject(new Error("hydration timed out")),
-        HYDRATION_TIMEOUT_MS,
-      );
-    }),
-  ])
-    .then((r) => {
-      if (!userSet) region = r;
-      ready = true;
-      emit();
-    })
-    .catch(() => {
-      ready = true;
-      emit();
-    })
-    // Without this the pending timer keeps the process alive for its full
-    // duration after hydration has already resolved.
-    .finally(() => {
-      if (timer) clearTimeout(timer);
-    });
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  hydrateOnce();
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-const getRegion = () => region;
-const getReady = () => ready;
-
-/** Test-only: reset the module store so each test hydrates from a fresh mock. */
-export function __resetRegionFilterForTests() {
-  region = null;
-  ready = false;
-  hydrated = false;
-  userSet = false;
-  listeners.clear();
-}
-
 export function useRegionFilter() {
-  const regionValue = useSyncExternalStore(subscribe, getRegion, getRegion);
-  const readyValue = useSyncExternalStore(subscribe, getReady, getReady);
+  const { session, loading: sessionLoading } = useAuth();
+  const { data: profile, loading: profileLoading } = useUser(
+    session?.id ?? "",
+  );
+  const persisted = profile?.notificationRegion ?? null;
+  // `undefined` = no local pick outstanding. `null` is a real value here
+  // ("Toute la France"), so it cannot double as the empty case.
+  const [pending, setPending] = useState<Region | null | undefined>(undefined);
 
-  const setRegion = useCallback((r: Region | null) => {
-    userSet = true;
-    region = r;
-    emit();
-    void saveRegion(r).catch(console.error);
-  }, []);
+  // The live snapshot has caught up with the pick — stop overriding, so a
+  // change made on another device (or another sibling tab) is no longer
+  // masked by this one's stale choice.
+  if (pending !== undefined && pending === persisted) setPending(undefined);
 
-  // `ready` is false until the persisted région has hydrated. Consumers whose
-  // query is région-scoped must hold their loading state until then, or their
-  // first render answers a "Toute la France" query and visibly re-queries.
-  return { region: regionValue, setRegion, ready: readyValue };
+  const setRegion = useCallback(
+    (r: Region | null) => {
+      if (!session) return;
+      setPending(r);
+      // Fire-and-forget: the dropdown has already moved, and a failed write is
+      // a preference that did not stick — not an error worth a modal.
+      void updateDoc(userDoc(session.id), { notificationRegion: r }).catch(
+        console.error,
+      );
+    },
+    [session],
+  );
+
+  return {
+    region: pending !== undefined ? pending : persisted,
+    setRegion,
+    // `useUser` never resolves `loading` for an empty uid (there's nothing to
+    // listen to), so once the session itself is settled, a signed-out visitor
+    // must not stay stuck waiting on a profile that will never arrive — only
+    // gate on the profile listener when there is a session to read one for.
+    ready: !sessionLoading && (!session || !profileLoading),
+  };
 }

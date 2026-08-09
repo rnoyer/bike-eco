@@ -8,6 +8,9 @@ import { b2cPayloadSchema } from "./payload";
 
 export { sendMessage } from "./messages";
 export {
+  onCompanyCreated, onDossierCreated, onDossierMessageCreated, onDossierUpdated
+} from "./notifications";
+export {
   acceptInvite,
   approveCompany, deleteCompany, registerCompany, resolveInvite, sendInvite
 } from "./registration";

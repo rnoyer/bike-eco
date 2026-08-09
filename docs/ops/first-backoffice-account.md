@@ -52,6 +52,17 @@ node grant-backoffice.js \
 `--password` est optionnel : sans lui le script génère un mot de passe aléatoire et l'affiche —
 il n'est que temporaire, l'étape 4 le remplace.
 
+`--region north|south|all` est optionnel : il pose la **région gérée**
+(`users/{uid}.notificationRegion`), qui filtre le dashboard back-office **et** cadre les
+notifications push (voir `docs/specs/feature-push-notifications.md`). `all` = "Toute la
+France" (`null`), ce qui est aussi le comportement quand le champ n'a jamais été posé.
+
+Il est volontairement **absent de la commande ci-dessus**, qui sert aussi de commande de
+réparation ([Dépannage](#dépannage)) : sans le drapeau le script ne touche pas au champ,
+donc une réparation n'efface pas un choix fait entre-temps depuis Paramètres → "Région
+gérée". Ne l'ajouter que pour poser (ou corriger) délibérément la région ; le titulaire
+peut de toute façon la changer lui-même depuis cet écran.
+
 Le compte créé est **administrateur** (`isAdmin: true`) par défaut — c'est l'équipe
 fondatrice, et seul un administrateur peut gérer (ou supprimer) les membres de l'équipe
 depuis « Mes collaborateurs ». `--no-admin true` crée à la place un simple membre.
@@ -122,7 +133,8 @@ Si le `403` persiste :
 
 ### Écran de connexion en boucle après le script
 
-Le document `users/{uid}` manque ou est mal formé — relancer le script, puis se
+Le document `users/{uid}` manque ou est mal formé — relancer le script **tel quel** (sans
+`--region` : la réparation ne doit pas réécrire la région gérée), puis se
 déconnecter/reconnecter (les claims ne sont relues qu'au rafraîchissement du token).
 
 ## Gestion courante
@@ -144,6 +156,7 @@ voir [Comptes back-office suivants](#comptes-back-office-suivants) ci-dessous.
 Ce script ne sert qu'au **premier** compte back-office. Une fois qu'il existe et
 qu'il est administrateur, les membres suivants s'invitent depuis l'application :
 Paramètres → "Inviter un membre de l'équipe Bike-eco". L'invité reçoit un code à
-usage unique valable 1 heure, suit le parcours d'inscription invité, et obtient un
+usage unique valable 1 heure, suit le parcours d'inscription invité — où il choisit
+sa **région gérée** (champ optionnel, "Toute la France" par défaut) —, et obtient un
 compte back-office **actif** et **non administrateur** — à promouvoir ensuite depuis
 la page Collaborateur si besoin.
