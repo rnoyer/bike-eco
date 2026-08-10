@@ -319,7 +319,9 @@ Create `src/components/ui/InfoCollapsibleRow.tsx`:
 ```tsx
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Animated, {
+// No default `Animated` import here: the `Animated.View` lives inside
+// `IconButton`. This file only produces the style that drives it.
+import {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -412,18 +414,6 @@ const styles = StyleSheet.create({
   // Inset so the sub-rows read as children of the header, not peers of it.
   detail: { paddingLeft: tokens.space.md },
 });
-```
-
-Note `Animated` is imported for its side-effect-free `useAnimatedStyle` /
-`useSharedValue` / `withTiming` here; the `Animated` default import itself is unused in
-this file, so **drop it from the import** if lint flags it:
-
-```tsx
-import {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
 ```
 
 - [ ] **Step 3: Run the gate**
