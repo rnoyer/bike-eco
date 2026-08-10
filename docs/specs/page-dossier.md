@@ -57,7 +57,7 @@ Eleven parts, identical for both roles — nothing in this card branches on role
 8. Repliable : clés de contact → clé noire, clé marron, clé rouge.
 9. Repliable : télécommande ou Bip → nombre.
 10. Comments : commentaires véhicule.
-11. Comments : commentaires complémentaire.
+11. Comments : commentaires complémentaires.
 
 Every repliable part ([`InfoCollapsibleRow`](component-info-card.md)) is collapsible only
 when its own answer is "oui" — the funnel leaves each sub-answer `null` otherwise, so

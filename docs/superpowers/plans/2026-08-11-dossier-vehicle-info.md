@@ -26,17 +26,17 @@
 
 ## File Structure
 
-| File | Responsibility | Task |
-|---|---|---|
-| `src/constants/vehicle.ts` | Gains named `MATERIEL_BATTERIE` / `MATERIEL_CHARGEUR` that `MATERIEL_OPTIONS` is built from | 1 |
-| `src/lib/ui/format.ts` | Gains `isOui`, `ouiNon`, `hasMateriel` — the app's one display-formatting module | 1 |
-| `src/lib/ui/__tests__/format.test.ts` | Unit tests for the three helpers | 1 |
-| `src/components/ui/IconButton.tsx` | Gains optional `iconStyle` on an `Animated.View` wrapping its glyph | 2 |
-| `src/components/ui/InfoCollapsibleRow.tsx` | **New.** The fourth `InfoCard` part | 2 |
-| `assets/images/icons/chevron-right.svg` | Currently untracked; committed | 2 |
-| `docs/specs/component-info-card.md` | Documents the new part | 2 |
-| `src/components/screens/DossierDetailScreen.tsx` | `VehicleCard` rebuilt to eleven parts | 3 |
-| `docs/specs/page-dossier.md` | Documents the new section | 3 |
+| File                                             | Responsibility                                                                              | Task |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------- | ---- |
+| `src/constants/vehicle.ts`                       | Gains named `MATERIEL_BATTERIE` / `MATERIEL_CHARGEUR` that `MATERIEL_OPTIONS` is built from | 1    |
+| `src/lib/ui/format.ts`                           | Gains `isOui`, `ouiNon`, `hasMateriel` — the app's one display-formatting module            | 1    |
+| `src/lib/ui/__tests__/format.test.ts`            | Unit tests for the three helpers                                                            | 1    |
+| `src/components/ui/IconButton.tsx`               | Gains optional `iconStyle` on an `Animated.View` wrapping its glyph                         | 2    |
+| `src/components/ui/InfoCollapsibleRow.tsx`       | **New.** The fourth `InfoCard` part                                                         | 2    |
+| `assets/images/icons/chevron-right.svg`          | Currently untracked; committed                                                              | 2    |
+| `docs/specs/component-info-card.md`              | Documents the new part                                                                      | 2    |
+| `src/components/screens/DossierDetailScreen.tsx` | `VehicleCard` rebuilt to eleven parts                                                       | 3    |
+| `docs/specs/page-dossier.md`                     | Documents the new section                                                                   | 3    |
 
 ---
 
@@ -48,11 +48,13 @@ has to own that translation, and it belongs in `format.ts` with the rest of the 
 formatting, not inline in a screen.
 
 **Files:**
+
 - Modify: `src/constants/vehicle.ts` (last line, `MATERIEL_OPTIONS`)
 - Modify: `src/lib/ui/format.ts` (append; `dash` is at the top of the file)
 - Test: `src/lib/ui/__tests__/format.test.ts` (append)
 
 **Interfaces:**
+
 - Consumes: nothing from earlier tasks.
 - Produces, all imported by Task 3 from `@/lib/ui/format`:
   - `isOui(v: string | null | undefined): boolean`
@@ -66,7 +68,7 @@ Append to `src/lib/ui/__tests__/format.test.ts`:
 
 ```ts
 describe("isOui", () => {
-  test("is true only for the stored \"oui\"", () => {
+  test('is true only for the stored "oui"', () => {
     expect(isOui("oui")).toBe(true);
     expect(isOui("non")).toBe(false);
   });
@@ -89,9 +91,9 @@ describe("hasMateriel", () => {
   test("matches the funnel's own checkbox labels", () => {
     expect(hasMateriel([MATERIEL_BATTERIE], "batterie")).toBe(true);
     expect(hasMateriel([MATERIEL_BATTERIE], "chargeur")).toBe(false);
-    expect(hasMateriel([MATERIEL_BATTERIE, MATERIEL_CHARGEUR], "chargeur")).toBe(
-      true,
-    );
+    expect(
+      hasMateriel([MATERIEL_BATTERIE, MATERIEL_CHARGEUR], "chargeur"),
+    ).toBe(true);
   });
 
   test("treats an absent list as nothing checked", () => {
@@ -228,12 +230,14 @@ The fourth `InfoCard` part. Collapsed it is visually an `InfoContactRow`; expand
 so a rotation can be driven onto its glyph.
 
 **Files:**
+
 - Modify: `src/components/ui/IconButton.tsx`
 - Create: `src/components/ui/InfoCollapsibleRow.tsx`
 - Commit (currently untracked): `assets/images/icons/chevron-right.svg`
 - Modify: `docs/specs/component-info-card.md`
 
 **Interfaces:**
+
 - Consumes: `InfoRow` (`[label: string, value: string]`) and the default export from `@/components/ui/InfoRows`; the default export from `@/components/ui/IconButton`.
 - Produces, for Task 3 — the default export of `@/components/ui/InfoCollapsibleRow`:
 
@@ -255,7 +259,12 @@ header comment; add the `iconStyle` prop and wrap the `Image`:
 
 ```tsx
 import { Image } from "expo-image";
-import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import Animated from "react-native-reanimated";
 
 import { tokens } from "@/theme/tokens";
@@ -439,10 +448,14 @@ line from "Three kinds, all in `src/components/ui/`." to "Four kinds, all in
 <InfoCollapsibleRow
   label="Contrôle technique"
   value={papers.controleTechnique}
-  rows={isOui(papers.controleTechnique) ? [
-    ["Moins de 6 mois", dash(papers.ctMoins6Mois)],
-    ["Résultat obtenu", dash(papers.resultatCT)],
-  ] : null}
+  rows={
+    isOui(papers.controleTechnique)
+      ? [
+          ["Moins de 6 mois", dash(papers.ctMoins6Mois)],
+          ["Résultat obtenu", dash(papers.resultatCT)],
+        ]
+      : null
+  }
 />
 ```
 
@@ -498,10 +511,12 @@ Replace `VehicleCard`'s four parts with eleven. Both roles get the identical car
 `VehicleCard` is already shared and nothing here branches on role.
 
 **Files:**
+
 - Modify: `src/components/screens/DossierDetailScreen.tsx` — the `VehicleCard` function only
 - Modify: `docs/specs/page-dossier.md`
 
 **Interfaces:**
+
 - Consumes: `InfoCollapsibleRow` (Task 2), and `isOui` / `ouiNon` / `hasMateriel` (Task 1) from `@/lib/ui/format`.
 - Produces: nothing consumed by a later task.
 
@@ -538,8 +553,14 @@ function VehicleCard({ dossier }: { dossier: Dossier }) {
             ? [
                 // `materiel` stores the funnel's checkbox labels; `hasMateriel`
                 // owns that coupling so this stays readable.
-                ["Batterie présente", ouiNon(hasMateriel(vehicle.materiel, "batterie"))],
-                ["Chargeur présent", ouiNon(hasMateriel(vehicle.materiel, "chargeur"))],
+                [
+                  "Batterie présente",
+                  ouiNon(hasMateriel(vehicle.materiel, "batterie")),
+                ],
+                [
+                  "Chargeur présent",
+                  ouiNon(hasMateriel(vehicle.materiel, "chargeur")),
+                ],
               ]
             : null
         }
@@ -606,7 +627,7 @@ function VehicleCard({ dossier }: { dossier: Dossier }) {
           is labelled for what the field actually contains. */}
       <InfoComment label="Commentaires véhicule" text={vehicle.accessoires} />
       <InfoComment
-        label="Commentaires complémentaire"
+        label="Commentaires complémentaires"
         text={pricing.commentaires}
       />
     </InfoCard>
@@ -684,7 +705,7 @@ Eleven parts, identical for both roles — nothing in this card branches on role
 8. Repliable : clés de contact → clé noire, clé marron, clé rouge.
 9. Repliable : télécommande ou Bip → nombre.
 10. Comments : commentaires véhicule.
-11. Comments : commentaires complémentaire.
+11. Comments : commentaires complémentaires.
 
 Every repliable part ([`InfoCollapsibleRow`](component-info-card.md)) is collapsible only
 when its own answer is "oui" — the funnel leaves each sub-answer `null` otherwise, so

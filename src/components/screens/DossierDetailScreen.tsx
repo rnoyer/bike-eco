@@ -150,7 +150,7 @@ function VehicleCard({ dossier }: { dossier: Dossier }) {
           is labelled for what the field actually contains. */}
       <InfoComment label="Commentaires véhicule" text={vehicle.accessoires} />
       <InfoComment
-        label="Commentaires complémentaire"
+        label="Commentaires complémentaires"
         text={pricing.commentaires}
       />
     </InfoCard>

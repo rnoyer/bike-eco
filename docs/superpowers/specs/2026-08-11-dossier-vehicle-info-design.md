@@ -47,8 +47,14 @@ Lives at `src/components/ui/InfoCollapsibleRow.tsx`.
   rows={
     isOui(vehicle.electrique)
       ? [
-          ["Batterie présente", ouiNon(hasMateriel(vehicle.materiel, "batterie"))],
-          ["Chargeur présent", ouiNon(hasMateriel(vehicle.materiel, "chargeur"))],
+          [
+            "Batterie présente",
+            ouiNon(hasMateriel(vehicle.materiel, "batterie")),
+          ],
+          [
+            "Chargeur présent",
+            ouiNon(hasMateriel(vehicle.materiel, "chargeur")),
+          ],
         ]
       : null
   }
@@ -131,19 +137,19 @@ An icon-only button is unreachable by a screen reader without a label, so:
 Eleven parts, a hairline between each. **Identical for both roles** — `VehicleCard` is
 already shared by b2b and back-office, and nothing here branches on role.
 
-| # | Part | Rows | Source |
-|---|---|---|---|
-| 1 | `InfoRows` | Prix souhaité · Marque · Modèle et Cylindrée · Année · Kilométrage | `pricing.prix`, `vehicle.*` |
-| 2 | **Collapsible** | Électrique → Batterie présente · Chargeur présent | `vehicle.electrique`, `vehicle.materiel` |
-| 3 | `InfoRows` | État | `condition.etat` |
-| 4 | `InfoComment` | Nature de la panne — **only when `etat === "En Panne"`** | `condition.naturePanne` |
-| 5 | **Collapsible** | Carte grise → À votre nom | `papers.carteGrise`, `papers.carteGriseAVotreNom` |
-| 6 | **Collapsible** | Contrôle technique → Moins de 6 mois · Résultat obtenu | `papers.controleTechnique`, `papers.ctMoins6Mois`, `papers.resultatCT` |
-| 7 | `InfoRows` | Certificat de non-gage · Carnet d'entretien · Facture d'entretien | `papers.*` |
-| 8 | **Collapsible** | Clés de contact → Clé noire · Clé marron · Clé rouge | `keys.aClesContact`, `keys.cleNoire/cleMarron/cleRouge` |
-| 9 | **Collapsible** | Télécommande ou Bip → Nombre | `keys.aTelecommande`, `keys.telecommande` |
-| 10 | `InfoComment` | Commentaires véhicule | `vehicle.accessoires` |
-| 11 | `InfoComment` | Commentaires complémentaire | `pricing.commentaires` |
+| #   | Part            | Rows                                                               | Source                                                                 |
+| --- | --------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| 1   | `InfoRows`      | Prix souhaité · Marque · Modèle et Cylindrée · Année · Kilométrage | `pricing.prix`, `vehicle.*`                                            |
+| 2   | **Collapsible** | Électrique → Batterie présente · Chargeur présent                  | `vehicle.electrique`, `vehicle.materiel`                               |
+| 3   | `InfoRows`      | État                                                               | `condition.etat`                                                       |
+| 4   | `InfoComment`   | Nature de la panne — **only when `etat === "En Panne"`**           | `condition.naturePanne`                                                |
+| 5   | **Collapsible** | Carte grise → À votre nom                                          | `papers.carteGrise`, `papers.carteGriseAVotreNom`                      |
+| 6   | **Collapsible** | Contrôle technique → Moins de 6 mois · Résultat obtenu             | `papers.controleTechnique`, `papers.ctMoins6Mois`, `papers.resultatCT` |
+| 7   | `InfoRows`      | Certificat de non-gage · Carnet d'entretien · Facture d'entretien  | `papers.*`                                                             |
+| 8   | **Collapsible** | Clés de contact → Clé noire · Clé marron · Clé rouge               | `keys.aClesContact`, `keys.cleNoire/cleMarron/cleRouge`                |
+| 9   | **Collapsible** | Télécommande ou Bip → Nombre                                       | `keys.aTelecommande`, `keys.telecommande`                              |
+| 10  | `InfoComment`   | Commentaires véhicule                                              | `vehicle.accessoires`                                                  |
+| 11  | `InfoComment`   | Commentaires complémentaires                                       | `pricing.commentaires`                                                 |
 
 Details that are easy to get wrong:
 
