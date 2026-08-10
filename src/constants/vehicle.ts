@@ -10,4 +10,10 @@ export const ETAT_OPTIONS = [
   "Accidenté",
 ];
 export const RESULTAT_CT_OPTIONS = ["Favorable", "Défavorable"];
-export const MATERIEL_OPTIONS = ["J'ai la batterie", "J'ai le chargeur"];
+
+// Named individually because the dossier page reads them back out of
+// `vehicle.materiel` — the funnel stores the checkbox *label*, so both sides
+// have to agree on one string rather than keep a copy each.
+export const MATERIEL_BATTERIE = "J'ai la batterie";
+export const MATERIEL_CHARGEUR = "J'ai le chargeur";
+export const MATERIEL_OPTIONS = [MATERIEL_BATTERIE, MATERIEL_CHARGEUR];

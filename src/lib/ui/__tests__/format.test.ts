@@ -1,10 +1,15 @@
 import { describe, expect, test } from "@jest/globals";
 import type { Timestamp } from "firebase/firestore";
 
+import { MATERIEL_BATTERIE, MATERIEL_CHARGEUR } from "@/constants/vehicle";
+
 import {
   dash,
   euros,
+  hasMateriel,
+  isOui,
   kilometres,
+  ouiNon,
   regionLabel,
   statusLabel,
   submittedAt,
@@ -100,5 +105,41 @@ describe("viewerStatus", () => {
     expect(viewerStatus("a_traiter", "backoffice")).toBe("a_traiter");
     expect(viewerStatus("en_cours", "backoffice")).toBe("en_cours");
     expect(viewerStatus("cloture", "backoffice")).toBe("cloture");
+  });
+});
+
+describe("isOui", () => {
+  test("is true only for the stored \"oui\"", () => {
+    expect(isOui("oui")).toBe(true);
+    expect(isOui("non")).toBe(false);
+  });
+
+  test("is false for an unanswered field", () => {
+    expect(isOui(null)).toBe(false);
+    expect(isOui(undefined)).toBe(false);
+    expect(isOui("")).toBe(false);
+  });
+});
+
+describe("ouiNon", () => {
+  test("renders a derived boolean in the stored vocabulary", () => {
+    expect(ouiNon(true)).toBe("oui");
+    expect(ouiNon(false)).toBe("non");
+  });
+});
+
+describe("hasMateriel", () => {
+  test("matches the funnel's own checkbox labels", () => {
+    expect(hasMateriel([MATERIEL_BATTERIE], "batterie")).toBe(true);
+    expect(hasMateriel([MATERIEL_BATTERIE], "chargeur")).toBe(false);
+    expect(hasMateriel([MATERIEL_BATTERIE, MATERIEL_CHARGEUR], "chargeur")).toBe(
+      true,
+    );
+  });
+
+  test("treats an absent list as nothing checked", () => {
+    expect(hasMateriel([], "batterie")).toBe(false);
+    expect(hasMateriel(null, "batterie")).toBe(false);
+    expect(hasMateriel(undefined, "chargeur")).toBe(false);
   });
 });
