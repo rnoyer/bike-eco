@@ -1,5 +1,10 @@
 import { Image } from "expo-image";
-import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import Animated, { type AnimatedStyle } from "react-native-reanimated";
 
 import { tokens } from "@/theme/tokens";
@@ -64,11 +69,9 @@ const styles = StyleSheet.create({
   button: {
     padding: tokens.space.md,
     borderRadius: tokens.radius.sm,
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 1,
-    borderColor: tokens.colors.brand,
+    backgroundColor: tokens.colors.rowAction,
   },
-  pressed: { backgroundColor: tokens.colors.brandTint },
+  pressed: { backgroundColor: tokens.colors.rowActionPressed },
   disabled: { opacity: 0.5 },
   icon: { width: 22, height: 22 },
 });

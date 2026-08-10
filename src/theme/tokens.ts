@@ -19,6 +19,8 @@ export const tokens = {
     disabled: "#C1C1C6", // also the text-input placeholder colour
     surfaceAlt: "#FAFAFA", // input / media-button fill
     surface: "#FFFFFF",
+    rowAction: "#BFBDCF",
+    rowActionPressed: "#8F8CAC",
     // Semantic feedback colours — single source for errors/success across the app.
     danger: "#9F0712",
     success: "#16A34A",
