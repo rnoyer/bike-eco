@@ -90,9 +90,14 @@ The shared `IconButton` (`src/components/ui/IconButton.tsx`) with
 precisely so the contact rows and the dossier bell cannot drift apart, and a third
 treatment would defeat it.
 
-This needs one addition to `IconButton`: an optional `iconStyle?: StyleProp<ImageStyle>`,
-with its glyph becoming `Animated.createAnimatedComponent(Image)` so a Reanimated style
-can drive it. Existing callers pass nothing and are unaffected.
+This needs one addition to `IconButton`: an optional `iconStyle?: StyleProp<ViewStyle>`,
+applied to an `Animated.View` (Reanimated) wrapping its glyph. Existing callers pass
+nothing and are unaffected.
+
+**The style goes on a wrapper `View`, not on the `Image`.** `expo-image`'s `Image` is not
+an Animated component, so a Reanimated style cannot be applied to it directly —
+`ZoomableImage` already documents this and wraps its image the same way. Do not reach for
+`Animated.createAnimatedComponent(Image)`.
 
 ### Animation
 
@@ -117,7 +122,9 @@ An icon-only button is unreachable by a screen reader without a label, so:
 
 - `accessibilityLabel`: `"Afficher le détail : {label}"` when collapsed,
   `"Masquer le détail : {label}"` when expanded.
-- `accessibilityState={{ expanded }}` on the button.
+- `accessibilityState={{ expanded }}` on the button. That state belongs on the `Pressable`
+  `IconButton` owns, so `IconButton` takes an optional `expanded?: boolean` alongside
+  `iconStyle` rather than having it passed in from outside.
 
 ## The rebuilt "Informations véhicule"
 
@@ -163,8 +170,11 @@ gated by `tsc` + lint (`docs/tech/verification.md`):
   vocabulary as every stored `OuiNon`, so "Batterie présente" reads like its neighbours.
 - `hasMateriel(materiel: string[], item: "batterie" | "chargeur"): boolean` — membership
   in `vehicle.materiel`, whose stored values are the checkbox labels themselves
-  (`MATERIEL_OPTIONS = ["J'ai la batterie", "J'ai le chargeur"]`, `src/constants/vehicle.ts:13`).
+  (`MATERIEL_OPTIONS = ["J'ai la batterie", "J'ai le chargeur"]`, `src/constants/vehicle.ts`).
   The helper owns that coupling so the screen never string-matches French copy inline.
+  `src/constants/vehicle.ts` gains named `MATERIEL_BATTERIE` / `MATERIEL_CHARGEUR`
+  constants that `MATERIEL_OPTIONS` is then built from, so the two sides reference one
+  string rather than two copies of it.
 - `isOui(value: string | null | undefined): boolean` — the `v === "oui"` guard the five
   collapsibles use to decide whether they have anything to reveal.
 
