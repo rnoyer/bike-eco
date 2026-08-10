@@ -45,15 +45,32 @@ Read from the live dossier snapshot, so a back-office update on
 
 ### "Informations véhicule"
 
-Four parts :
+Eleven parts, identical for both roles — nothing in this card branches on role.
 
-1. Liste d'information : marque, modèle et cylindrée, année, kilométrage, électrique.
-2. Comments : accessoires.
-3. Liste d'information : état, carte grise, contrôle technique, prix souhaité.
-4. Comments : commentaires.
+1. Liste d'information : prix souhaité, marque, modèle et cylindrée, année, kilométrage.
+2. Repliable : électrique → batterie présente, chargeur présent.
+3. Liste d'information : état.
+4. Comments : nature de la panne — **only when l'état est "En Panne"**.
+5. Repliable : carte grise → à votre nom.
+6. Repliable : contrôle technique → moins de 6 mois, résultat obtenu.
+7. Liste d'information : certificat de non-gage, carnet d'entretien, facture d'entretien.
+8. Repliable : clés de contact → clé noire, clé marron, clé rouge.
+9. Repliable : télécommande ou Bip → nombre.
+10. Comments : commentaires véhicule.
+11. Comments : commentaires complémentaire.
+
+Every repliable part ([`InfoCollapsibleRow`](component-info-card.md)) is collapsible only
+when its own answer is "oui" — the funnel leaves each sub-answer `null` otherwise, so
+there would be nothing to reveal. A "non" or "—" answer renders as a plain row with no
+button, keeping its own hairlines so the card's shape is the same for every dossier.
 
 "Modèle et Cylindrée" is a single row, mirroring the B2B submission form — which is the
 only source of dossiers — where both are one field (`vehicle.modele`).
+
+"Commentaires véhicule" is `vehicle.accessoires`, which holds the funnel's step-2
+free-text "Commentaires (Ex. État de la moto)". The B2B funnel collects no accessories,
+so the row is labelled for what the field actually contains; there is no "Accessoires"
+row.
 
 ### "Informations vendeur"
 
