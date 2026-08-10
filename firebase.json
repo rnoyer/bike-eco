@@ -25,6 +25,10 @@
   "storage": {
     "rules": "storage.rules"
   },
+  "react-native": {
+    "messaging_android_notification_channel_id": "default",
+    "messaging_android_notification_color": "@color/notification_icon_color"
+  },
   "emulators": {
     "auth": {
       "port": 9099

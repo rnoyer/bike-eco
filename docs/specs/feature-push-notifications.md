@@ -95,6 +95,19 @@ const moto = (v: DossierVehicle) =>
 
 ## Gotchas
 
+- **`firebase.json` must repeat the Android channel and colour, or the app will not
+  build.** Running both libraries means both declare the same two FCM `<meta-data>` keys.
+  The `expo-notifications` config plugin writes
+  `com.google.firebase.messaging.default_notification_channel_id` = `default` and
+  `..._notification_color` = `@color/notification_icon_color` into the app manifest from
+  its `defaultChannel`/`color` options in `app.json`; RNFB's own library manifest declares
+  the same two names, filled from Gradle placeholders that it resolves out of the
+  `react-native` block of the root `firebase.json` — falling back to `""` and
+  `@color/white` when that block is missing. Two different values for one `meta-data`
+  name is a hard manifest-merger error (`processDebugMainManifest`), not a warning. So
+  `messaging_android_notification_channel_id` and `messaging_android_notification_color`
+  in `firebase.json` must mirror the `app.json` plugin options exactly; identical values
+  merge cleanly. Change one, change the other.
 - Every trigger must pass `database: "bike-eco-db"` — a trigger declared without it binds
   to `(default)` and silently never fires.
 - Triggers run `retry: false` — a duplicate push is worse than a missed one, and a

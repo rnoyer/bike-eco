@@ -71,6 +71,14 @@ eas build --platform ios
 
 ### ANDROID
 
+#### Check build will be okay
+
+```bash
+npx expo-doctor@latest
+npx expo prebuild --platform android --clean
+cd android && ./gradlew :app:processReleaseMainManifest
+```
+
 ```bash
 # Production Build:
 eas build --platform android
