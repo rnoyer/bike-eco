@@ -1,4 +1,10 @@
-import type { DossierStatus, Region, UserRole } from "@/lib/firestore/schema";
+import { MATERIEL_BATTERIE, MATERIEL_CHARGEUR } from "@/constants/vehicle";
+import type {
+  DossierStatus,
+  OuiNon,
+  Region,
+  UserRole,
+} from "@/lib/firestore/schema";
 import type { Timestamp } from "firebase/firestore";
 
 /** "—" for an absent value. Never print "null" or leave a row blank. */
@@ -77,3 +83,31 @@ export const viewerStatus = (
   role: UserRole,
 ): DossierStatus =>
   role === "b2b" && status === "a_traiter" ? "en_cours" : status;
+
+/**
+ * `true` only for the stored `"oui"`.
+ *
+ * The dossier's collapsible rows use it to decide whether they have anything to
+ * reveal: every sub-answer (`carteGriseAVotreNom`, the key counts, the CT
+ * result…) is left `null` by the funnel unless the parent answer was "oui".
+ */
+export const isOui = (v: string | null | undefined): boolean => v === "oui";
+
+/** Renders a *derived* boolean in the same vocabulary as a stored `OuiNon`, so
+ *  "Batterie présente : oui" reads like the rows around it. */
+export const ouiNon = (v: boolean): OuiNon => (v ? "oui" : "non");
+
+/**
+ * Whether the seller checked "J'ai la batterie" / "J'ai le chargeur".
+ *
+ * `vehicle.materiel` stores the funnel's checkbox *labels*, so the coupling to
+ * that French copy lives here rather than in the screen — the dossier asks for
+ * `"batterie"` and renders its own "Batterie présente" label.
+ */
+export const hasMateriel = (
+  materiel: string[] | null | undefined,
+  item: "batterie" | "chargeur",
+): boolean =>
+  (materiel ?? []).includes(
+    item === "batterie" ? MATERIEL_BATTERIE : MATERIEL_CHARGEUR,
+  );

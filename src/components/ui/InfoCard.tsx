@@ -12,7 +12,7 @@ interface Props {
   /** Shown, muted, when the card has no parts. Omit for cards whose content is
    *  always present. */
   emptyMessage?: string;
-  /** One or more parts — `InfoRows`, `InfoContactRow`, `InfoComment`. */
+  /** One or more parts — `InfoRows`, `InfoContactRow`, `InfoComment`, `InfoCollapsibleRow`. */
   children?: ReactNode;
 }
 

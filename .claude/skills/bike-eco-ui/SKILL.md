@@ -77,13 +77,14 @@ entry — `StatusBadge` reads it directly.
 
 **Every read-only label/value block in the app is an `InfoCard`** — a dark title bar over
 a white body split into parts by hairline dividers. Full contract in
-`docs/specs/component-info-card.md`. Three part components:
+`docs/specs/component-info-card.md`. Four part components:
 
-| Part             | For                                                                  |
-| ---------------- | -------------------------------------------------------------------- |
-| `InfoRows`       | `rows: [label, value][]` — the liste d'information                   |
-| `InfoContactRow` | `kind="phone" \| "email"` — value plus a right-aligned action button |
-| `InfoComment`    | Free text (commentaires, accessoires) full-width below its label     |
+| Part                  | For                                                                          |
+| --------------------- | ----------------------------------------------------------------------------- |
+| `InfoRows`            | `rows: [label, value][]` — the liste d'information                          |
+| `InfoContactRow`      | `kind="phone" \| "email"` — value plus a right-aligned action button        |
+| `InfoComment`         | Free text (commentaires, accessoires) full-width below its label            |
+| `InfoCollapsibleRow`  | `{ label, value, rows?: InfoRow[] \| null }` — a label/value row that reveals more `InfoRows` behind a chevron button. `rows` is the switch: `null`/`undefined`/`[]` renders a plain row with no button, so "only when the answer is oui" lives at the call site |
 
 Rules that must survive any restyle:
 
@@ -115,6 +116,13 @@ The only place that formats a value for display, and the app's one unit-tested U
   they cannot disagree. `DossierDetailScreen` is the worked example.
 - **Optional rows are omitted by the caller**, not rendered empty. There are no
   `showX` props on the parts.
+- **`isOui(v)`**, **`ouiNon(bool)`**, **`hasMateriel(materiel, "batterie" | "chargeur")`** —
+  the trio behind `InfoCollapsibleRow`'s gating. `isOui` is `true` only for the stored
+  `"oui"`; the dossier's collapsible rows gate on it because the funnel leaves every
+  sub-answer `null` unless the parent answer was "oui". `ouiNon` renders a _derived_
+  boolean in the same vocabulary as a stored `OuiNon`. `hasMateriel` checks membership in
+  `vehicle.materiel`, which stores the funnel's checkbox _labels_ — the helper owns that
+  coupling so a screen never string-matches French copy inline.
 
 ### Tappable phone / email
 
@@ -144,7 +152,7 @@ address as plain `InfoRows`.
 
 | Component                                                            | Notes                                                                                                                                                                                                                                                                                                                                  |
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ui/InfoCard` + `ui/InfoRows`, `ui/InfoContactRow`, `ui/InfoComment` | Every read-only label/value block — see "Info cards" above                                                                                                                                                                                                                                                                             |
+| `ui/InfoCard` + `ui/InfoRows`, `ui/InfoContactRow`, `ui/InfoComment`, `ui/InfoCollapsibleRow` | Every read-only label/value block — see "Info cards" above                                                                                                                                                                                                                                                                             |
 | `ui/Section`                                                         | Title + `loading` + `error` + `emptyMessage` + children, for **button groups and card lists**. Owns all four states in that precedence — don't reimplement them per screen                                                                                                                                                             |
 | `ui/Spinner`                                                         | The **only** spinner. Never render a bare `ActivityIndicator`: this owns the token colour. `ScreenLoader` (named export) is the centred whole-screen/region variant                                                                                                                                                                    |
 | `ui/ScreenMessage`                                                   | Screen-level counterpart to `Section`'s error/empty states: `message` + `tone` (`muted` \| `danger`)                                                                                                                                                                                                                                   |
