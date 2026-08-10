@@ -64,6 +64,7 @@
         }
       ],
       "expo-web-browser",
+      "./plugins/withRNFirebaseDisableSPM",
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
       [
