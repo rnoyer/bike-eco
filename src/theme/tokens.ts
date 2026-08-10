@@ -22,6 +22,7 @@ export const tokens = {
     // Semantic feedback colours — single source for errors/success across the app.
     danger: "#9F0712",
     success: "#16A34A",
+    info: "#D7D2F4",
   },
   // Per-status badge palette (background + foreground), keyed by DossierStatus.
   status: {

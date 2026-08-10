@@ -51,11 +51,11 @@ const styles = StyleSheet.create({
   button: {
     padding: tokens.space.md,
     borderRadius: tokens.radius.sm,
-    backgroundColor: tokens.colors.brandTint,
+    backgroundColor: tokens.colors.surface,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: tokens.colors.brand,
   },
-  pressed: { backgroundColor: tokens.colors.brandPressed },
+  pressed: { backgroundColor: tokens.colors.brandTint },
   disabled: { opacity: 0.5 },
   icon: { width: 22, height: 22 },
 });

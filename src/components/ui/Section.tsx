@@ -45,5 +45,5 @@ const styles = StyleSheet.create({
   spinner: { paddingVertical: tokens.space.lg },
   empty: { fontSize: 14, color: tokens.colors.muted },
   error: { fontSize: 14, color: tokens.colors.danger },
-  list: { gap: tokens.space.xl },
+  list: { gap: tokens.space.md },
 });

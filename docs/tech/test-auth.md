@@ -55,3 +55,23 @@ npm --prefix functions run build
 npx firebase-tools@latest deploy --only functions
 
 ```
+
+## Build projects
+
+### IOS
+
+```bash
+# Development build:
+npx eas-cli@latest build -p ios --profile development
+
+# Production build:
+eas build --platform ios
+
+```
+
+### ANDROID
+
+```bash
+# Production Build:
+eas build --platform android
+```
