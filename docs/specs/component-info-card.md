@@ -41,7 +41,7 @@ button groups ("Actions sur mon compte", "Gérer ce collaborateur") and lists of
 
 ## Parts
 
-Three kinds, all in `src/components/ui/`.
+Four kinds, all in `src/components/ui/`.
 
 ### `InfoRows` — liste d'information
 
@@ -110,6 +110,40 @@ label on one line.
 
 Empty text renders `"—"` under the label, keeping the part's height stable.
 
+### `InfoCollapsibleRow` — ligne repliable
+
+```tsx
+<InfoCollapsibleRow
+  label="Contrôle technique"
+  value={papers.controleTechnique}
+  rows={isOui(papers.controleTechnique) ? [
+    ["Moins de 6 mois", dash(papers.ctMoins6Mois)],
+    ["Résultat obtenu", dash(papers.resultatCT)],
+  ] : null}
+/>
+```
+
+A label/value row that reveals further `InfoRows` beneath it when tapped. Collapsed it is
+deliberately indistinguishable from an `InfoContactRow`: the same row shape, the same
+right-aligned `IconButton`, and the card's hairlines above and below it.
+
+- **`rows` is the switch.** `null`, `undefined` or `[]` renders the row with no button and
+  nothing to expand — the "non / —" state. The condition therefore lives at the call site,
+  next to the fields it is about, rather than inside the component. Every caller on
+  [page-dossier](page-dossier.md) gates on `isOui`, because the funnel leaves every
+  sub-answer `null` unless the parent answer was "oui".
+- The button is the shared `IconButton` with `assets/images/icons/chevron-right.svg`,
+  carrying `accessibilityState={{ expanded }}` and a French label that flips between
+  "Afficher le détail : {label}" and "Masquer le détail : {label}".
+- **The glyph rotates 90°, not the button** — `withTiming` over 150ms
+  (`react-native-reanimated`). Rotating the button would swing its `radius.sm` corners
+  through the transition. The style sits on an `Animated.View` inside `IconButton`
+  (its `iconStyle` prop) because `expo-image`'s `Image` is not an Animated component.
+- The reveal itself is a mount/unmount, not an animated height: the sub-row list is short
+  and variable-length, so animating it buys jank rather than clarity.
+- Sub-rows render through `InfoRows`, inset `space.md` from the left so they read as
+  children of the header.
+
 ## Callers
 
 | Screen | Card | Parts |
@@ -117,7 +151,7 @@ Empty text renders `"—"` under the label, keeping the part's height stable.
 | [My account](page-my-account.md) | "Mes informations personnelles" | Nom · Prénom · Email · Téléphone |
 | My account (B2B only) | "Informations {entreprise}" | SIRET · N° TVA · Département · Ville |
 | [Dossier](page-dossier.md) | "Informations Dossier" | Date de soumission · Statut · Prix validé · Région |
-| Dossier | "Informations véhicule" | rows · Accessoires · rows · Commentaires |
+| Dossier | "Informations véhicule" | 11 parts — see [page-dossier.md](page-dossier.md) |
 | Dossier | "Informations vendeur" | rows · Téléphone · Email |
 | [Company](page-company.md) | "Information Entreprise" | Entreprise · SIRET · N° TVA · Département · Ville · Région |
 | [Colleague](page-colleague.md) | "Information collaborateur" / "Informations vendeur" | Nom · Prénom · Rôle · Téléphone · Email |
