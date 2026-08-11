@@ -1,4 +1,4 @@
-import { RegError, type CallerClaims } from "../errors";
+import { assertBackoffice, RegError, type CallerClaims } from "../errors";
 
 export interface BackofficeDeps {
   getCompany(id: string): Promise<{ name: string; status: string } | null>;
@@ -11,12 +11,6 @@ export interface BackofficeDeps {
   deleteUsers(companyId: string): Promise<void>;
   deleteInvitations(companyId: string): Promise<void>;
   deleteCompany(id: string): Promise<void>;
-}
-
-function assertBackoffice(caller: CallerClaims): void {
-  if (caller.role !== "backoffice" || caller.status !== "active") {
-    throw new RegError("permission-denied", "Action réservée à l'équipe Bike-eco.");
-  }
 }
 
 export async function approveCompanyCore(
