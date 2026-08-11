@@ -16,10 +16,10 @@ Back-office only for now. B2B users see no button; the callable rejects them.
 1. Back-office user taps `M'envoyer par email` on `/(backoffice)/dossier/{id}`.
 2. The button spins while the client calls `sendDossierRecap` with `{ dossierId }`.
 3. The function re-reads the dossier from Firestore, resolves the caller's own
-   email, renders the HTML, sends it, and returns `{ email }`.
+   email, renders the HTML, sends it, and acknowledges.
 4. The client redirects to the back-office confirmation screen —
-   "Récapitulatif envoyé à {email}" — which auto-redirects back to the dossier
-   after 1500 ms.
+   "Récapitulatif envoyé à votre adresse email" — which auto-redirects back to
+   the dossier after 1500 ms.
 
 The client sends nothing but the dossier id. Every value in the email is read
 server-side under the function's own credentials, and the recipient is derived
@@ -39,17 +39,17 @@ Mirrors `functions/src/users/`: schema, dependency-injected core, thin wiring.
   3. `deps.getUserEmail(caller.uid)` → missing/empty →
      `RegError("failed-precondition", "Aucune adresse email n'est associée à votre compte.")`.
   4. `deps.sendMail({ to, subject, html })` with the rendered document.
-  5. returns `{ email }`.
+
+  Returns nothing — `authedCall`'s `respond` turns that into the `{ ok: true }`
+  acknowledgement the client's `call()` expects. The address never leaves the
+  server: the confirmation screen says "votre adresse email" rather than naming
+  a mailbox, so there is nothing for the callable to hand back.
 - `render.ts` — `recapSubject(dossier)` and `recapHtml(dossier)`. Pure functions
   over the dossier document; no I/O, no Firebase imports.
 - `index.ts` — builds the real deps (admin SDK reads, `sendHtmlMail`) and
   exports `sendDossierRecap = authedCall(recapSchema, …, { secrets: B2C_EMAIL_SECRETS })`.
 
 Re-exported from `functions/src/index.ts` alongside the other callables.
-
-The core returns the address it sent to rather than letting the client read its
-own profile: the confirmation screen then names the mailbox the mail actually
-went to, not the one the client believes it has.
 
 ### Email plumbing
 
@@ -141,7 +141,7 @@ No photos and no photo links. The recap is text.
 
 ### `src/lib/data/useDossierRecapEmail.ts`
 
-A `useAsyncAction` wrapper over `call<{ dossierId: string }, { email: string }>("sendDossierRecap", …)`,
+A `useAsyncAction` wrapper over `call<{ dossierId: string }, { ok: true }>("sendDossierRecap", …)`,
 exposing `{ sendRecap, pending }` — the same shape as `useDossierManagement`.
 Errors already arrive in French from `frenchError`.
 
@@ -156,7 +156,7 @@ below the Dossier card:
 
 `loading`, not `disabled` — a network round-trip should read as working, not
 unavailable. On failure, `alertDialog("Envoi impossible", message)`, as the
-management screen does. On success, redirect with the returned address.
+management screen does. On success, redirect to the confirmation screen.
 
 The B2B screen renders no button at all, so the back-office-only rule is
 enforced in two places: the UI never offers it, and the callable refuses it.
@@ -171,7 +171,7 @@ keeps working untouched.
 The recap flow navigates with:
 
 - `title`: `Récapitulatif envoyé`
-- `message`: `Récapitulatif envoyé à {email}`
+- `message`: `Récapitulatif envoyé à votre adresse email`
 - `redirectTo`: `/(backoffice)/dossier/{id}`
 
 and the existing 1500 ms delay.
@@ -193,7 +193,7 @@ clean up, and the user can simply press the button again.
 
 - `functions/src/dossierEmail/core.test.ts` — fake deps: a B2B caller is
   rejected without any send; a missing dossier is rejected; the happy path
-  sends to the caller's own address and returns it.
+  sends to the caller's own address.
 - `functions/src/dossierEmail/render.test.ts` — the subject carries company and
   vehicle; the three section titles are present; a conditional row appears only
   when its parent answer is oui; an absent field produces no row.
