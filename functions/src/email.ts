@@ -94,6 +94,22 @@ export async function sendMail(opts: { to: string; subject: string; text: string
   });
 }
 
+/** Reusable HTML sender for non-B2C flows (the back-office dossier recap).
+ *  Same pooled transport, same From, same dev override as `sendMail`. */
+export async function sendHtmlMail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<void> {
+  const { transport } = getTransport();
+  await transport.sendMail({
+    from: fromAddress(),
+    to: DEV_EMAIL_OVERRIDE ? DEV_EMAIL : opts.to,
+    subject: opts.subject,
+    html: opts.html,
+  });
+}
+
 export interface Attachment {
   filename: string;
   content: Buffer;
