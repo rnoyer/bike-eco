@@ -66,10 +66,25 @@ only `sendMail` (plain text) and `sendB2cEmails`. Two targeted changes:
 
 ### Formatting on the server
 
-`functions/` is a separate package and cannot import `src/lib/ui/format.ts`, so
-`render.ts` carries its own small set of formatters: dash-for-absent, `euros`,
-`kilometres`, oui/non, the dossier status labels, the région labels, and the
-submission date.
+`functions/` is a separate package and cannot import `src/lib/ui/format.ts`.
+A server-side copy of some of those formatters already exists in
+`functions/src/notifications/labels.ts` (`STATUS_LABELS`, `euros`,
+`viewerStatus`, the shared enums). Rather than start a third copy, that file is
+promoted to `functions/src/labels.ts` — a sibling of `regions.ts` and
+`email.ts`, which is what it already is in spirit — and extended with the rest
+of what the recap needs: `kilometres`, `ouiNon`, `REGION_LABELS`,
+`hasMateriel`, and `submittedAt`. The notification modules keep working through
+an import-path update; nothing about their behaviour changes.
+
+Note that no formatter dashes an absent value here, unlike the app's `dash()`.
+`rowsHtml` drops a row whose value is empty, and "—" is not empty — so a
+dashing formatter would print every unanswered field instead of dropping it.
+Absent values reach the row list as `null`. A `0` is not absent: zero keys of a
+colour is an answer, and its row stays.
+
+Oui/non answers render capitalised (`Oui` / `Non`), as the B2C emails already
+do via `yesNo`. The app screen prints the stored lowercase value, but the email
+follows the email template.
 
 Dates render with `timeZone: "Europe/Paris"`. Cloud Functions run in UTC, so
 without it a dossier submitted at 00:30 Paris time would be dated the previous
