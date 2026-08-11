@@ -31,19 +31,26 @@ fails, it shows the mapped French error instead.
 
 ## Scrolling
 
-The thread is oldest-first, so the latest message is at the bottom — and that is
-where the page opens, without animation: arriving from a notification must land
-on the message that was announced, not above it.
+The thread is oldest-first, so the latest message is at the bottom, and **the
+view is always there.** One rule, no exceptions:
 
-After that the view follows new messages down, with one exception each way:
+- **Opening "Messages" scrolls to the latest message**, without animation —
+  arriving from a notification must land on the message that was announced, not
+  above it. This holds on every _return_ to the tab, not only the first: the tab
+  screens stay mounted, so coming back from "Dossier" re-pins the view wherever
+  the user had left it. Re-tapping "Messages" while already on it is not a
+  return and does nothing.
+- **A message scrolls to itself as it arrives**, whether it came from the other
+  party or is the user's own send.
 
-- **A user who has scrolled up to read history is never moved.** An arriving
-  message stays out of sight until they come back to the bottom themselves.
-- **Their own send always wins.** Sending scrolls to the bottom whatever they
-  were reading — the bubble is theirs, and they just created it.
+The view also re-pins whenever the thread's frame changes. The case that matters
+is the keyboard opening, so the last message never slides behind the composer at
+the moment it is being answered — but dismissing the keyboard and rotating the
+device land at the bottom too.
 
-The view also re-pins to the bottom when the keyboard opens, so the last message
-never slides behind the composer at the moment it is being answered.
+Nothing tracks whether the user had scrolled up to read history: on a thread
+between one dealer and the back office, being carried to the newest message is
+what they came for.
 
 ## Sending
 
