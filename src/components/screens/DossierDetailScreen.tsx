@@ -1,3 +1,5 @@
+import { useRouter } from "expo-router";
+import Button from "@/components/ui/Button";
 import DossierMuteButton from "@/components/ui/DossierMuteButton";
 import InfoCard from "@/components/ui/InfoCard";
 import InfoCollapsibleRow from "@/components/ui/InfoCollapsibleRow";
@@ -9,7 +11,9 @@ import ScreenMessage from "@/components/ui/ScreenMessage";
 import SectionWrapper from "@/components/ui/SectionWrapper";
 import { ScreenLoader } from "@/components/ui/Spinner";
 import { useDossier } from "@/lib/data/useDossier";
+import { useDossierRecapEmail } from "@/lib/data/useDossierRecapEmail";
 import type { Dossier, DossierStatus, UserRole } from "@/lib/firestore/schema";
+import { alertDialog } from "@/lib/ui/dialog";
 import {
   dash,
   euros,
@@ -177,6 +181,40 @@ function SellerCard({ dossier }: { dossier: Dossier }) {
   );
 }
 
+/**
+ * Back-office only: mail myself this dossier.
+ *
+ * `loading`, not `disabled` — a network round-trip reads as working, not as
+ * unavailable. The confirmation names no mailbox because the callable does not
+ * return one: it always sends to the caller's own address.
+ */
+function RecapEmailButton({ id }: { id: string }) {
+  const router = useRouter();
+  const { sendRecap, pending } = useDossierRecapEmail({
+    onError: (message) => alertDialog("Envoi impossible", message),
+  });
+
+  return (
+    <Button
+      label="M'envoyer par email"
+      loading={pending}
+      onPress={() => {
+        void sendRecap(id).then((result) => {
+          if (!result) return;
+          router.replace({
+            pathname: "/(backoffice)/confirmation",
+            params: {
+              title: "Récapitulatif envoyé",
+              message: "Récapitulatif envoyé à votre adresse email",
+              redirectTo: `/(backoffice)/dossier/${id}`,
+            },
+          });
+        });
+      }}
+    />
+  );
+}
+
 function LoadedDossier({
   id,
   dossier,
@@ -206,7 +244,10 @@ function LoadedDossier({
         <VehicleCard dossier={dossier} />
         <SellerCard dossier={dossier} />
         {role === "backoffice" ? (
-          <DossierCard dossier={dossier} status={status} />
+          <>
+            <DossierCard dossier={dossier} status={status} />
+            <RecapEmailButton id={id} />
+          </>
         ) : null}
       </SectionWrapper>
     </>
