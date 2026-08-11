@@ -17,3 +17,21 @@ const MESSAGES: Record<string, string> = {
 export function mapDataError(code: string): string {
   return MESSAGES[code] ?? "Une erreur est survenue. Veuillez réessayer.";
 }
+
+/**
+ * Codes meaning "this document is simply no longer reachable" — it was deleted,
+ * or access to it was revoked — as opposed to something having gone wrong.
+ *
+ * Deleting a dossier denies its subdocument listeners rather than emptying
+ * them: the rules authorize `mutes` and `messages` by reaching through the
+ * dossier document (`get(dossiers/$(id)).data.companyId`), and on an absent
+ * document that dereferences null and fails rule evaluation. So every b2b
+ * listener open on a dossier the back office deletes ends in `permission-denied`
+ * by design. That is an expected end of life for a subscription, not a fault to
+ * report.
+ */
+const EXPECTED_LOSS = new Set(["permission-denied", "not-found"]);
+
+export function isExpectedAccessLoss(code: string): boolean {
+  return EXPECTED_LOSS.has(code);
+}

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useAccount } from "@/lib/data/useAccount";
 import { dossierMuteDoc } from "@/lib/firestore/collections";
+import { isExpectedAccessLoss } from "./dataErrors";
 
 /**
  * Whether this user has muted a dossier's notifications.
@@ -33,7 +34,16 @@ export function useDossierMute(dossierId: string) {
       dossierMuteDoc(dossierId, uid),
       (snap) => setResolved({ key: currentKey, muted: snap.exists() }),
       (error) => {
-        console.error("Mute listener failed", error);
+        // A deleted dossier terminates this listener with `permission-denied`
+        // rather than emptying it (the mutes rule reaches through the dossier
+        // document), and that is the ordinary way this subscription ends. Only
+        // shout about codes that mean something actually went wrong: on web a
+        // bare console.error is what LogBox turns into a red error overlay, so
+        // the back office deleting a dossier used to throw one in the face of
+        // every dealer with that dossier open.
+        if (!isExpectedAccessLoss(error.code)) {
+          console.error("Mute listener failed", error);
+        }
         setResolved({ key: currentKey, muted: false });
       },
     );
@@ -50,7 +60,14 @@ export function useDossierMute(dossierId: string) {
     const write = next
       ? setDoc(ref, { createdAt: serverTimestamp() })
       : deleteDoc(ref);
-    void write.catch(console.error);
+    // Same reasoning as the listener above: tapping the bell just as the
+    // dossier is deleted fails with `permission-denied`, which is the write
+    // losing a race it was never going to win, not a fault.
+    void write.catch((error: { code?: string }) => {
+      if (!isExpectedAccessLoss(error?.code ?? "")) {
+        console.error("Mute write failed", error);
+      }
+    });
   }, [uid, dossierId, muted, ready]);
 
   return { muted, toggle, ready };
