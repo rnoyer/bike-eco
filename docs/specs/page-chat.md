@@ -29,6 +29,29 @@ While the thread is loading, the page shows a centered spinner — never a blank
 view, which would be indistinguishable from an empty conversation. If the read
 fails, it shows the mapped French error instead.
 
+## Scrolling
+
+The thread is oldest-first, so the latest message is at the bottom, and **the
+view is always there.** One rule, no exceptions:
+
+- **Opening "Messages" scrolls to the latest message**, without animation —
+  arriving from a notification must land on the message that was announced, not
+  above it. This holds on every _return_ to the tab, not only the first: the tab
+  screens stay mounted, so coming back from "Dossier" re-pins the view wherever
+  the user had left it. Re-tapping "Messages" while already on it is not a
+  return and does nothing.
+- **A message scrolls to itself as it arrives**, whether it came from the other
+  party or is the user's own send.
+
+The view also re-pins whenever the thread's frame changes. The case that matters
+is the keyboard opening, so the last message never slides behind the composer at
+the moment it is being answered — but dismissing the keyboard and rotating the
+device land at the bottom too.
+
+Nothing tracks whether the user had scrolled up to read history: on a thread
+between one dealer and the back office, being carried to the newest message is
+what they came for.
+
 ## Sending
 
 Sends go through the `sendMessage` Cloud callable: the client uploads any

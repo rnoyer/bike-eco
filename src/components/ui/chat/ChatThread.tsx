@@ -8,7 +8,8 @@ import { storageUrl } from "@/lib/storage/displayUrl";
 import { alertDialog } from "@/lib/ui/dialog";
 import { tokens } from "@/theme/tokens";
 import { Image } from "expo-image";
-import { useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useRef, useState } from "react";
 import {
   Linking,
   Pressable,
@@ -158,12 +159,53 @@ export default function ChatThread({
 }) {
   const [viewerUri, setViewerUri] = useState<string | null>(null);
 
+  // A `ScrollView` opens at offset 0 and stays there. The thread is oldest-first
+  // (`useMessages` orders by `createdAt`), so without this the screen opens on
+  // the *oldest* messages and every new bubble lands below the fold — which is
+  // what made a notification tap look like it had dropped the user above the
+  // composer.
+  //
+  // One rule, no exceptions: the view is always at the latest message. Nothing
+  // tracks whether the user had scrolled up — an arriving message, their own
+  // send and a return to the tab all pull the thread back down.
+  const scrollRef = useRef<ScrollView>(null);
+  // The first scroll must not animate: the user asked for this thread, and
+  // watching it fly past its history is not an arrival, it is a glitch.
+  const arrivedRef = useRef(false);
+
+  function stickToBottom() {
+    scrollRef.current?.scrollToEnd({ animated: arrivedRef.current });
+    arrivedRef.current = true;
+  }
+
+  // Coming back to "Messages" re-pins to the bottom. The tab screens stay
+  // mounted, so neither the content size nor the layout changes on the way back
+  // — without this the user returns to wherever they had scrolled to, which is
+  // the one place the latest message may not be.
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollToEnd({ animated: false });
+    }, []),
+  );
+
   return (
     <>
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        // Fires on the first layout and on every message, arriving or their
+        // own. Not on an image loading: `styles.thumb` is a fixed 160 × 160, so
+        // a thumbnail resolving leaves the content height untouched.
+        onContentSizeChange={stickToBottom}
+        // Content unchanged, frame changed. The case that earns this handler is
+        // the keyboard opening under `KeyboardAvoidingView`, which would slide
+        // the last bubble behind the composer exactly as it is being answered.
+        // It is deliberately not narrowed to that case: it fires on any frame
+        // change — dismissing the keyboard, rotating — and each of those re-pins
+        // to the bottom too, which is the rule above, not an exception to it.
+        onLayout={stickToBottom}
       >
         {messages.map((m) => {
           const mine = m.senderId === currentUserId;

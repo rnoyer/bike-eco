@@ -220,6 +220,30 @@ Two rules, both learned from the chat composer being buried under the keyboard:
   `@react-navigation/elements`) and the header is taller on notched devices.
   `DossierChatScreen` is the worked example.
 
+## A chat thread has to be scrolled, deliberately
+
+A `ScrollView` opens at offset 0 and stays there. The thread is oldest-first, so
+`ChatThread` shipped once showing the *oldest* messages with every new bubble landing
+below the fold — which read as "the notification dropped me above the composer". The
+rule is deliberately unconditional: **the view is always at the latest message.** Three
+handlers own it, and all three are load-bearing:
+
+- `onContentSizeChange` — first layout and every new message, incoming or the user's
+  own. *Not* an image loading: the thumbnail is a fixed 160 × 160, so it grows nothing;
+- `onLayout` — content unchanged, frame changed. The case it is there for is the keyboard
+  opening under `KeyboardAvoidingView`, which would otherwise slide the last bubble behind
+  the composer — but it is left unnarrowed, so dismissing the keyboard and rotating re-pin
+  as well;
+- `useFocusEffect` — every *return* to the tab. Neither of the other two fires then: the
+  tab screens stay mounted, so the view would otherwise still be wherever the user
+  scrolled to last time. It is a focus transition, so re-tapping an already-focused
+  "Messages" does nothing.
+
+Nothing tracks whether the user had scrolled up — an earlier version gated all of this
+on an `isNearBottom` helper so history-reading was never interrupted, and it was dropped
+on purpose. The first scroll does not animate — flying past the history is a glitch, not
+an arrival — and neither does a re-focus, for the same reason.
+
 A bottom bar that pads itself with `insets.bottom` must drop that inset while the
 keyboard is open (`Keyboard.addListener("keyboardDidShow"/"keyboardDidHide")`) — the
 keyboard already covers the home indicator, so keeping it leaves a dead band.
