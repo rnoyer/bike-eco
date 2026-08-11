@@ -424,6 +424,16 @@ test("a dealer cannot mute another company's dossier", async () => {
   );
 });
 
+test("a dealer's own mute is denied once the dossier is deleted", async () => {
+  // `isDossierParticipant` reaches through `get(dossiers/$(id)).data.companyId`,
+  // which on an absent document dereferences null and fails rule evaluation.
+  // So deleting a dossier does not merely empty a dealer's mute listener — it
+  // terminates it with `permission-denied`, which is why the listener's error
+  // path has to treat that code as an expected loss rather than a failure.
+  const db = env.authenticatedContext("user_b2b_nord", b2bClaims).firestore();
+  await assertFails(getDoc(doc(db, "dossiers/dos_gone/mutes/user_b2b_nord")));
+});
+
 test("a back-office user can mute any dossier, including another company's", async () => {
   const db = env.authenticatedContext("bo_1", boClaims).firestore();
   await assertSucceeds(
