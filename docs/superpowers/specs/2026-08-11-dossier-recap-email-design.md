@@ -1,7 +1,7 @@
 # Dossier recap email — design
 
 **Date:** 2026-08-11
-**Status:** approved, not yet implemented
+**Status:** implemented
 
 ## Goal
 
@@ -32,7 +32,7 @@ dossier to somebody else, or mail themselves a dossier they doctored.
 
 Mirrors `functions/src/users/`: schema, dependency-injected core, thin wiring.
 
-- `schemas.ts` — `dossierRecapSchema = z.object({ dossierId: z.string().min(1) })`.
+- `schemas.ts` — `dossierRecapSchema = z.object({ dossierId: z.string().trim().min(1).regex(/^[A-Za-z0-9_-]+$/) })`: single path segment only, preventing paths like "dos_1/messages/msg_1" from resolving to unrelated documents and crashing the renderer as a generic error instead of cleanly failing validation.
 - `core.ts` — `sendDossierRecapCore(input, caller, deps)`:
   1. `caller.role !== "backoffice"` → `RegError("permission-denied", "Action non autorisée.")`.
   2. `caller.status !== "active"` → `RegError("permission-denied", "Action réservée aux comptes actifs.")`.
