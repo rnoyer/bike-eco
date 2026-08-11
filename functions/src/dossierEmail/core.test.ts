@@ -15,6 +15,12 @@ const dealer: CallerClaims = {
   status: "active",
   companyId: "comp_1",
 };
+const pendingBackoffice: CallerClaims = {
+  uid: "bo2",
+  role: "backoffice",
+  status: "pending",
+  companyId: null,
+};
 
 const DOSSIER: RecapDossier = {
   status: "en_cours",
@@ -67,16 +73,31 @@ interface Sent {
 
 function fakeDeps(over: Partial<DossierEmailDeps> = {}): DossierEmailDeps & {
   sent: Sent[];
+  getDossierCalls: () => number;
 } {
   const sent: Sent[] = [];
-  return {
-    sent,
+  let getDossierCalls = 0;
+  const merged: DossierEmailDeps = {
     getDossier: async () => DOSSIER,
     getUserEmail: async () => "agent@bike-eco.fr",
     sendMail: async (mail) => {
       sent.push(mail);
     },
     ...over,
+  };
+  return {
+    sent,
+    getDossierCalls: () => getDossierCalls,
+    getDossier: async (id) => {
+      // Counted so a regression that checks dossier existence before the
+      // role/status guard is caught: it would still pass every other
+      // assertion here while leaking dossier existence through
+      // not-found vs. permission-denied to a caller who should see neither.
+      getDossierCalls++;
+      return merged.getDossier(id);
+    },
+    getUserEmail: merged.getUserEmail,
+    sendMail: merged.sendMail,
   };
 }
 
@@ -113,6 +134,7 @@ describe("sendDossierRecapCore", () => {
       message: "Action non autorisée.",
     });
     expect(d.sent).toHaveLength(0);
+    expect(d.getDossierCalls()).toBe(0);
   });
 
   test("refuses a caller with no role claim at all", async () => {
@@ -121,6 +143,19 @@ describe("sendDossierRecapCore", () => {
       sendDossierRecapCore({ dossierId: "dos_1" }, { uid: "x" }, d),
     ).rejects.toMatchObject({ code: "permission-denied" });
     expect(d.sent).toHaveLength(0);
+    expect(d.getDossierCalls()).toBe(0);
+  });
+
+  test("refuses a back-office caller whose status is not active, without sending anything", async () => {
+    const d = fakeDeps();
+    await expect(
+      sendDossierRecapCore({ dossierId: "dos_1" }, pendingBackoffice, d),
+    ).rejects.toMatchObject({
+      code: "permission-denied",
+      message: "Action réservée aux comptes actifs.",
+    });
+    expect(d.sent).toHaveLength(0);
+    expect(d.getDossierCalls()).toBe(0);
   });
 
   test("reports a missing dossier", async () => {

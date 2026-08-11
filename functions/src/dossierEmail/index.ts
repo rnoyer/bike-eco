@@ -1,3 +1,5 @@
+import { getAuth } from "firebase-admin/auth";
+
 import { authedCall, db } from "../callable";
 import { B2C_EMAIL_SECRETS, sendHtmlMail } from "../email";
 import { sendDossierRecapCore, type DossierEmailDeps } from "./core";
@@ -12,9 +14,21 @@ function dossierEmailDeps(): DossierEmailDeps {
       const snap = await db().collection("dossiers").doc(id).get();
       return snap.exists ? (snap.data() as RecapDossier) : null;
     },
+    // Read from Firebase Auth, not `users/{uid}.email`: the profile field is
+    // client-writable (the security rules block role/companyId/status/isAdmin
+    // on update, but not email), so it cannot carry the "always the caller's
+    // own address" invariant this callable relies on. The Auth record can only
+    // change through re-authentication.
     getUserEmail: async (uid) => {
-      const snap = await db().collection("users").doc(uid).get();
-      return snap.exists ? ((snap.data()!.email as string) ?? null) : null;
+      const user = await getAuth()
+        .getUser(uid)
+        .catch((err: unknown) => {
+          // Already gone is not this callable's problem to throw on: the caller
+          // just ends up with no email, same as any other account with none.
+          if ((err as { code?: string })?.code === "auth/user-not-found") return null;
+          throw err;
+        });
+      return user?.email ?? null;
     },
     sendMail: sendHtmlMail,
   };

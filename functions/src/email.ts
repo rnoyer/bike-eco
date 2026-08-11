@@ -101,13 +101,21 @@ export async function sendHtmlMail(opts: {
   subject: string;
   html: string;
 }): Promise<void> {
-  const { transport } = getTransport();
-  await transport.sendMail({
+  const { transport, dev } = getTransport();
+  const to = DEV_EMAIL_OVERRIDE ? DEV_EMAIL : opts.to;
+  const info = await transport.sendMail({
     from: fromAddress(),
-    to: DEV_EMAIL_OVERRIDE ? DEV_EMAIL : opts.to,
+    to,
     subject: opts.subject,
     html: opts.html,
   });
+  if (dev) {
+    logger.info("Email (dev/JSON transport)", {
+      to,
+      subject: opts.subject,
+      message: info.message?.toString(),
+    });
+  }
 }
 
 export interface Attachment {

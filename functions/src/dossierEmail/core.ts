@@ -4,7 +4,8 @@ import type { DossierRecapInput } from "./schemas";
 
 export interface DossierEmailDeps {
   getDossier(id: string): Promise<RecapDossier | null>;
-  /** The caller's own profile email, or null when the account carries none. */
+  /** The caller's own address, read from Firebase Auth (not the client-writable
+   *  `users/{uid}.email` profile field), or null when the account carries none. */
   getUserEmail(uid: string): Promise<string | null>;
   sendMail(mail: { to: string; subject: string; html: string }): Promise<void>;
 }
@@ -26,6 +27,9 @@ export async function sendDossierRecapCore(
 ): Promise<void> {
   if (caller.role !== "backoffice") {
     throw new RegError("permission-denied", "Action non autorisée.");
+  }
+  if (caller.status !== "active") {
+    throw new RegError("permission-denied", "Action réservée aux comptes actifs.");
   }
 
   const dossier = await deps.getDossier(input.dossierId);

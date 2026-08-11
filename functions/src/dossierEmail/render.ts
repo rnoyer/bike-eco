@@ -115,7 +115,11 @@ function vehicleSection(d: RecapDossier): string {
       ["Chargeur présent", hasMateriel(vehicle.materiel, "chargeur") ? "Oui" : "Non"],
     ]),
     ["État", condition.etat],
-    // Free text, and only ever filled for this one état.
+    // Free text, and only ever filled for this one état. `condition.etat` is
+    // typed `string | null` here rather than the app's `EtatVehicule` union
+    // (src/constants/vehicle.ts, `ETAT_OPTIONS`) because this package cannot
+    // import client code — so a typo in the literal below would not fail to
+    // compile the way it does on the app's dossier screen.
     ["Nature de la panne", condition.etat === "En Panne" ? condition.naturePanne : null],
     ["Carte grise", ouiNon(papers.carteGrise)],
     ...when(papers.carteGrise, [["À votre nom", ouiNon(papers.carteGriseAVotreNom)]]),

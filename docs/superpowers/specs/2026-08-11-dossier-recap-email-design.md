@@ -35,10 +35,16 @@ Mirrors `functions/src/users/`: schema, dependency-injected core, thin wiring.
 - `schemas.ts` — `dossierRecapSchema = z.object({ dossierId: z.string().min(1) })`.
 - `core.ts` — `sendDossierRecapCore(input, caller, deps)`:
   1. `caller.role !== "backoffice"` → `RegError("permission-denied", "Action non autorisée.")`.
-  2. `deps.getDossier(dossierId)` → `null` → `RegError("not-found", "Dossier introuvable.")`.
-  3. `deps.getUserEmail(caller.uid)` → missing/empty →
+  2. `caller.status !== "active"` → `RegError("permission-denied", "Action réservée aux comptes actifs.")`.
+  3. `deps.getDossier(dossierId)` → `null` → `RegError("not-found", "Dossier introuvable.")`.
+  4. `deps.getUserEmail(caller.uid)` → missing/empty →
      `RegError("failed-precondition", "Aucune adresse email n'est associée à votre compte.")`.
-  4. `deps.sendMail({ to, subject, html })` with the rendered document.
+     The address is read from Firebase Auth, not `users/{uid}.email`: that
+     profile field is client-writable (the security rules block
+     role/companyId/status/isAdmin on update, but not email), so it cannot
+     carry the "always the caller's own address" invariant this callable
+     depends on.
+  5. `deps.sendMail({ to, subject, html })` with the rendered document.
 
   Returns nothing — `authedCall`'s `respond` turns that into the `{ ok: true }`
   acknowledgement the client's `call()` expects. The address never leaves the
