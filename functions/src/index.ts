@@ -6,6 +6,7 @@ import * as logger from "firebase-functions/logger";
 import { B2C_EMAIL_SECRETS, sendB2cEmails, type Attachment } from "./email";
 import { b2cPayloadSchema } from "./payload";
 
+export { sendDossierRecap } from "./dossierEmail";
 export { sendMessage } from "./messages";
 export {
   onCompanyCreated, onDossierCreated, onDossierMessageCreated, onDossierUpdated

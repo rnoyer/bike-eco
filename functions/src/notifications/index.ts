@@ -4,7 +4,7 @@ import * as logger from "firebase-functions/logger";
 import { db } from "../callable";
 import { motoLabel } from "./copy";
 import { resolveDeliveries, type NotificationEvent, type Recipient, type ResolveDeps } from "./core";
-import type { DossierStatus, Region, UserRole } from "./labels";
+import type { DossierStatus, Region, UserRole } from "../labels";
 import { dispatch } from "./send";
 
 /**

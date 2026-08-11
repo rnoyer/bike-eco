@@ -15,12 +15,11 @@ export const tokens = {
     brandPressed: "#17A814", // pressed state of a `brand`-filled control
     muted: "#71727A",
     border: "#E5E7EB",
+    borderDarker: "#BFBDCF",
     divider: "#F3F4F6",
     disabled: "#C1C1C6", // also the text-input placeholder colour
     surfaceAlt: "#FAFAFA", // input / media-button fill
     surface: "#FFFFFF",
-    rowAction: "#BFBDCF",
-    rowActionPressed: "#8F8CAC",
     // Semantic feedback colours — single source for errors/success across the app.
     danger: "#9F0712",
     success: "#16A34A",

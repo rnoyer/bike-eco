@@ -2,6 +2,7 @@ import * as logger from "firebase-functions/logger";
 import { defineSecret } from "firebase-functions/params";
 import * as nodemailer from "nodemailer";
 
+import { section, shell, type Row } from "./emailHtml";
 import type { B2cPayload } from "./payload";
 import { resolveRegion } from "./regions";
 
@@ -93,6 +94,30 @@ export async function sendMail(opts: { to: string; subject: string; text: string
   });
 }
 
+/** Reusable HTML sender for non-B2C flows (the back-office dossier recap).
+ *  Same pooled transport, same From, same dev override as `sendMail`. */
+export async function sendHtmlMail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<void> {
+  const { transport, dev } = getTransport();
+  const to = DEV_EMAIL_OVERRIDE ? DEV_EMAIL : opts.to;
+  const info = await transport.sendMail({
+    from: fromAddress(),
+    to,
+    subject: opts.subject,
+    html: opts.html,
+  });
+  if (dev) {
+    logger.info("Email (dev/JSON transport)", {
+      to,
+      subject: opts.subject,
+      message: info.message?.toString(),
+    });
+  }
+}
+
 export interface Attachment {
   filename: string;
   content: Buffer;
@@ -121,50 +146,6 @@ async function send(
       message: info.message?.toString(),
     });
   }
-}
-
-// ─── HTML rendering helpers ──────────────────────────────────────────────────
-
-function esc(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-/** A label/value row, dropped entirely when the value is empty/null. */
-type Row = [label: string, value: string | null | undefined];
-
-function rowsHtml(rows: Row[]): string {
-  const visible = rows.filter(([, v]) => v != null && String(v).trim() !== "");
-  return visible
-    .map(
-      ([label, value]) =>
-        `<tr>` +
-        `<td style="padding:4px 12px 4px 0;color:#71727A;font-size:13px;vertical-align:top;">${esc(label)}</td>` +
-        `<td style="padding:4px 0;color:#111;font-size:13px;font-weight:600;">${esc(String(value))}</td>` +
-        `</tr>`
-    )
-    .join("");
-}
-
-function section(title: string, rows: Row[]): string {
-  const body = rowsHtml(rows);
-  if (!body) return "";
-  return (
-    `<h2 style="font-size:15px;color:#111;margin:20px 0 6px;">${esc(title)}</h2>` +
-    `<table style="border-collapse:collapse;width:100%;">${body}</table>`
-  );
-}
-
-function shell(title: string, intro: string, body: string): string {
-  return (
-    `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;">` +
-    `<h1 style="font-size:22px;color:#111;margin:0 0 8px;">${esc(title)}</h1>` +
-    `<p style="font-size:14px;color:#71727A;margin:0 0 8px;">${esc(intro)}</p>` +
-    body +
-    `</div>`
-  );
 }
 
 const yesNo = (v: string | null) => (v === "oui" ? "Oui" : v === "non" ? "Non" : v ?? "");

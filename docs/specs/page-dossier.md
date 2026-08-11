@@ -29,6 +29,24 @@ following up on their own submission, so its status comes first :
 - **B2B** : Informations Dossier, Informations véhicule, Informations vendeur.
 - **Bike-eco Backoffice** : Informations véhicule, Informations vendeur, Informations Dossier.
 
+### "M'envoyer par email" — back office only
+
+Below the last card, a back-office reader gets a primary button, `M'envoyer par
+email`, which mails them a recap of the dossier at the address on their own
+account. A b2b user has no such button.
+
+The button spins while the `sendDossierRecap` callable runs. On success the app
+goes to [page-confirmation](page-confirmation.md) — "Récapitulatif envoyé" /
+"Récapitulatif envoyé à votre adresse email" — which returns to this dossier
+after 1.5 s. On failure an alert shows the French error and the reader stays
+put.
+
+Only the dossier id is sent: the recipient is resolved server-side from the
+caller's own account, so the address is never in the client's hands — which is
+why the confirmation says "votre adresse email" instead of naming the mailbox.
+The email itself is specified in
+[the design doc](../superpowers/specs/2026-08-11-dossier-recap-email-design.md).
+
 ### "Informations Dossier"
 
 One part (liste d'information) : date de soumission (`JJ MMM AAAA hh:mm`, e.g.

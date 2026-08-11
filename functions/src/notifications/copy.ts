@@ -4,7 +4,7 @@ import {
   viewerStatus,
   type DossierStatus,
   type UserRole,
-} from "./labels";
+} from "../labels";
 
 /** Line 1 becomes the FCM `title`; the rest become the `\n`-joined `body`. */
 export interface NotificationContent {
