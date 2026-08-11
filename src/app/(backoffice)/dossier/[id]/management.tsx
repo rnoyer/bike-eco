@@ -65,7 +65,8 @@ export default function BackofficeDossierManagement() {
             initialRegion={data.region}
             initialStatus={data.status}
             initialPrice={data.validatedPrice}
-            busy={busy}
+            busy={pending}
+            disabled={busy}
             onSubmit={async (region, status, price) => {
               if (!session) return;
               if (await updateManagement(id, region, status, price, session.id)) {
