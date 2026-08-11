@@ -1,6 +1,7 @@
 import { section, shell, type Row } from "../emailHtml";
 import {
   euros,
+  generatedAt,
   hasMateriel,
   kilometres,
   ouiNon,
@@ -160,19 +161,29 @@ function sellerSection(d: RecapDossier): string {
 
 /** The status is printed raw: `viewerStatus` exists to hide `a_traiter` from a
  *  b2b reader, and this email only ever goes to the back office. */
-function dossierSection(d: RecapDossier): string {
+function dossierSection(d: RecapDossier, now: Date): string {
   return section("Informations Dossier", [
     ["Date de soumission", d.createdAt === null ? null : submittedAt(d.createdAt)],
     ["Statut", STATUS_LABELS[d.status]],
     ["Prix validé", d.validatedPrice === null ? null : euros(d.validatedPrice)],
     ["Région", REGION_LABELS[d.region]],
+    // Two jobs. It tells the reader which version of a moving dossier they are
+    // holding — the statut and the prix validé change under them between
+    // sends. And it is what keeps each send a distinct message: Gmail threads
+    // messages sharing a subject and hides whatever repeats an earlier one
+    // behind "Show trimmed content", so without it a resend of an unchanged
+    // dossier arrives looking empty. Seconds, not minutes, so two sends in the
+    // same minute still differ.
+    ["Récapitulatif généré le", generatedAt(now)],
   ]);
 }
 
-export function recapHtml(d: RecapDossier): string {
+/** `now` is a parameter, not a `new Date()` inside: this module renders a
+ *  document as a function of its inputs, and the caller owns the clock. */
+export function recapHtml(d: RecapDossier, now: Date): string {
   return shell(
     recapSubject(d),
     intro(d),
-    vehicleSection(d) + sellerSection(d) + dossierSection(d),
+    vehicleSection(d) + sellerSection(d) + dossierSection(d, now),
   );
 }

@@ -154,7 +154,21 @@ collapsibles flattened into plain rows:
 the denormalized `submitter` (a deleted colleague's `users/{uid}` doc is gone
 while their dossiers remain).
 
-**Informations Dossier** — date de soumission, statut, prix validé, région.
+**Informations Dossier** — date de soumission, statut, prix validé, région, and
+"Récapitulatif généré le".
+
+That last row carries the send's own timestamp, to the second, in Paris time. It
+tells the reader which version of a moving dossier they are holding — the statut
+and the prix validé change under them between sends — and it is what keeps each
+send a distinct message. Gmail threads messages that share a subject and hides
+whatever repeats an earlier one behind "Show trimmed content", so two
+byte-identical recaps arrive with the second looking empty. This was observed in
+testing on 2026-08-11: a recap, a status change, and two resends rendered as the
+full email, then the Informations Dossier section alone, then nothing — while
+the Firestore document and the rendered HTML were complete throughout.
+
+`recapHtml(dossier, now)` takes the clock as a parameter and stays a pure
+function of its inputs; `core.ts` passes `new Date()`.
 
 No photos and no photo links. The recap is text.
 

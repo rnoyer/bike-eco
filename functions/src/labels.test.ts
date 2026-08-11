@@ -1,5 +1,6 @@
 import { describe, expect, test } from "@jest/globals";
 import {
+  generatedAt,
   hasMateriel,
   kilometres,
   ouiNon,
@@ -68,5 +69,22 @@ describe("submittedAt", () => {
   test("dashes an absent timestamp", () => {
     expect(submittedAt(null)).toBe("—");
     expect(submittedAt(undefined)).toBe("—");
+  });
+});
+
+describe("generatedAt", () => {
+  // Same Paris-time conversion as `submittedAt`, but to the second: two recaps
+  // of an unchanged dossier must not be byte-identical, or Gmail threads them
+  // and trims the second away as repeated content.
+  test("formats in Europe/Paris, to the second", () => {
+    expect(generatedAt(new Date("2026-08-11T07:06:21Z"))).toBe(
+      "11 août 2026 09:06:21",
+    );
+  });
+
+  test("two sends a second apart render differently", () => {
+    const a = generatedAt(new Date("2026-08-11T07:06:21Z"));
+    const b = generatedAt(new Date("2026-08-11T07:06:22Z"));
+    expect(a).not.toBe(b);
   });
 });

@@ -45,6 +45,9 @@ const FULL: RecapDossier = {
   pricing: { prix: 3500, commentaires: "Vente rapide souhaitée" },
 };
 
+/** Fixed clock, so a rendered recap is a function of its inputs alone. */
+const NOW = new Date("2026-08-11T07:06:21Z");
+
 const dossier = (over: Partial<RecapDossier> = {}): RecapDossier => ({
   ...FULL,
   ...over,
@@ -60,7 +63,7 @@ describe("recapSubject", () => {
 
 describe("recapHtml", () => {
   test("opens with the subject and the intro sentence", () => {
-    const html = recapHtml(FULL);
+    const html = recapHtml(FULL, NOW);
     expect(html).toContain(
       "Demande de rachat - Garage Lambert - Yamaha MT-07 689",
     );
@@ -70,7 +73,7 @@ describe("recapHtml", () => {
   });
 
   test("carries the three sections, in reading order", () => {
-    const html = recapHtml(FULL);
+    const html = recapHtml(FULL, NOW);
     const vehicule = html.indexOf("Informations véhicule");
     const vendeur = html.indexOf("Informations vendeur");
     const dossierSection = html.indexOf("Informations Dossier");
@@ -80,7 +83,7 @@ describe("recapHtml", () => {
   });
 
   test("renders the vehicle's own values with their units", () => {
-    const html = recapHtml(FULL);
+    const html = recapHtml(FULL, NOW);
     expect(html).toContain("Prix souhaité");
     expect(html).toContain("3500 €");
     expect(html).toContain("48000 km");
@@ -89,7 +92,7 @@ describe("recapHtml", () => {
   });
 
   test("renders the seller block from the denormalized submitter", () => {
-    const html = recapHtml(FULL);
+    const html = recapHtml(FULL, NOW);
     // "Entreprise" and "Prénom" are unique labels, but plain "Nom" is a
     // substring of the "Nombre" row (télécommande count), which is also on
     // the page — so it's matched against the exact `>Nom<` table cell
@@ -105,7 +108,7 @@ describe("recapHtml", () => {
   });
 
   test("renders the dossier block with French status, région and date", () => {
-    const html = recapHtml(FULL);
+    const html = recapHtml(FULL, NOW);
     expect(html).toContain("En cours");
     expect(html).toContain("Région");
     expect(html).toContain("Sud");
@@ -115,29 +118,29 @@ describe("recapHtml", () => {
 
   test("prints the back office's own status verbatim", () => {
     // No `viewerStatus` projection: the reader is always the back office.
-    expect(recapHtml(dossier({ status: "a_traiter" }))).toContain("À traiter");
+    expect(recapHtml(dossier({ status: "a_traiter" }), NOW)).toContain("À traiter");
   });
 
   test("reveals the électrique sub-answers only when électrique is oui", () => {
-    expect(recapHtml(FULL)).toContain("Batterie présente");
-    expect(recapHtml(FULL)).toContain("Chargeur présent");
+    expect(recapHtml(FULL, NOW)).toContain("Batterie présente");
+    expect(recapHtml(FULL, NOW)).toContain("Chargeur présent");
     const thermique = dossier({
       vehicle: { ...FULL.vehicle, electrique: "non", materiel: [] },
     });
-    expect(recapHtml(thermique)).not.toContain("Batterie présente");
-    expect(recapHtml(thermique)).not.toContain("Chargeur présent");
+    expect(recapHtml(thermique, NOW)).not.toContain("Batterie présente");
+    expect(recapHtml(thermique, NOW)).not.toContain("Chargeur présent");
   });
 
   test("reveals the nature de la panne only for a dossier En Panne", () => {
-    expect(recapHtml(FULL)).toContain("Démarreur HS");
+    expect(recapHtml(FULL, NOW)).toContain("Démarreur HS");
     const bon = dossier({
       condition: { etat: "Bon état", naturePanne: "Démarreur HS" },
     });
-    expect(recapHtml(bon)).not.toContain("Démarreur HS");
+    expect(recapHtml(bon, NOW)).not.toContain("Démarreur HS");
   });
 
   test("reveals the papers sub-answers only when their parent is oui", () => {
-    const html = recapHtml(FULL);
+    const html = recapHtml(FULL, NOW);
     expect(html).toContain("À votre nom");
     expect(html).toContain("Résultat obtenu");
     const sansPapiers = dossier({
@@ -150,23 +153,23 @@ describe("recapHtml", () => {
         resultatCT: null,
       },
     });
-    const html2 = recapHtml(sansPapiers);
+    const html2 = recapHtml(sansPapiers, NOW);
     expect(html2).not.toContain("À votre nom");
     expect(html2).not.toContain("Résultat obtenu");
   });
 
   test("reveals the key counts only when there are keys", () => {
-    expect(recapHtml(FULL)).toContain("Clé noire");
+    expect(recapHtml(FULL, NOW)).toContain("Clé noire");
     const sansCles = dossier({
       keys: { ...FULL.keys, aClesContact: "non", cleNoire: null },
     });
-    expect(recapHtml(sansCles)).not.toContain("Clé noire");
+    expect(recapHtml(sansCles, NOW)).not.toContain("Clé noire");
   });
 
   test("keeps a zero count but drops an unanswered one", () => {
     // FULL has cleMarron: 0 and cleRouge: null. Zero keys of a colour is an
     // answer; a null is a question the funnel never asked.
-    const html = recapHtml(FULL);
+    const html = recapHtml(FULL, NOW);
     expect(html).toContain("Clé marron");
     expect(html).not.toContain("Clé rouge");
   });
@@ -178,6 +181,7 @@ describe("recapHtml", () => {
         pricing: { prix: null, commentaires: "" },
         validatedPrice: null,
       }),
+      NOW,
     );
     expect(html).not.toContain("Année");
     expect(html).not.toContain("Kilométrage");
@@ -190,8 +194,26 @@ describe("recapHtml", () => {
   test("escapes free text instead of letting it into the markup", () => {
     const html = recapHtml(
       dossier({ pricing: { prix: 3500, commentaires: "<script>alert(1)</script>" } }),
+      NOW,
     );
     expect(html).not.toContain("<script>");
     expect(html).toContain("&lt;script&gt;");
+  });
+});
+
+describe("generation timestamp", () => {
+  test("stamps when the recap was generated, in Paris time", () => {
+    const html = recapHtml(FULL, NOW);
+    expect(html).toContain("Récapitulatif généré le");
+    expect(html).toContain("11 août 2026 09:06:21");
+  });
+
+  // The reason the row exists: Gmail threads messages sharing a subject and
+  // hides whatever repeats an earlier one, so two byte-identical recaps of an
+  // unchanged dossier arrive looking blank.
+  test("two recaps of an unchanged dossier are not byte-identical", () => {
+    const a = recapHtml(FULL, new Date("2026-08-11T07:06:21Z"));
+    const b = recapHtml(FULL, new Date("2026-08-11T07:06:22Z"));
+    expect(a).not.toBe(b);
   });
 });

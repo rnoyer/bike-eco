@@ -46,6 +46,9 @@ export async function sendDossierRecapCore(
   await deps.sendMail({
     to: email,
     subject: recapSubject(dossier),
-    html: recapHtml(dossier),
+    // The clock lives here rather than inside the renderer, which stays a pure
+    // function of its inputs. Every send stamps its own generation time, which
+    // is what stops Gmail trimming a resend away as repeated content.
+    html: recapHtml(dossier, new Date()),
   });
 }

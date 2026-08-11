@@ -99,3 +99,28 @@ export function submittedAt(
   });
   return `${date} ${time}`;
 }
+
+/**
+ * "11 août 2026 09:06:21" — when a document was produced, in Paris time.
+ *
+ * To the second, unlike `submittedAt`. Two recaps of an unchanged dossier would
+ * otherwise be byte-identical, and Gmail threads messages that share a subject
+ * and hides whatever repeats an earlier one behind "Show trimmed content" — so
+ * a resend arrives looking blank. A timestamp that always differs is what keeps
+ * every send its own message.
+ */
+export function generatedAt(date: Date): string {
+  const day = date.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Europe/Paris",
+  });
+  const time = date.toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZone: "Europe/Paris",
+  });
+  return `${day} ${time}`;
+}
