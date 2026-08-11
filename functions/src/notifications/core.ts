@@ -8,7 +8,7 @@ import {
   type NotificationContent,
   type NotificationTarget,
 } from "./copy";
-import { viewerStatus, type DossierStatus, type Region, type UserRole } from "./labels";
+import { viewerStatus, type DossierStatus, type Region, type UserRole } from "../labels";
 
 /** The subset of a `users/{uid}` document fan-out needs. */
 export interface Recipient {
