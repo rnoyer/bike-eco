@@ -10,7 +10,7 @@ const FULL: RecapDossier = {
   submitter: {
     nom: "Durand",
     prenom: "Claire",
-    companyName: "Moto Sud",
+    companyName: "Garage Lambert",
     email: "claire@moto-sud.fr",
     telephone: "0601020304",
   },
@@ -53,7 +53,7 @@ const dossier = (over: Partial<RecapDossier> = {}): RecapDossier => ({
 describe("recapSubject", () => {
   test("names the company and the vehicle", () => {
     expect(recapSubject(FULL)).toBe(
-      "Demande de rachat - Moto Sud - Yamaha MT-07 689",
+      "Demande de rachat - Garage Lambert - Yamaha MT-07 689",
     );
   });
 });
@@ -61,9 +61,11 @@ describe("recapSubject", () => {
 describe("recapHtml", () => {
   test("opens with the subject and the intro sentence", () => {
     const html = recapHtml(FULL);
-    expect(html).toContain("Demande de rachat - Moto Sud - Yamaha MT-07 689");
     expect(html).toContain(
-      "Veuillez trouver le récapitulatif de la demande de rachat soumise dans l'application Bike-eco par Claire Durand, de Moto Sud.",
+      "Demande de rachat - Garage Lambert - Yamaha MT-07 689",
+    );
+    expect(html).toContain(
+      "Veuillez trouver le récapitulatif de la demande de rachat soumise dans l'application Bike-eco par Claire Durand, de Garage Lambert.",
     );
   });
 
@@ -88,7 +90,14 @@ describe("recapHtml", () => {
 
   test("renders the seller block from the denormalized submitter", () => {
     const html = recapHtml(FULL);
-    expect(html).toContain("Moto Sud");
+    // "Entreprise" and "Prénom" are unique labels, but plain "Nom" is a
+    // substring of the "Nombre" row (télécommande count), which is also on
+    // the page — so it's matched against the exact `>Nom<` table cell
+    // instead, which only the seller's Nom row renders.
+    expect(html).toContain("Entreprise");
+    expect(html).toContain(">Nom<");
+    expect(html).toContain("Prénom");
+    expect(html).toContain("Garage Lambert");
     expect(html).toContain("Durand");
     expect(html).toContain("Claire");
     expect(html).toContain("0601020304");
@@ -98,6 +107,7 @@ describe("recapHtml", () => {
   test("renders the dossier block with French status, région and date", () => {
     const html = recapHtml(FULL);
     expect(html).toContain("En cours");
+    expect(html).toContain("Région");
     expect(html).toContain("Sud");
     expect(html).toContain("3200 €");
     expect(html).toContain("26 juil. 2026 14:30");
@@ -115,6 +125,7 @@ describe("recapHtml", () => {
       vehicle: { ...FULL.vehicle, electrique: "non", materiel: [] },
     });
     expect(recapHtml(thermique)).not.toContain("Batterie présente");
+    expect(recapHtml(thermique)).not.toContain("Chargeur présent");
   });
 
   test("reveals the nature de la panne only for a dossier En Panne", () => {
