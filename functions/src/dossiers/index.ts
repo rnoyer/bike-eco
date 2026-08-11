@@ -1,6 +1,7 @@
 import { getStorage } from "firebase-admin/storage";
 
 import { authedCall, db } from "../callable";
+import { RegError } from "../errors";
 import { deleteDossierCore, type DossierDeleteDeps } from "./core";
 import { deleteDossierSchema } from "./schemas";
 
@@ -9,7 +10,14 @@ function dossierDeleteDeps(): DossierDeleteDeps {
     getDossier: async (id) => {
       const snap = await db().collection("dossiers").doc(id).get();
       if (!snap.exists) return null;
-      return { companyId: snap.data()!.companyId as string };
+      const companyId = snap.data()?.companyId;
+      // The cast boundary: Firestore data is untyped, and a document with no
+      // usable companyId would build the prefix "dossiers/undefined/..." — a
+      // delete that silently matches nothing while the document goes away.
+      if (typeof companyId !== "string" || companyId === "") {
+        throw new RegError("failed-precondition", "Ce dossier est incomplet et ne peut pas être supprimé.");
+      }
+      return { companyId };
     },
     // One prefixed delete covers all three shapes `src/lib/storage/paths.ts`
     // writes under a dossier: `photos/{index}.{ext}`, `photos/thumb.jpg`, and
