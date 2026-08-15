@@ -25,6 +25,16 @@ Everything in `src/components/ui/` and `src/components/form/` is React Native st
 violation. (The tab bars are `NativeTabs` from `expo-router/unstable-native-tabs`, which is
 unrelated to `@expo/ui`.)
 
+**Never wrap a universal `@expo/ui` component that renders its own `Host` in another
+`Host`.** `BottomSheet` has rendered its own since `@expo/ui` 56.0.10 — absolutely
+positioned, so it costs no layout and needs no wrapper. The scaffold's leftover
+`<Host style={{ position: "absolute", width: 0, height: 0 }}>` around it shipped as an
+iOS bug: with no `snapPoints` the sheet auto-sizes to its content (`fitToContents` →
+`presentationDetents([.height(measured)])`), and content measured inside a zero-sized
+host collapses to a detent too short to show both buttons. Android was unaffected —
+Compose's `ModalBottomSheet` sizes to intrinsic content — so this is only visible on a
+device or iOS simulator. Check the installed `@expo/ui` source before adding a `Host`.
+
 The info lists that used to live in `src/components/native/` were replaced by `InfoCard`
 (see below) precisely because `@expo/ui`'s `Row` + `Spacer(flexible)` can't do dividers,
 icon buttons, or a value that wraps instead of squeezing its label.
@@ -275,4 +285,5 @@ never invent its own.
 | A long free-text value in an `InfoRows` row instead of an `InfoComment`                                   | Squeezes the label; text overflows off-screen                                              |
 | Gating a `tel:` / `mailto:` button on `canOpenURL`                                                        | Android package visibility answers `false`; the button vanishes on device but shows on web |
 | New modal without its own `GestureHandlerRootView`                                                        | Gestures silently dead inside the modal                                                    |
+| A `Host` wrapped around a universal `@expo/ui` component that already renders one                         | On iOS the 0×0 host collapses the measured content — the auto-sized `BottomSheet` came out too short to show its buttons |
 | `KeyboardAvoidingView` with no `behavior` on Android, or no `keyboardVerticalOffset` under a Stack header | Keyboard covers the input                                                                  |
