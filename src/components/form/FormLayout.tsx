@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -38,6 +39,48 @@ export default function FormLayout({
 }: Props) {
   const insets = useSafeAreaInsets();
   const keyboardOpen = useKeyboardOpen();
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollOffset = useRef(0);
+
+  // Bring the focused field into view once the keyboard is up. Only iOS needs
+  // this: Android's native ScrollView scrolls a focused descendant onto screen
+  // itself, while iOS leaves the offset where it was and the field ends up
+  // behind the keyboard — which is exactly the bug this fixes.
+  //
+  // `KeyboardAvoidingView` has already shrunk this ScrollView, so its visible
+  // window excludes both the keyboard and the button bar; all that is missing is
+  // putting the field inside it. Hence `keyboardDidShow` (via `useKeyboardOpen`)
+  // rather than the field's own `onFocus`: focus fires before the lift, when the
+  // window is still full height and the measurements would be stale.
+  //
+  // Never runs on web — react-native-web's `Keyboard` is a stub whose listeners
+  // never fire, so `keyboardOpen` stays false there. Just as well: RNW's
+  // `TextInput.State` has no `currentlyFocusedInput`.
+  useEffect(() => {
+    if (!keyboardOpen) return;
+    const input = TextInput.State.currentlyFocusedInput();
+    const scroll = scrollRef.current;
+    // The `ScrollView` component itself is not measurable — the native view it
+    // wraps is, and that view's frame is the visible window we are aiming for.
+    const viewport = scroll?.getNativeScrollRef();
+    if (!input || !scroll || !viewport) return;
+
+    viewport.measureInWindow((_x, viewportY, _w, viewportHeight) => {
+      input.measureInWindow((_ix, inputY, _iw, inputHeight) => {
+        const margin = tokens.space.md;
+        const toRevealBottom =
+          inputY + inputHeight + margin - (viewportY + viewportHeight);
+        const toRevealTop = inputY - viewportY - margin;
+        // The smaller of the two: show the bottom of a field that fits, but the
+        // top of one taller than the window — bottom-aligning a long
+        // "Commentaires" box would push the first line off the top instead.
+        const delta = Math.min(toRevealBottom, toRevealTop);
+        if (delta > 0) {
+          scroll.scrollTo({ y: scrollOffset.current + delta, animated: true });
+        }
+      });
+    });
+  }, [keyboardOpen]);
 
   return (
     <KeyboardAvoidingView
@@ -54,8 +97,15 @@ export default function FormLayout({
       </View>
 
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
+        // Tracked so the reveal above can scroll relative to where the form
+        // already is; `scrollTo` takes an absolute offset.
+        onScroll={(e) => {
+          scrollOffset.current = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
         // A number pad has no return key, and `FormField` drops the toolbar iOS would
         // otherwise build to carry one — so dragging the form is what closes it.

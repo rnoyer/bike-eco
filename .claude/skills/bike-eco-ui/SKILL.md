@@ -268,6 +268,20 @@ on an `isNearBottom` helper so history-reading was never interrupted, and it was
 on purpose. The first scroll does not animate — flying past the history is a glitch, not
 an arrival — and neither does a re-focus, for the same reason.
 
+**iOS does not scroll a focused input into view; Android does.** Android's native
+ScrollView brings a focused descendant onto screen itself, so a form only breaks on iOS:
+the offset stays put, `KeyboardAvoidingView` shrinks the scroll view under it, and a
+field near the bottom is left behind the keyboard. Any scrolling form has to do it
+itself — `FormLayout` is the worked example. It measures on `keyboardDidShow` (not the
+field's `onFocus`, which fires before the lift, when the frame is still full height and
+the numbers are stale), compares the focused input's window rect against the scroll
+view's own, and scrolls by the smaller of "reveal the bottom" and "reveal the top" so a
+box taller than the window shows its first line rather than its last. `ScrollView`
+itself is not measurable — `getNativeScrollRef()` is.
+
+`automaticallyAdjustKeyboardInsets` is *not* the fix here: it scrolls the field to the
+top of the keyboard, which is behind the Précédent/Suivant bar.
+
 A bottom bar that pads itself with `insets.bottom` must drop that inset while the
 keyboard is open — the keyboard already covers the home indicator, so keeping it leaves
 a dead band. **`useKeyboardOpen()`** (`src/lib/ui/useKeyboardOpen.ts`) is that flag; both
