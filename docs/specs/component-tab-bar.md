@@ -33,6 +33,12 @@ Each entry in `tabs.ts` carries both renderers' needs:
 Keep `sf` / `md` / `icon` depicting the same thing, so the two platforms stay visually
 consistent. The web icons are the Material Symbols matching each `md` name.
 
+**One documented exception**, the dossier tab's motorbike: SF Symbols only gained
+`motorcycle` in version 6 (iOS 18), and the deployment target is 16.4. Below iOS 18 that
+tab falls back to `bicycle`, because an unavailable symbol renders as *no icon at all* —
+`[UIImage systemImageNamed:]` returns nil — which is worse than the wrong vehicle. Drop
+the fallback once the deployment target reaches 18.
+
 Contexts:
 - App level (B2B & BO): Dashboard · Mon compte · Paramètres — `B2B_TABS`, `BACKOFFICE_TABS`.
 - Dossier level (B2B): Dossier · Messages — `b2bDossierTabs(id)`.
