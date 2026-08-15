@@ -6,7 +6,7 @@ interface Props {
   visible: boolean;
   title: string;
   message: string;
-  /** Label of the destructive action, e.g. "Supprimer tout". */
+  /** Label of the destructive action, e.g. "Tout supprimer". */
   confirmLabel: string;
   /** Locks both buttons while an action is already in flight. */
   disabled?: boolean;
@@ -17,10 +17,21 @@ interface Props {
 /** Destructive-confirmation modal. An in-page `Modal`, not `confirmDialog`:
  *  these prompts spell out what is deleted, which a native alert cannot. */
 export default function ConfirmModal({
-  visible, title, message, confirmLabel, disabled = false, onCancel, onConfirm,
+  visible,
+  title,
+  message,
+  confirmLabel,
+  disabled = false,
+  onCancel,
+  onConfirm,
 }: Props) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onCancel}
+    >
       <View style={styles.backdrop}>
         <View style={styles.modal}>
           <Text style={styles.title}>{title}</Text>

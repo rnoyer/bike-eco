@@ -9,7 +9,7 @@ Slice 4 (registration) was decomposed into three sub-projects:
 - **4a — Registration** (shipped, PR #9): company signup, invite-a-colleague, invited
   signup. `registerCompany` creates a `pending` company + owner account; the pending gate
   (Slice 1) blocks them from the dashboard.
-- **4b — Back-office company management** *(this spec)*: the pending→active validation
+- **4b — Back-office company management** _(this spec)_: the pending→active validation
   loop and the destructive delete of an established company.
 - **4c — Message `senderName` stamping** (FR-2): independent, small. Its own spec later.
 
@@ -23,14 +23,14 @@ they require.
 
 ## Decisions (locked)
 
-| # | Decision | Choice |
-|---|----------|--------|
-| 1 | 4b scope | **Full `page-company`** — the pending validation loop **and** the irreversible cascade-delete of an active company (users + dossiers + chats + Storage). |
-| 2 | Decline semantics | **Hard-delete** the applicant (company doc + owner user doc + Auth user). Frees the SIRET for re-registration. `"rejected"` in `COMPANY_STATUSES` becomes vestigial → trimmed to `["pending", "active"]`. |
-| 3 | State-change emails | **Approve only** — "compte validé, vous pouvez vous connecter". Decline is silent. |
-| 4 | Company region | **Captured at registration, derived-and-stored.** A "Département" field is added to step 1 of company registration; `company.region` is derived from it (`functions/src/regions.ts`) and stored. Filters the back-office list/banner. |
-| 5 | Décliner vs Supprimer | **One `deleteCompany` callable** serves both — the server operation (hard-delete cascade) is identical; pending simply has less to remove. |
-| 6 | Region filtering of companies | **Client-side** — companies are a small set, so filter the pending/active lists by `région gérée` in the hook. Avoids region composite indexes (two simple `status+orderBy` composites suffice). |
+| #   | Decision                      | Choice                                                                                                                                                                                                                                |
+| --- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | 4b scope                      | **Full `page-company`** — the pending validation loop **and** the irreversible cascade-delete of an active company (users + dossiers + chats + Storage).                                                                              |
+| 2   | Decline semantics             | **Hard-delete** the applicant (company doc + owner user doc + Auth user). Frees the SIRET for re-registration. `"rejected"` in `COMPANY_STATUSES` becomes vestigial → trimmed to `["pending", "active"]`.                             |
+| 3   | State-change emails           | **Approve only** — "compte validé, vous pouvez vous connecter". Decline is silent.                                                                                                                                                    |
+| 4   | Company region                | **Captured at registration, derived-and-stored.** A "Département" field is added to step 1 of company registration; `company.region` is derived from it (`functions/src/regions.ts`) and stored. Filters the back-office list/banner. |
+| 5   | Décliner vs Supprimer         | **One `deleteCompany` callable** serves both — the server operation (hard-delete cascade) is identical; pending simply has less to remove.                                                                                            |
+| 6   | Region filtering of companies | **Client-side** — companies are a small set, so filter the pending/active lists by `région gérée` in the hook. Avoids region composite indexes (two simple `status+orderBy` composites suffice).                                      |
 
 ## Goals
 
@@ -88,10 +88,10 @@ the Admin SDK (which bypasses rules), exactly like 4a.
 `Company` gains:
 
 ```ts
-departement: string;              // "33 - Gironde" — captured at registration (step 1)
-region: Region;                   // derived from departement; drives back-office routing
-validatedAt: Timestamp | null;    // set on approve; null while pending
-createdByName: string;            // denormalized owner full name for the card subtitle
+departement: string; // "33 - Gironde" — captured at registration (step 1)
+region: Region; // derived from departement; drives back-office routing
+validatedAt: Timestamp | null; // set on approve; null while pending
+createdByName: string; // denormalized owner full name for the card subtitle
 ```
 
 - `COMPANY_STATUSES` trimmed to `["pending", "active"]`.
@@ -109,7 +109,7 @@ Per Decision 4, region is captured at the source rather than derived from a prof
   (still editable — the registrant may live outside the company's département).
 - The Zod schema and `RegisterCompanyInput` gain the company `departement`.
 - **`registerCompanyCore`** writes `company.departement`, `company.region =
-  resolveRegion(departement)` (reuse `functions/src/regions.ts`), `validatedAt: null`,
+resolveRegion(departement)` (reuse `functions/src/regions.ts`), `validatedAt: null`,
   and `createdByName = `${prenom} ${nom}``.
 - **Seed script** (`scripts/seed.ts`, from Slice 1) updated so existing test companies carry
   `departement`/`region`/`validatedAt`/`createdByName` — no standalone backfill script (dev
@@ -131,7 +131,7 @@ Per Decision 4, region is captured at the source rather than derived from a prof
 
 - **Pending banner** — in the back-office branch of `DashboardScreen`: when the pending count
   > 0, a sticky, clickable banner "**[X] nouveaux vendeurs à valider**" → push
-  `/(backoffice)/companies`.
+  > `/(backoffice)/companies`.
 - **Paramètres button** — a secondary **"Gérer les entreprises"** button in the back-office
   settings screen (above "Région gérée") → `/(backoffice)/companies`.
 - **`(backoffice)/companies/index.tsx`** — reuses the dashboard layout: two sections via a
@@ -150,7 +150,7 @@ Per Decision 4, region is captured at the source rather than derived from a prof
     email, téléphone, département, ville).
   - **If approved:** "Autres utilisateurs de cette entreprise" — list of the company's users;
     and a red "Supprimer cette entreprise" → **confirmation modal** (warns what is deleted;
-    primary "Annuler", secondary "Supprimer tout") → `deleteCompany`.
+    primary "Annuler", secondary "Tout supprimer") → `deleteCompany`.
   - On approve/decline/delete success, pop back to the list — the live `useCompanies`
     listener reflects the change (company moves sections or disappears).
 

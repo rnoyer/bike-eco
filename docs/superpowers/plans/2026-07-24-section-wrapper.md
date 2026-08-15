@@ -30,11 +30,13 @@
 ## Task 1: `SectionWrapper` component + spec
 
 **Files:**
+
 - Create: `src/components/ui/SectionWrapper.tsx`
 - Create: `docs/specs/component-section-wrapper.md`
 - Modify: `docs/specs/component-section.md`
 
 **Interfaces:**
+
 - Produces: `export default function SectionWrapper({ children }: { children: ReactNode })` — a non-scrolling `View` styled `{ padding: tokens.space.lg, gap: tokens.space.xl }`. Consumed by every task below.
 
 - [ ] **Step 1: Create the component**
@@ -89,7 +91,6 @@ no longer re-declare `padding`/`gap` on their own `ScrollView`.
 In `docs/specs/component-section.md`, append to the end of the file:
 
 ```markdown
-
 ## Layout
 
 Sections are spaced by the [`SectionWrapper`](component-section-wrapper.md) container, which
@@ -115,12 +116,14 @@ git commit -m "feat(ui): SectionWrapper layout container + spec"
 The homogeneous transform: wrap the `ScrollView`'s children in `<SectionWrapper>` and remove `padding`/`gap` from the `content` style. A reviewer accepts/rejects these four together.
 
 **Files:**
+
 - Modify: `src/components/screens/DashboardScreen.tsx`
 - Modify: `src/app/(backoffice)/companies/index.tsx`
 - Modify: `src/app/(backoffice)/companies/[id].tsx`
 - Modify: `src/components/screens/AccountScreen.tsx`
 
 **Interfaces:**
+
 - Consumes: `SectionWrapper` (Task 1).
 
 - [ ] **Step 1: DashboardScreen — import**
@@ -138,62 +141,68 @@ import SectionWrapper from "@/components/ui/SectionWrapper";
 Replace the back-office `return (...)` block's `<ScrollView>...</ScrollView>` body so `SectionWrapper` wraps the banner + sections:
 
 ```tsx
-    return (
-      <ScrollView>
-        <SectionWrapper>
-          {onOpenCompanies ? <PendingCompaniesBanner onPress={onOpenCompanies} /> : null}
-          <DossiersSection
-            title="Dossiers à traiter"
-            dossiers={aTraiter.data}
-            loading={aTraiter.loading}
-            emptyMessage="Vous n'avez pas de dossier à traiter pour le moment."
-            renderCard={card}
-          />
-          <DossiersSection
-            title="Dossiers en cours"
-            dossiers={enCours.data}
-            loading={enCours.loading}
-            emptyMessage="Vous n'avez pas de dossier en cours pour le moment."
-            renderCard={card}
-          />
-          <DossiersSection
-            title="Dossiers clos"
-            dossiers={closed.data}
-            loading={closed.loading}
-            emptyMessage="Vous n'avez pas de dossier clos pour le moment."
-            renderCard={card}
-          />
-        </SectionWrapper>
-      </ScrollView>
-    );
+return (
+  <ScrollView>
+    <SectionWrapper>
+      {onOpenCompanies ? (
+        <PendingCompaniesBanner onPress={onOpenCompanies} />
+      ) : null}
+      <DossiersSection
+        title="Dossiers à traiter"
+        dossiers={aTraiter.data}
+        loading={aTraiter.loading}
+        emptyMessage="Vous n'avez pas de dossier à traiter pour le moment."
+        renderCard={card}
+      />
+      <DossiersSection
+        title="Dossiers en cours"
+        dossiers={enCours.data}
+        loading={enCours.loading}
+        emptyMessage="Vous n'avez pas de dossier en cours pour le moment."
+        renderCard={card}
+      />
+      <DossiersSection
+        title="Dossiers clos"
+        dossiers={closed.data}
+        loading={closed.loading}
+        emptyMessage="Vous n'avez pas de dossier clos pour le moment."
+        renderCard={card}
+      />
+    </SectionWrapper>
+  </ScrollView>
+);
 ```
 
 Replace the B2C `return (...)` block's body the same way (CTA + two sections inside `SectionWrapper`):
 
 ```tsx
-  return (
-    <ScrollView>
-      <SectionWrapper>
-        <TouchableOpacity style={styles.cta} activeOpacity={0.85} onPress={onSell}>
-          <Text style={styles.ctaText}>Vendre une moto</Text>
-        </TouchableOpacity>
-        <DossiersSection
-          title="Dossiers en cours"
-          dossiers={ongoing}
-          loading={aTraiter.loading || enCours.loading}
-          emptyMessage="Vous n'avez pas de dossier en cours pour le moment."
-          renderCard={card}
-        />
-        <DossiersSection
-          title="Dossiers clos"
-          dossiers={closed.data}
-          loading={closed.loading}
-          emptyMessage="Vous n'avez pas de dossier clos pour le moment."
-          renderCard={card}
-        />
-      </SectionWrapper>
-    </ScrollView>
-  );
+return (
+  <ScrollView>
+    <SectionWrapper>
+      <TouchableOpacity
+        style={styles.cta}
+        activeOpacity={0.85}
+        onPress={onSell}
+      >
+        <Text style={styles.ctaText}>Vendre une moto</Text>
+      </TouchableOpacity>
+      <DossiersSection
+        title="Dossiers en cours"
+        dossiers={ongoing}
+        loading={aTraiter.loading || enCours.loading}
+        emptyMessage="Vous n'avez pas de dossier en cours pour le moment."
+        renderCard={card}
+      />
+      <DossiersSection
+        title="Dossiers clos"
+        dossiers={closed.data}
+        loading={closed.loading}
+        emptyMessage="Vous n'avez pas de dossier clos pour le moment."
+        renderCard={card}
+      />
+    </SectionWrapper>
+  </ScrollView>
+);
 ```
 
 - [ ] **Step 3: DashboardScreen — drop the `content` style**
@@ -209,7 +218,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  ctaText: { color: tokens.colors.primaryText, fontSize: 16, fontWeight: "700" },
+  ctaText: {
+    color: tokens.colors.primaryText,
+    fontSize: 16,
+    fontWeight: "700",
+  },
 });
 ```
 
@@ -283,99 +296,99 @@ import SectionWrapper from "@/components/ui/SectionWrapper";
 In the main `return`, change the opening tag to a bare `<ScrollView>` (the `content` style is deleted in Step 7), wrap all the in-flow `Section`s in `<SectionWrapper>`, and leave the `<Modal>` as a direct child of the `ScrollView` after the wrapper. The structure becomes:
 
 ```tsx
-  return (
-    <ScrollView>
-      <SectionWrapper>
-        {isPending ? (
-          <Section title="Voulez-vous autoriser cette entreprise à vendre des véhicules">
-            <View style={styles.row}>
-              <Button
-                label="Autoriser"
-                onPress={() => run(() => callApproveCompany(id))}
-                style={styles.flex}
-                disabled={busy}
-              />
-              <Button
-                variant="outlined"
-                label="Décliner inscription"
-                onPress={onDecline}
-                style={styles.flex}
-                disabled={busy}
-              />
-            </View>
-          </Section>
-        ) : null}
-
-        <Section title="Information vendeur">
-          <CompanyInfoList company={company.data} />
-        </Section>
-
-        {owner ? (
-          <Section title="Information vendeur admin">
-            <AccountInfoList user={owner} />
-          </Section>
-        ) : null}
-
-        {!isPending ? (
-          <>
-            <Section
-              title="Autres utilisateurs de cette entreprise"
-              emptyMessage="Aucun autre utilisateur."
-            >
-              {otherUsers.map((u) => (
-                <Text
-                  key={u.id}
-                  style={styles.userLine}
-                >{`${u.prenom} ${u.nom} — ${u.email}`}</Text>
-              ))}
-            </Section>
-            <Section title="Gérer cette entreprise">
-              <Button
-                variant="outlined"
-                label="Supprimer cette entreprise"
-                onPress={() => setConfirmDelete(true)}
-                style={styles.danger}
-                disabled={busy}
-              />
-            </Section>
-          </>
-        ) : null}
-      </SectionWrapper>
-
-      <Modal
-        visible={confirmDelete}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setConfirmDelete(false)}
-      >
-        <View style={styles.backdrop}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Supprimer cette entreprise ?</Text>
-            <Text style={styles.modalBody}>
-              Cette action supprime définitivement l&apos;entreprise, ses
-              utilisateurs, tous ses dossiers, les conversations et les
-              documents stockés.
-            </Text>
+return (
+  <ScrollView>
+    <SectionWrapper>
+      {isPending ? (
+        <Section title="Voulez-vous autoriser cette entreprise à vendre des véhicules">
+          <View style={styles.row}>
             <Button
-              label="Annuler"
-              onPress={() => setConfirmDelete(false)}
+              label="Autoriser"
+              onPress={() => run(() => callApproveCompany(id))}
+              style={styles.flex}
               disabled={busy}
             />
             <Button
-              variant="text"
-              label="Supprimer tout"
-              onPress={() => {
-                setConfirmDelete(false);
-                void run(() => callDeleteCompany(id));
-              }}
-              style={styles.danger}
+              variant="outlined"
+              label="Décliner inscription"
+              onPress={onDecline}
+              style={styles.flex}
               disabled={busy}
             />
           </View>
+        </Section>
+      ) : null}
+
+      <Section title="Information vendeur">
+        <CompanyInfoList company={company.data} />
+      </Section>
+
+      {owner ? (
+        <Section title="Information vendeur admin">
+          <AccountInfoList user={owner} />
+        </Section>
+      ) : null}
+
+      {!isPending ? (
+        <>
+          <Section
+            title="Autres utilisateurs de cette entreprise"
+            emptyMessage="Aucun autre utilisateur."
+          >
+            {otherUsers.map((u) => (
+              <Text
+                key={u.id}
+                style={styles.userLine}
+              >{`${u.prenom} ${u.nom} — ${u.email}`}</Text>
+            ))}
+          </Section>
+          <Section title="Gérer cette entreprise">
+            <Button
+              variant="outlined"
+              label="Supprimer cette entreprise"
+              onPress={() => setConfirmDelete(true)}
+              style={styles.danger}
+              disabled={busy}
+            />
+          </Section>
+        </>
+      ) : null}
+    </SectionWrapper>
+
+    <Modal
+      visible={confirmDelete}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setConfirmDelete(false)}
+    >
+      <View style={styles.backdrop}>
+        <View style={styles.modal}>
+          <Text style={styles.modalTitle}>Supprimer cette entreprise ?</Text>
+          <Text style={styles.modalBody}>
+            Cette action supprime définitivement l&apos;entreprise, ses
+            utilisateurs, tous ses dossiers, les conversations et les documents
+            stockés.
+          </Text>
+          <Button
+            label="Annuler"
+            onPress={() => setConfirmDelete(false)}
+            disabled={busy}
+          />
+          <Button
+            variant="text"
+            label="Tout supprimer"
+            onPress={() => {
+              setConfirmDelete(false);
+              void run(() => callDeleteCompany(id));
+            }}
+            style={styles.danger}
+            disabled={busy}
+          />
         </View>
-      </Modal>
-    </ScrollView>
-  );
+      </View>
+    </Modal>
+  </ScrollView>
+);
 ```
 
 - [ ] **Step 7: companies/[id].tsx — drop the `content` style**
@@ -488,10 +501,12 @@ git commit -m "feat(ui): adopt SectionWrapper in dashboard, companies, account s
 The Settings field (région `Dropdown`) must be a direct child of the wrapper so it shares the `xl` gap. `SettingsList` returns `<SectionWrapper>` instead of its own `container` `View`; `SettingsScreen` drops its `ScrollView` padding.
 
 **Files:**
+
 - Modify: `src/components/form/SettingsList.tsx`
 - Modify: `src/components/screens/SettingsScreen.tsx`
 
 **Interfaces:**
+
 - Consumes: `SectionWrapper` (Task 1), `Section` (already imported in `SettingsList`).
 
 - [ ] **Step 1: SettingsList.tsx — full end state**
@@ -617,9 +632,11 @@ git commit -m "feat(ui): SettingsList renders SectionWrapper (shared gap for fie
 The full-bleed `PhotoCarousel` stays a direct child of the `ScrollView`; the heading + Informations `Section` move into `SectionWrapper` (replacing the bespoke `list` `View`).
 
 **Files:**
+
 - Modify: `src/components/screens/DossierDetailScreen.tsx`
 
 **Interfaces:**
+
 - Consumes: `SectionWrapper` (Task 1), `Section` (already imported).
 
 - [ ] **Step 1: Full end state**
@@ -640,7 +657,10 @@ export default function DossierDetailScreen({ id }: { id: string }) {
   return (
     <ScrollView>
       {loading || !data ? (
-        <ActivityIndicator style={styles.spinner} color={tokens.colors.primary} />
+        <ActivityIndicator
+          style={styles.spinner}
+          color={tokens.colors.primary}
+        />
       ) : (
         <>
           <PhotoCarousel photos={data.photos} status={data.status} />
@@ -695,6 +715,7 @@ git commit -m "feat(ui): DossierDetail uses SectionWrapper (full-bleed carousel 
 ## Self-Review
 
 **Spec coverage:**
+
 - Pure `View` padding/gap container → Task 1. ✓
 - Owns `padding lg` + `gap xl`, screens drop their own → Tasks 2–4. ✓
 - Holds any block child (Sections, fields, banners, CTAs, headings) → Dashboard banner/CTA (Task 2), Settings Dropdown (Task 3), Dossier heading (Task 4). ✓

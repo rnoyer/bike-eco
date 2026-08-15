@@ -1,6 +1,6 @@
 import { useGlobalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 
 import DossierManagementForm from "@/components/form/DossierManagementForm";
 import Button from "@/components/ui/Button";
@@ -69,21 +69,24 @@ export default function BackofficeDossierManagement() {
             disabled={busy}
             onSubmit={async (region, status, price) => {
               if (!session) return;
-              if (await updateManagement(id, region, status, price, session.id)) {
+              if (
+                await updateManagement(id, region, status, price, session.id)
+              ) {
                 router.replace("/(backoffice)/confirmation");
               }
             }}
           />
-
-          <Section title="Gérer ce dossier">
-            <Button
-              variant="danger"
-              label="Supprimer ce dossier"
-              onPress={() => setConfirmDelete(true)}
-              loading={deleting.pending}
-              disabled={busy}
-            />
-          </Section>
+          <View style={styles.toBottom}>
+            <Section title="Supprimer ce dossier">
+              <Button
+                variant="danger"
+                label="Supprimer"
+                onPress={() => setConfirmDelete(true)}
+                loading={deleting.pending}
+                disabled={busy}
+              />
+            </Section>
+          </View>
 
           <ConfirmModal
             visible={confirmDelete}
@@ -104,5 +107,6 @@ export default function BackofficeDossierManagement() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: tokens.space.lg, gap: tokens.space.xl },
+  content: { flexGrow: 1, padding: tokens.space.lg, gap: tokens.space.xl },
+  toBottom: { marginTop: "auto", gap: tokens.space.sm },
 });

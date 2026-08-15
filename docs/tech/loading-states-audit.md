@@ -42,16 +42,16 @@ appears nowhere in the repo.
 
 Reuse these rather than inventing new ones.
 
-| Primitive | Path | Notes |
-|---|---|---|
-| `Section` — title + `loading` spinner + `emptyMessage` | `src/components/ui/Section.tsx:22-26` | The blessed read-loading pattern. `bike-eco-ui` SKILL.md: "owns all three states — don't reimplement them per screen" |
-| `Button` `disabled` | `src/components/ui/Button.tsx:37,40-41` | Dimming only, no spinner |
-| `busy` + `run()` write wrapper | `src/app/(backoffice)/companies/[id].tsx:47-61` | Best write site in the repo: re-entry guard, `disabled` on all four buttons, mapped-error `Alert` |
-| `googleBusy` / `forgotBusy` / `resetBusy` | `signin.tsx:36-37`, `AccountScreen.tsx:23` | The correct per-action state shape |
-| `writeWithTimeout` (15 s) | `src/lib/firestore/writeWithTimeout.ts:2,33` | The only defence against Firestore buffering an unreachable write forever |
-| `{ data, loading, error }` key-match derivation | `src/lib/data/useDossiers.ts:54-76` | Every read hook already conforms |
-| Design tokens | `src/theme/tokens.ts` | Any new spinner: `color={tokens.colors.primary}`, `tokens.space.*` padding |
-| French error mapping | `mapAuthError` / `mapPasswordResetError` (`src/lib/auth/authErrors.ts`), `mapDataError` (`src/lib/data/dataErrors.ts`), `frenchError` (`src/lib/data/callable.ts:5-20`) | A screen renders a mapped message, never its own |
+| Primitive                                              | Path                                                                                                                                                                    | Notes                                                                                                                 |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `Section` — title + `loading` spinner + `emptyMessage` | `src/components/ui/Section.tsx:22-26`                                                                                                                                   | The blessed read-loading pattern. `bike-eco-ui` SKILL.md: "owns all three states — don't reimplement them per screen" |
+| `Button` `disabled`                                    | `src/components/ui/Button.tsx:37,40-41`                                                                                                                                 | Dimming only, no spinner                                                                                              |
+| `busy` + `run()` write wrapper                         | `src/app/(backoffice)/companies/[id].tsx:47-61`                                                                                                                         | Best write site in the repo: re-entry guard, `disabled` on all four buttons, mapped-error `Alert`                     |
+| `googleBusy` / `forgotBusy` / `resetBusy`              | `signin.tsx:36-37`, `AccountScreen.tsx:23`                                                                                                                              | The correct per-action state shape                                                                                    |
+| `writeWithTimeout` (15 s)                              | `src/lib/firestore/writeWithTimeout.ts:2,33`                                                                                                                            | The only defence against Firestore buffering an unreachable write forever                                             |
+| `{ data, loading, error }` key-match derivation        | `src/lib/data/useDossiers.ts:54-76`                                                                                                                                     | Every read hook already conforms                                                                                      |
+| Design tokens                                          | `src/theme/tokens.ts`                                                                                                                                                   | Any new spinner: `color={tokens.colors.primary}`, `tokens.space.*` padding                                            |
+| French error mapping                                   | `mapAuthError` / `mapPasswordResetError` (`src/lib/auth/authErrors.ts`), `mapDataError` (`src/lib/data/dataErrors.ts`), `frenchError` (`src/lib/data/callable.ts:5-20`) | A screen renders a mapped message, never its own                                                                      |
 
 ---
 
@@ -62,100 +62,100 @@ re-render · **DIM** = button dims via `disabled` · **SPIN** = spinner shown.
 
 ### 3.1 Auth screens
 
-| File:line | Operation | Trigger | Loading |
-|---|---|---|---|
-| `(auth)/signin.tsx:43` | `signInWithEmailAndPassword` | "Login" | **NONE** — no busy flag; button re-tappable |
-| `(auth)/signin.tsx:58` | `signInWithGoogle()` | Google button | DIM — `googleBusy` → `ThirdPartyAuthButtons disabled` (`:163`) |
-| `(auth)/signin.tsx:73-78` | `getDoc(userDoc)` in `writeWithTimeout` — "is this identity registered?" | Google button | DIM — `googleBusy` |
-| `(auth)/signin.tsx:83,93,94` | `signOut` / `deleteUser` — unregistered-Google cleanup | Google button | DIM — `googleBusy` |
-| `(auth)/signin.tsx:125` | `sendPasswordResetEmail` | "Mot de passe oublié" | DIM — `forgotBusy` (`:157`) |
-| `(auth)/register.tsx:40` | callable `registerCompany` (Google path) | "S'inscrire" | **REF** — `submitting` ref `:24` |
-| `(auth)/register.tsx:53` | `submitCompanyRegistration` → callable `registerCompany` | "S'inscrire" | **REF** |
-| `(auth)/register.tsx:68` | `signOut` in `goHome()` | "Retour à l'accueil" / "Précédent" on step 1 | **NONE** |
-| `(auth)/register-invited.tsx:69` | callable `acceptInvite` (Google) | "S'inscrire" | **REF** — `:36` |
-| `(auth)/register-invited.tsx:84` | `submitInvitedRegistration` → callable `acceptInvite` | "S'inscrire" | **REF** |
-| `(auth)/register-invited.tsx:106` | `signInWithEmailAndPassword` | "Aller à l'accueil" | **NONE** — `FormConfirmation`'s button has no `disabled` prop |
-| `(auth)/register-invited.tsx:108` | `refreshSession()` → `getIdTokenResult(true)` + `getDoc` | same | **NONE** |
-| `(auth)/invite-code.tsx:34` | callable `resolveInvite` | "Continuer" | **REF** — `:21` |
-| `(auth)/pending.tsx:15` | `signOut` | "Se déconnecter" | **NONE** |
-| `lib/auth/AuthProvider.tsx:61-64` | `Promise.all([getIdTokenResult(true), getDoc(userDoc)])` | every auth-state change + `refreshSession` | SPIN — `initializing` → `_layout.tsx:30` `ActivityIndicator`. Later `loading` flips deliberately show nothing (comment `_layout.tsx:25-29`) |
-| `lib/auth/AuthProvider.tsx:94` | `onAuthStateChanged` | app start | SPIN — `initializing` |
-| `lib/auth/AuthProvider.tsx:119` | `signOut: () => fbSignOut(auth)` | all sign-out buttons | **NONE** |
-| `lib/auth/googleSignIn.ts:31,35,36,45,48` | `hasPlayServices` / `signOut` / `signIn` / `signInWithCredential` | any Google button | **NONE** internally (caller-provided only) |
-| `lib/auth/googleSignIn.web.ts:22,29,30` | `signInWithPopup` / `deleteUser` / `signOut` | Google on web | **NONE** |
-| `features/registration/fields.tsx:28` | `signInWithGoogle({expectedEmail})` | Google inside "Votre compte" step | **NONE** — `ThirdPartyAuthButtons` rendered at `:78` **without** `disabled`, unlike `signin.tsx` |
-| `features/registration/fields.tsx:41` | `onGoogleProfile` → step advance | same | **NONE** |
+| File:line                                 | Operation                                                                | Trigger                                      | Loading                                                                                                                                     |
+| ----------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `(auth)/signin.tsx:43`                    | `signInWithEmailAndPassword`                                             | "Login"                                      | **NONE** — no busy flag; button re-tappable                                                                                                 |
+| `(auth)/signin.tsx:58`                    | `signInWithGoogle()`                                                     | Google button                                | DIM — `googleBusy` → `ThirdPartyAuthButtons disabled` (`:163`)                                                                              |
+| `(auth)/signin.tsx:73-78`                 | `getDoc(userDoc)` in `writeWithTimeout` — "is this identity registered?" | Google button                                | DIM — `googleBusy`                                                                                                                          |
+| `(auth)/signin.tsx:83,93,94`              | `signOut` / `deleteUser` — unregistered-Google cleanup                   | Google button                                | DIM — `googleBusy`                                                                                                                          |
+| `(auth)/signin.tsx:125`                   | `sendPasswordResetEmail`                                                 | "Mot de passe oublié"                        | DIM — `forgotBusy` (`:157`)                                                                                                                 |
+| `(auth)/register.tsx:40`                  | callable `registerCompany` (Google path)                                 | "S'inscrire"                                 | **REF** — `submitting` ref `:24`                                                                                                            |
+| `(auth)/register.tsx:53`                  | `submitCompanyRegistration` → callable `registerCompany`                 | "S'inscrire"                                 | **REF**                                                                                                                                     |
+| `(auth)/register.tsx:68`                  | `signOut` in `goHome()`                                                  | "Retour à l'accueil" / "Précédent" on step 1 | **NONE**                                                                                                                                    |
+| `(auth)/register-invited.tsx:69`          | callable `acceptInvite` (Google)                                         | "S'inscrire"                                 | **REF** — `:36`                                                                                                                             |
+| `(auth)/register-invited.tsx:84`          | `submitInvitedRegistration` → callable `acceptInvite`                    | "S'inscrire"                                 | **REF**                                                                                                                                     |
+| `(auth)/register-invited.tsx:106`         | `signInWithEmailAndPassword`                                             | "Aller à l'accueil"                          | **NONE** — `FormConfirmation`'s button has no `disabled` prop                                                                               |
+| `(auth)/register-invited.tsx:108`         | `refreshSession()` → `getIdTokenResult(true)` + `getDoc`                 | same                                         | **NONE**                                                                                                                                    |
+| `(auth)/invite-code.tsx:34`               | callable `resolveInvite`                                                 | "Continuer"                                  | **REF** — `:21`                                                                                                                             |
+| `(auth)/pending.tsx:15`                   | `signOut`                                                                | "Se déconnecter"                             | **NONE**                                                                                                                                    |
+| `lib/auth/AuthProvider.tsx:61-64`         | `Promise.all([getIdTokenResult(true), getDoc(userDoc)])`                 | every auth-state change + `refreshSession`   | SPIN — `initializing` → `_layout.tsx:30` `ActivityIndicator`. Later `loading` flips deliberately show nothing (comment `_layout.tsx:25-29`) |
+| `lib/auth/AuthProvider.tsx:94`            | `onAuthStateChanged`                                                     | app start                                    | SPIN — `initializing`                                                                                                                       |
+| `lib/auth/AuthProvider.tsx:119`           | `signOut: () => fbSignOut(auth)`                                         | all sign-out buttons                         | **NONE**                                                                                                                                    |
+| `lib/auth/googleSignIn.ts:31,35,36,45,48` | `hasPlayServices` / `signOut` / `signIn` / `signInWithCredential`        | any Google button                            | **NONE** internally (caller-provided only)                                                                                                  |
+| `lib/auth/googleSignIn.web.ts:22,29,30`   | `signInWithPopup` / `deleteUser` / `signOut`                             | Google on web                                | **NONE**                                                                                                                                    |
+| `features/registration/fields.tsx:28`     | `signInWithGoogle({expectedEmail})`                                      | Google inside "Votre compte" step            | **NONE** — `ThirdPartyAuthButtons` rendered at `:78` **without** `disabled`, unlike `signin.tsx`                                            |
+| `features/registration/fields.tsx:41`     | `onGoogleProfile` → step advance                                         | same                                         | **NONE**                                                                                                                                    |
 
 ### 3.2 Forms / funnels
 
-| File:line | Operation | Trigger | Loading |
-|---|---|---|---|
-| `b2cSubmissionForm.tsx:32` | `submitB2cSubmission` — multipart POST to `sendB2cSubmission` | "Envoyer" | **REF** — `:21`. Longest wait in the app: every full-size photo in one multipart body |
-| `features/b2c-submission/submit.ts:43,67,73,82` | web blob read · **sequential** `appendPhoto` loop · `fetch` POST · error-body parse | same | **NONE** |
-| `(b2b)/vehicule-submission.tsx:34` | `submitB2bSubmission` | "Envoyer" | **REF** — `:21` |
-| `features/b2b-submission/submit.ts:60` | `getDocFromServer(companyDoc)` — forced-server reachability probe | same | **NONE** |
-| `features/b2b-submission/submit.ts:67-71` | `makeThumbnail` (`ImageManipulator` render+save) then upload | same | **NONE** — CPU-bound |
-| `features/b2b-submission/submit.ts:74-79` | **sequential** `uploadLocalFile` per photo | same | **NONE** |
-| `features/b2b-submission/submit.ts:84-102` | `writeWithTimeout(setDoc, deleteDoc, 15000)` | same | **NONE** |
-| `(b2b)/add-colleague.tsx:17` | `invite(email)` → callable `sendInvite` | "Envoyer l'invitation" | **NONE** — no ref, no state, no `disabled`. Each tap sends another email |
-| `lib/forms/useStepForm.ts:64` | `form.trigger(step fields)` — Zod per-step | every "Suivant" | **NONE** |
-| `lib/forms/useStepForm.ts:67` | `form.handleSubmit(onSubmit)()` — awaits the whole submit chain | "Envoyer"/"S'inscrire" | **NONE** — `isSubmitting` never exposed; `FormLayout:77-85` has no `disabled`/`loading` prop |
-| `components/form/PhotoPicker.tsx:24,29,40,45` | media-library / camera permission + launch | "Galerie" / "Appareil Photo" | **NONE** |
+| File:line                                       | Operation                                                                           | Trigger                      | Loading                                                                                      |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
+| `b2cSubmissionForm.tsx:32`                      | `submitB2cSubmission` — multipart POST to `sendB2cSubmission`                       | "Envoyer"                    | **REF** — `:21`. Longest wait in the app: every full-size photo in one multipart body        |
+| `features/b2c-submission/submit.ts:43,67,73,82` | web blob read · **sequential** `appendPhoto` loop · `fetch` POST · error-body parse | same                         | **NONE**                                                                                     |
+| `(b2b)/vehicule-submission.tsx:34`              | `submitB2bSubmission`                                                               | "Envoyer"                    | **REF** — `:21`                                                                              |
+| `features/b2b-submission/submit.ts:60`          | `getDocFromServer(companyDoc)` — forced-server reachability probe                   | same                         | **NONE**                                                                                     |
+| `features/b2b-submission/submit.ts:67-71`       | `makeThumbnail` (`ImageManipulator` render+save) then upload                        | same                         | **NONE** — CPU-bound                                                                         |
+| `features/b2b-submission/submit.ts:74-79`       | **sequential** `uploadLocalFile` per photo                                          | same                         | **NONE**                                                                                     |
+| `features/b2b-submission/submit.ts:84-102`      | `writeWithTimeout(setDoc, deleteDoc, 15000)`                                        | same                         | **NONE**                                                                                     |
+| `(b2b)/add-colleague.tsx:17`                    | `invite(email)` → callable `sendInvite`                                             | "Envoyer l'invitation"       | **NONE** — no ref, no state, no `disabled`. Each tap sends another email                     |
+| `lib/forms/useStepForm.ts:64`                   | `form.trigger(step fields)` — Zod per-step                                          | every "Suivant"              | **NONE**                                                                                     |
+| `lib/forms/useStepForm.ts:67`                   | `form.handleSubmit(onSubmit)()` — awaits the whole submit chain                     | "Envoyer"/"S'inscrire"       | **NONE** — `isSubmitting` never exposed; `FormLayout:77-85` has no `disabled`/`loading` prop |
+| `components/form/PhotoPicker.tsx:24,29,40,45`   | media-library / camera permission + launch                                          | "Galerie" / "Appareil Photo" | **NONE**                                                                                     |
 
 ### 3.3 Dashboard / data hooks
 
-| File:line | Operation | Trigger | Loading |
-|---|---|---|---|
-| `lib/data/useDossiers.ts:54` | `onSnapshot(query(...))` — called 3× | `DashboardScreen` mount (`:27-29`) | SPIN — `loading` `:70` → `DossiersSection` → `Section` |
-| `lib/data/useDossier.ts:20` | `onSnapshot(dossierDoc)` | dossier detail / chat / management | SPIN in detail (`:15`) + management (`:17`); `DossierChatScreen:43` returns `null` (blank) |
-| `lib/data/useCompanies.ts:30` | `onSnapshot(companies query)` | back-office list, `PendingCompaniesBanner` | SPIN via `Section`; the banner ignores `loading` |
-| `lib/data/useCompanies.ts:58` | `onSnapshot(companyDoc)` | `companies/[id].tsx:25`, `AccountScreen:20` | SPIN in `companies/[id].tsx:30`; unused in `AccountScreen` |
-| `lib/data/useCompanies.ts:82` | `onSnapshot(users where companyId)` | `companies/[id].tsx:26` | SPIN |
-| `lib/data/useRegionFilter.ts` → `useUser` | `onSnapshot(userDoc)` — `users/{uid}.notificationRegion` | first `useRegionFilter()` | **Was:** `ready` exposed but no consumer read it — `DashboardScreen`, `SettingsList`, `companies/index.tsx`, `PendingCompaniesBanner` all took only `{ region }`, so the first render queried "Toute la France" and re-queried once hydration landed. **Fixed** (see §5): `DashboardScreen.tsx:29` now destructures `ready` and derives `hydrating` from it, and `ready` gates whole screens in the other three consumers too. |
-| `lib/data/useRegionFilter.ts` (`setRegion`) | `updateDoc` (fire-and-forget) | région dropdown | **NONE** — intentionally optimistic; a local `pending` override covers the snapshot round-trip |
-| `lib/data/useAccount.ts` | passthrough of `useAuth()` | `AccountScreen:19` | `loading` returned, but `AccountScreen:55` renders `null` — blank screen |
+| File:line                                   | Operation                                                | Trigger                                     | Loading                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------- | -------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `lib/data/useDossiers.ts:54`                | `onSnapshot(query(...))` — called 3×                     | `DashboardScreen` mount (`:27-29`)          | SPIN — `loading` `:70` → `DossiersSection` → `Section`                                                                                                                                                                                                                                                                                                                                                                         |
+| `lib/data/useDossier.ts:20`                 | `onSnapshot(dossierDoc)`                                 | dossier detail / chat / management          | SPIN in detail (`:15`) + management (`:17`); `DossierChatScreen:43` returns `null` (blank)                                                                                                                                                                                                                                                                                                                                     |
+| `lib/data/useCompanies.ts:30`               | `onSnapshot(companies query)`                            | back-office list, `PendingCompaniesBanner`  | SPIN via `Section`; the banner ignores `loading`                                                                                                                                                                                                                                                                                                                                                                               |
+| `lib/data/useCompanies.ts:58`               | `onSnapshot(companyDoc)`                                 | `companies/[id].tsx:25`, `AccountScreen:20` | SPIN in `companies/[id].tsx:30`; unused in `AccountScreen`                                                                                                                                                                                                                                                                                                                                                                     |
+| `lib/data/useCompanies.ts:82`               | `onSnapshot(users where companyId)`                      | `companies/[id].tsx:26`                     | SPIN                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `lib/data/useRegionFilter.ts` → `useUser`   | `onSnapshot(userDoc)` — `users/{uid}.notificationRegion` | first `useRegionFilter()`                   | **Was:** `ready` exposed but no consumer read it — `DashboardScreen`, `SettingsList`, `companies/index.tsx`, `PendingCompaniesBanner` all took only `{ region }`, so the first render queried "Toute la France" and re-queried once hydration landed. **Fixed** (see §5): `DashboardScreen.tsx:29` now destructures `ready` and derives `hydrating` from it, and `ready` gates whole screens in the other three consumers too. |
+| `lib/data/useRegionFilter.ts` (`setRegion`) | `updateDoc` (fire-and-forget)                            | région dropdown                             | **NONE** — intentionally optimistic; a local `pending` override covers the snapshot round-trip                                                                                                                                                                                                                                                                                                                                 |
+| `lib/data/useAccount.ts`                    | passthrough of `useAuth()`                               | `AccountScreen:19`                          | `loading` returned, but `AccountScreen:55` renders `null` — blank screen                                                                                                                                                                                                                                                                                                                                                       |
 
 ### 3.4 Dossier detail
 
-| File:line | Operation | Loading |
-|---|---|---|
-| `components/screens/DossierDetailScreen.tsx:11` | `useDossier(id)` | SPIN `:15` |
-| `components/ui/PhotoCarousel.tsx:41` | `expo-image` remote fetch | **NONE** beyond `transition={150}` + placeholder background |
+| File:line                                       | Operation                 | Loading                                                     |
+| ----------------------------------------------- | ------------------------- | ----------------------------------------------------------- |
+| `components/screens/DossierDetailScreen.tsx:11` | `useDossier(id)`          | SPIN `:15`                                                  |
+| `components/ui/PhotoCarousel.tsx:41`            | `expo-image` remote fetch | **NONE** beyond `transition={150}` + placeholder background |
 
 ### 3.5 Chat
 
-| File:line | Operation | Trigger | Loading |
-|---|---|---|---|
-| `lib/data/useMessages.ts:25` | `onSnapshot(messages orderBy createdAt)` | opening Messages tab | `loading` returned `:38` but **`DossierChatScreen:18` destructures only `{ data }`** — thread renders empty |
-| `lib/data/useSendMessage.ts:41` | `uploadLocalFile` — **sequential loop, up to 5 attachments**, each = XHR blob read + `uploadBytes` + `getDownloadURL` | "Envoyer" | **NONE** |
-| `lib/data/useSendMessage.ts:54` | callable `sendMessage` | same | **NONE** |
-| `lib/storage/cleanup.ts:24` | `Promise.allSettled(deleteObject…)` | failure path | **NONE** |
-| `components/screens/DossierChatScreen.tsx:63-67` | `send(text, files).catch(Alert)` — fire-and-forget | "Envoyer" | **NONE** — and `ChatComposer.tsx:45-51` clears `text` **and** `files` immediately. A failure alerts *after* the message and attachments are gone. No pending bubble, no disabled send |
-| `components/ui/chat/ChatComposer.tsx:59,64` | media permission + `launchImageLibraryAsync` | "+" → Photo | **NONE** |
-| `components/ui/chat/ChatComposer.tsx:90` | `DocumentPicker.getDocumentAsync({copyToCacheDirectory:true})` | "+" → PDF | **NONE** — the cache copy is slow for large PDFs |
-| `components/ui/chat/ChatThread.tsx:28` | `Linking.openURL(pdf)` | tapping a PDF | **NONE** |
-| `components/ui/chat/ChatThread.tsx:48-53,62` | `expo-image` attachment thumbnails | render | **NONE** beyond `transition={100}` |
+| File:line                                        | Operation                                                                                                             | Trigger              | Loading                                                                                                                                                                               |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/data/useMessages.ts:25`                     | `onSnapshot(messages orderBy createdAt)`                                                                              | opening Messages tab | `loading` returned `:38` but **`DossierChatScreen:18` destructures only `{ data }`** — thread renders empty                                                                           |
+| `lib/data/useSendMessage.ts:41`                  | `uploadLocalFile` — **sequential loop, up to 5 attachments**, each = XHR blob read + `uploadBytes` + `getDownloadURL` | "Envoyer"            | **NONE**                                                                                                                                                                              |
+| `lib/data/useSendMessage.ts:54`                  | callable `sendMessage`                                                                                                | same                 | **NONE**                                                                                                                                                                              |
+| `lib/storage/cleanup.ts:24`                      | `Promise.allSettled(deleteObject…)`                                                                                   | failure path         | **NONE**                                                                                                                                                                              |
+| `components/screens/DossierChatScreen.tsx:63-67` | `send(text, files).catch(Alert)` — fire-and-forget                                                                    | "Envoyer"            | **NONE** — and `ChatComposer.tsx:45-51` clears `text` **and** `files` immediately. A failure alerts _after_ the message and attachments are gone. No pending bubble, no disabled send |
+| `components/ui/chat/ChatComposer.tsx:59,64`      | media permission + `launchImageLibraryAsync`                                                                          | "+" → Photo          | **NONE**                                                                                                                                                                              |
+| `components/ui/chat/ChatComposer.tsx:90`         | `DocumentPicker.getDocumentAsync({copyToCacheDirectory:true})`                                                        | "+" → PDF            | **NONE** — the cache copy is slow for large PDFs                                                                                                                                      |
+| `components/ui/chat/ChatThread.tsx:28`           | `Linking.openURL(pdf)`                                                                                                | tapping a PDF        | **NONE**                                                                                                                                                                              |
+| `components/ui/chat/ChatThread.tsx:48-53,62`     | `expo-image` attachment thumbnails                                                                                    | render               | **NONE** beyond `transition={100}`                                                                                                                                                    |
 
 ### 3.6 Back-office
 
-| File:line | Operation | Trigger | Loading |
-|---|---|---|---|
-| `(backoffice)/companies/[id].tsx:72,160` | callable `deleteCompany` via `run()` | "Décliner inscription" / "Supprimer tout" | DIM — `busy` `:27`, guard `:48`, `disabled` on `:88,95,129,153,162` |
-| `(backoffice)/companies/[id].tsx:87` | callable `approveCompany` via `run()` | "Autoriser" | DIM — `busy` |
-| `(backoffice)/companies/[id].tsx:25-26` | `useCompany` + `useCompanyUsers` | mount | SPIN `:30` |
-| `(backoffice)/dossier/[id]/management.tsx:25` → `useDossierManagement.ts:21` | `updateDoc(dossierDoc)` | "Mettre à jour" | **NONE** — no busy state, no `disabled`, and **not** wrapped in `writeWithTimeout` |
-| `(backoffice)/dossier/[id]/management.tsx:11` | `useDossier(id)` | mount | SPIN `:17` |
-| `(backoffice)/companies/index.tsx:15-16` | two `useCompanies` | mount | SPIN via `Section` |
-| `components/ui/PendingCompaniesBanner.tsx:9` | `useCompanies("pending", region)` | mount | `loading` ignored; renders `null` until non-empty |
+| File:line                                                                    | Operation                             | Trigger                                   | Loading                                                                            |
+| ---------------------------------------------------------------------------- | ------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------- |
+| `(backoffice)/companies/[id].tsx:72,160`                                     | callable `deleteCompany` via `run()`  | "Décliner inscription" / "Tout supprimer" | DIM — `busy` `:27`, guard `:48`, `disabled` on `:88,95,129,153,162`                |
+| `(backoffice)/companies/[id].tsx:87`                                         | callable `approveCompany` via `run()` | "Autoriser"                               | DIM — `busy`                                                                       |
+| `(backoffice)/companies/[id].tsx:25-26`                                      | `useCompany` + `useCompanyUsers`      | mount                                     | SPIN `:30`                                                                         |
+| `(backoffice)/dossier/[id]/management.tsx:25` → `useDossierManagement.ts:21` | `updateDoc(dossierDoc)`               | "Mettre à jour"                           | **NONE** — no busy state, no `disabled`, and **not** wrapped in `writeWithTimeout` |
+| `(backoffice)/dossier/[id]/management.tsx:11`                                | `useDossier(id)`                      | mount                                     | SPIN `:17`                                                                         |
+| `(backoffice)/companies/index.tsx:15-16`                                     | two `useCompanies`                    | mount                                     | SPIN via `Section`                                                                 |
+| `components/ui/PendingCompaniesBanner.tsx:9`                                 | `useCompanies("pending", region)`     | mount                                     | `loading` ignored; renders `null` until non-empty                                  |
 
 ### 3.7 Settings / account
 
-| File:line | Operation | Trigger | Loading |
-|---|---|---|---|
-| `components/screens/AccountScreen.tsx:30` | `sendPasswordResetEmail` | "Changer mon mot de passe" → confirm | DIM — `resetBusy` `:23`, `disabled` `:79` |
-| `components/screens/AccountScreen.tsx:72` | `signOut` passed **directly** as `onPress` | "Se déconnecter" | **NONE** |
-| `components/screens/AccountScreen.tsx:19-20,55` | `useAccount` + `useCompany` | mount | `loading` present, rendered as `return null` |
-| `components/form/SettingsList.tsx:37` | `setRegion` → `void saveRegion(r)` | région dropdown | **NONE** — optimistic |
+| File:line                                       | Operation                                  | Trigger                              | Loading                                      |
+| ----------------------------------------------- | ------------------------------------------ | ------------------------------------ | -------------------------------------------- |
+| `components/screens/AccountScreen.tsx:30`       | `sendPasswordResetEmail`                   | "Changer mon mot de passe" → confirm | DIM — `resetBusy` `:23`, `disabled` `:79`    |
+| `components/screens/AccountScreen.tsx:72`       | `signOut` passed **directly** as `onPress` | "Se déconnecter"                     | **NONE**                                     |
+| `components/screens/AccountScreen.tsx:19-20,55` | `useAccount` + `useCompany`                | mount                                | `loading` present, rendered as `return null` |
+| `components/form/SettingsList.tsx:37`           | `setRegion` → `void saveRegion(r)`         | région dropdown                      | **NONE** — optimistic                        |
 
 Stubs, not yet async: "Supprimer mon compte" (`AccountScreen.tsx:89-94`) and back-office
 "Inviter un collègue" (`(backoffice)/(tabs)/settings.tsx:11`) are `Alert.alert`
@@ -163,18 +163,18 @@ placeholders. Both will need pending state when wired.
 
 ### 3.8 Infrastructure
 
-| File:line | Note |
-|---|---|
-| `lib/data/callable.ts:24-25` | `httpsCallable` + `await fn(data)` — the single choke point for **every** Cloud Function call. No timeout, no abort, no shared pending signal |
-| `lib/storage/upload.ts:23-32` | `blobFromUri` reads the *whole* file into memory before the upload starts |
-| `lib/storage/upload.ts:42` | `uploadBytes` — **non-resumable, so progress events are not available anywhere in the app** |
-| `lib/storage/upload.ts:43` | `getDownloadURL` — an extra round-trip after every single upload |
-| `lib/storage/upload.ts:54-62` | `makeThumbnail` — CPU-bound `ImageManipulator` pass on the B2B submit path |
-| `lib/firestore/writeWithTimeout.ts:2,33` | `WRITE_TIMEOUT_MS = 15000`, `Promise.race`. Used by `signin.tsx:73` and `b2b-submission/submit.ts:84` only |
-| `firebase.core.ts:24` | `storage.maxUploadRetryTime = 20000` — caps a *failing* upload at 20 s |
-| `firebaseConfig.ts:25-26` | `initializeAuth` with AsyncStorage persistence; its async restore is what `initializing` covers |
-| `app/_layout.tsx:14-23,30` | `AuthGate` — navigation gated on `loading`, splash on `initializing` |
-| `components/ui/ConfirmationView.tsx:20-23` | `setTimeout(router.replace, 1500)` — an *artificial* delay, unrelated to network |
+| File:line                                  | Note                                                                                                                                          |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/data/callable.ts:24-25`               | `httpsCallable` + `await fn(data)` — the single choke point for **every** Cloud Function call. No timeout, no abort, no shared pending signal |
+| `lib/storage/upload.ts:23-32`              | `blobFromUri` reads the _whole_ file into memory before the upload starts                                                                     |
+| `lib/storage/upload.ts:42`                 | `uploadBytes` — **non-resumable, so progress events are not available anywhere in the app**                                                   |
+| `lib/storage/upload.ts:43`                 | `getDownloadURL` — an extra round-trip after every single upload                                                                              |
+| `lib/storage/upload.ts:54-62`              | `makeThumbnail` — CPU-bound `ImageManipulator` pass on the B2B submit path                                                                    |
+| `lib/firestore/writeWithTimeout.ts:2,33`   | `WRITE_TIMEOUT_MS = 15000`, `Promise.race`. Used by `signin.tsx:73` and `b2b-submission/submit.ts:84` only                                    |
+| `firebase.core.ts:24`                      | `storage.maxUploadRetryTime = 20000` — caps a _failing_ upload at 20 s                                                                        |
+| `firebaseConfig.ts:25-26`                  | `initializeAuth` with AsyncStorage persistence; its async restore is what `initializing` covers                                               |
+| `app/_layout.tsx:14-23,30`                 | `AuthGate` — navigation gated on `loading`, splash on `initializing`                                                                          |
+| `components/ui/ConfirmationView.tsx:20-23` | `setTimeout(router.replace, 1500)` — an _artificial_ delay, unrelated to network                                                              |
 
 ---
 
@@ -183,7 +183,7 @@ placeholders. Both will need pending state when wired.
 ### A. Zero feedback on a long, user-initiated network call
 
 1. **`signin.tsx:43`** — `signInWithEmailAndPassword` has no busy flag; the Login button
-   is double-tappable. The Google and forgot-password paths *on the same screen* are both
+   is double-tappable. The Google and forgot-password paths _on the same screen_ are both
    correctly guarded.
 2. **`add-colleague.tsx:17`** — no guard whatsoever. Each extra tap sends another
    invitation email.
@@ -191,7 +191,7 @@ placeholders. Both will need pending state when wired.
    in `writeWithTimeout`. Offline, Firestore buffers the write and the promise never
    settles: the button stays live and the screen neither navigates nor errors. An
    indefinite silent hang.
-4. **`DossierChatScreen.tsx:63`** — fire-and-forget `send()` over up to five *sequential*
+4. **`DossierChatScreen.tsx:63`** — fire-and-forget `send()` over up to five _sequential_
    uploads, while `ChatComposer.tsx:45-51` clears the text and attachments immediately.
    A failure alerts the user after their input is already lost. This is a data-loss bug,
    not only a missing spinner.
@@ -233,13 +233,13 @@ upload begins; `makeThumbnail`'s CPU-bound pass.
 
 ### New primitives
 
-| Primitive | Path | Replaces |
-|---|---|---|
-| `Spinner` + `ScreenLoader` | `src/components/ui/Spinner.tsx` | The five duplicated `ActivityIndicator`s and their ad-hoc padding. `ActivityIndicator` now appears in this file and nowhere else in `src/` |
-| `ScreenMessage` | `src/components/ui/ScreenMessage.tsx` | Per-screen "introuvable" `Text` styling; new home for screen-level read errors |
-| `Button` `loading` | `src/components/ui/Button.tsx` | Every hand-rolled `busy` boolean that only dimmed a button |
-| `useAsyncAction` | `src/lib/ui/useAsyncAction.ts` | `companies/[id]`'s `run()`, `googleBusy`/`forgotBusy`/`resetBusy`, and the ungated sites in A |
-| `frenchAuthMessage` | `src/lib/auth/authErrors.ts` | The `code?.startsWith("auth/") ? … : …` ladder in `signin.tsx` |
+| Primitive                  | Path                                  | Replaces                                                                                                                                   |
+| -------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Spinner` + `ScreenLoader` | `src/components/ui/Spinner.tsx`       | The five duplicated `ActivityIndicator`s and their ad-hoc padding. `ActivityIndicator` now appears in this file and nowhere else in `src/` |
+| `ScreenMessage`            | `src/components/ui/ScreenMessage.tsx` | Per-screen "introuvable" `Text` styling; new home for screen-level read errors                                                             |
+| `Button` `loading`         | `src/components/ui/Button.tsx`        | Every hand-rolled `busy` boolean that only dimmed a button                                                                                 |
+| `useAsyncAction`           | `src/lib/ui/useAsyncAction.ts`        | `companies/[id]`'s `run()`, `googleBusy`/`forgotBusy`/`resetBusy`, and the ungated sites in A                                              |
+| `frenchAuthMessage`        | `src/lib/auth/authErrors.ts`          | The `code?.startsWith("auth/") ? … : …` ladder in `signin.tsx`                                                                             |
 
 `useAsyncAction` is the load-bearing one: it owns the re-entry guard, the pending flag and
 the mapped-error surfacing, and `useInvite` / `useDossierManagement` compose it so their
@@ -253,9 +253,9 @@ Two design points worth keeping:
 - **The guard is a ref, the flag is state.** They are not redundant. `pending` only lands
   on the next render, so a second tap in the same tick would sail past a state-only check
   — which is exactly why the funnels reached for a `useRef` in the first place. The bug
-  was never the ref; it was having *only* the ref.
+  was never the ref; it was having _only_ the ref.
 - **`loading` beats `disabled` in `Button`.** A button that is both would otherwise dim
-  *and* spin, which reads as broken. On a screen that locks every button while one acts
+  _and_ spin, which reads as broken. On a screen that locks every button while one acts
   (`companies/[id]`), the acting button spins at full strength and its siblings dim.
 
 ### Behaviour changes
@@ -263,7 +263,7 @@ Two design points worth keeping:
 - **Funnels.** `useStepForm` now returns `submitting` (react-hook-form's `isSubmitting`)
   and refuses to re-enter `next` while it is true; `FormLayout` takes `busy` and renders
   the nav buttons as `ui/Button`s, so "Envoyer" spins and both disable. All five `useRef`
-  guards are gone. *(Chosen over a full-screen overlay.)*
+  guards are gone. _(Chosen over a full-screen overlay.)_
 - **Chat.** `useSendMessage` holds an optimistic `pending` list: a sent message appears in
   the thread immediately, greyed with a spinner, and on failure keeps the user's text and
   attachments with **Réessayer** / **Supprimer**. This removes the data-loss bug in A.4 —
@@ -272,7 +272,7 @@ Two design points worth keeping:
 
   Retry re-sends under the **original** message id, so it cannot duplicate the message:
   `sendMessage` writes with `create()` (`functions/src/messages/index.ts:31`), which
-  rejects an id that already exists. That also means a send whose *response* was lost —
+  rejects an id that already exists. That also means a send whose _response_ was lost —
   message written, client saw an error — could never be retried successfully. So a
   placeholder is dropped once its id shows up in the live thread: `useMessages` now
   returns `WithId<Message>` and the delivered document is the evidence that the send
@@ -299,6 +299,7 @@ Two design points worth keeping:
 
   Scope of "a failure loses nothing": within the screen's lifetime. `pending` is component
   state, so navigating away from a thread with a failed bubble still discards it.
+
 - **Dossier update.** Wrapped in `writeWithTimeout`, so A.3 fails in 15 s instead of
   hanging forever offline.
 - **`Section` gained an `error` state** (precedence: loading → error → empty → list),

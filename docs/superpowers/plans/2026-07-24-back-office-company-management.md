@@ -23,9 +23,11 @@
 ### Task 1: Extend the `Company` data model
 
 **Files:**
+
 - Modify: `src/lib/firestore/schema.ts`
 
 **Interfaces:**
+
 - Produces: `Company` gains `departement: string`, `region: Region`, `validatedAt: Timestamp | null`, `createdByName: string`; `COMPANY_STATUSES = ["pending", "active"] as const`.
 
 - [ ] **Step 1: Trim `COMPANY_STATUSES`**
@@ -79,11 +81,13 @@ git commit -m "feat(schema): add departement/region/validatedAt/createdByName to
 ### Task 2: Registration writes the company region + new fields
 
 **Files:**
+
 - Modify: `functions/src/registration/schemas.ts`
 - Modify: `functions/src/registration/core.ts`
 - Test: `functions/src/registration/core.test.ts`
 
 **Interfaces:**
+
 - Consumes: `resolveRegion(departement)` from `functions/src/regions.ts`.
 - Produces: `registerCompanyCore` now writes `departement`, `region`, `validatedAt: null`, `createdByName` on the company doc. `RegisterCompanyInput` gains optional `companyDepartement`.
 
@@ -121,9 +125,18 @@ test("registerCompany (password) creates pending company+user, pins claims, emai
     createdByName: "Camille Durand",
     validatedAt: null,
   });
-  expect(d.calls.users["uid_new"]).toMatchObject({ role: "b2b", companyId: "comp_new", status: "pending" });
-  expect(d.calls.claims).toEqual({ uid: "uid_new", claims: { role: "b2b", companyId: "comp_new", status: "pending" } });
-  expect(d.calls.emails).toEqual([{ kind: "applicant", to: "c@x.fr", name: "Garage X" }]);
+  expect(d.calls.users["uid_new"]).toMatchObject({
+    role: "b2b",
+    companyId: "comp_new",
+    status: "pending",
+  });
+  expect(d.calls.claims).toEqual({
+    uid: "uid_new",
+    claims: { role: "b2b", companyId: "comp_new", status: "pending" },
+  });
+  expect(d.calls.emails).toEqual([
+    { kind: "applicant", to: "c@x.fr", name: "Garage X" },
+  ]);
 });
 ```
 
@@ -145,18 +158,18 @@ import { resolveRegion } from "../regions";
 Then in `registerCompanyCore`, replace the `writeCompany` call:
 
 ```ts
-  const companyId = deps.newCompanyId();
-  const companyDepartement = input.companyDepartement ?? input.departement;
-  await deps.writeCompany(companyId, {
-    siret: input.siret,
-    name: input.companyName,
-    status: "pending",
-    departement: companyDepartement,
-    region: resolveRegion(companyDepartement),
-    createdBy: uid,
-    createdByName: `${input.prenom} ${input.nom}`,
-    validatedAt: null,
-  });
+const companyId = deps.newCompanyId();
+const companyDepartement = input.companyDepartement ?? input.departement;
+await deps.writeCompany(companyId, {
+  siret: input.siret,
+  name: input.companyName,
+  status: "pending",
+  departement: companyDepartement,
+  region: resolveRegion(companyDepartement),
+  createdBy: uid,
+  createdByName: `${input.prenom} ${input.nom}`,
+  validatedAt: null,
+});
 ```
 
 - [ ] **Step 5: Run the test to verify it passes**
@@ -176,11 +189,13 @@ git commit -m "feat(functions): registerCompany derives + stores company region 
 ### Task 3: `approveCompanyCore` (pure logic + tests)
 
 **Files:**
+
 - Create: `functions/src/registration/backoffice.ts`
 - Test: `functions/src/registration/backoffice.test.ts`
 - Modify: `functions/src/registration/core.ts` (extend `RegErrorCode`)
 
 **Interfaces:**
+
 - Consumes: `RegError`, `RegErrorCode`, `CallerClaims` from `./core`.
 - Produces: `BackofficeDeps` interface; `approveCompanyCore(companyId: string, caller: CallerClaims, deps: BackofficeDeps): Promise<void>`.
 
@@ -190,16 +205,23 @@ In `functions/src/registration/core.ts`, change:
 
 ```ts
 export type RegErrorCode =
-  | "unauthenticated" | "permission-denied" | "already-exists"
-  | "invalid-argument" | "not-found";
+  | "unauthenticated"
+  | "permission-denied"
+  | "already-exists"
+  | "invalid-argument"
+  | "not-found";
 ```
 
 to:
 
 ```ts
 export type RegErrorCode =
-  | "unauthenticated" | "permission-denied" | "already-exists"
-  | "invalid-argument" | "not-found" | "failed-precondition";
+  | "unauthenticated"
+  | "permission-denied"
+  | "already-exists"
+  | "invalid-argument"
+  | "not-found"
+  | "failed-precondition";
 ```
 
 - [ ] **Step 2: Write the failing test**
@@ -210,23 +232,48 @@ Create `functions/src/registration/backoffice.test.ts`:
 import { approveCompanyCore, type BackofficeDeps } from "./backoffice";
 import type { CallerClaims } from "./core";
 
-const boCaller: CallerClaims = { uid: "bo1", role: "backoffice", status: "active", companyId: null };
+const boCaller: CallerClaims = {
+  uid: "bo1",
+  role: "backoffice",
+  status: "active",
+  companyId: null,
+};
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function fakeDeps(over: Partial<BackofficeDeps> = {}): BackofficeDeps & { calls: any } {
+function fakeDeps(
+  over: Partial<BackofficeDeps> = {},
+): BackofficeDeps & { calls: any } {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const calls: any = { activated: [], emails: [], order: [] };
   return {
     calls,
     getCompany: async () => ({ name: "Garage X", status: "pending" }),
-    getPendingCompanyUsers: async () => [{ uid: "owner1", email: "owner@x.fr" }],
-    activateUser: async (uid) => { calls.activated.push(uid); calls.order.push(`activate:${uid}`); },
-    setCompanyActive: async (id) => { calls.companyActive = id; calls.order.push(`company:${id}`); },
-    sendApprovalEmail: async (to, name) => { calls.emails.push({ to, name }); },
-    deleteStorage: async () => { throw new Error("must not be called"); },
-    deleteDossiers: async () => { throw new Error("must not be called"); },
-    deleteUsers: async () => { throw new Error("must not be called"); },
-    deleteCompany: async () => { throw new Error("must not be called"); },
+    getPendingCompanyUsers: async () => [
+      { uid: "owner1", email: "owner@x.fr" },
+    ],
+    activateUser: async (uid) => {
+      calls.activated.push(uid);
+      calls.order.push(`activate:${uid}`);
+    },
+    setCompanyActive: async (id) => {
+      calls.companyActive = id;
+      calls.order.push(`company:${id}`);
+    },
+    sendApprovalEmail: async (to, name) => {
+      calls.emails.push({ to, name });
+    },
+    deleteStorage: async () => {
+      throw new Error("must not be called");
+    },
+    deleteDossiers: async () => {
+      throw new Error("must not be called");
+    },
+    deleteUsers: async () => {
+      throw new Error("must not be called");
+    },
+    deleteCompany: async () => {
+      throw new Error("must not be called");
+    },
     ...over,
   };
 }
@@ -242,18 +289,28 @@ test("approveCompany activates the owner + company and emails the applicant", as
 test("approveCompany rejects a non-backoffice caller", async () => {
   const d = fakeDeps();
   await expect(
-    approveCompanyCore("comp_1", { uid: "u", role: "b2b", status: "active", companyId: "c" }, d),
+    approveCompanyCore(
+      "comp_1",
+      { uid: "u", role: "b2b", status: "active", companyId: "c" },
+      d,
+    ),
   ).rejects.toMatchObject({ code: "permission-denied" });
 });
 
 test("approveCompany rejects a company that is not pending", async () => {
-  const d = fakeDeps({ getCompany: async () => ({ name: "Garage X", status: "active" }) });
-  await expect(approveCompanyCore("comp_1", boCaller, d)).rejects.toMatchObject({ code: "failed-precondition" });
+  const d = fakeDeps({
+    getCompany: async () => ({ name: "Garage X", status: "active" }),
+  });
+  await expect(approveCompanyCore("comp_1", boCaller, d)).rejects.toMatchObject(
+    { code: "failed-precondition" },
+  );
 });
 
 test("approveCompany rejects an unknown company", async () => {
   const d = fakeDeps({ getCompany: async () => null });
-  await expect(approveCompanyCore("nope", boCaller, d)).rejects.toMatchObject({ code: "not-found" });
+  await expect(approveCompanyCore("nope", boCaller, d)).rejects.toMatchObject({
+    code: "not-found",
+  });
 });
 ```
 
@@ -271,7 +328,9 @@ import { RegError, type CallerClaims } from "./core";
 
 export interface BackofficeDeps {
   getCompany(id: string): Promise<{ name: string; status: string } | null>;
-  getPendingCompanyUsers(companyId: string): Promise<{ uid: string; email: string }[]>;
+  getPendingCompanyUsers(
+    companyId: string,
+  ): Promise<{ uid: string; email: string }[]>;
   activateUser(uid: string): Promise<void>;
   setCompanyActive(id: string): Promise<void>;
   sendApprovalEmail(to: string, companyName: string): Promise<void>;
@@ -283,7 +342,10 @@ export interface BackofficeDeps {
 
 function assertBackoffice(caller: CallerClaims): void {
   if (caller.role !== "backoffice" || caller.status !== "active") {
-    throw new RegError("permission-denied", "Action réservée à l'équipe Bike-eco.");
+    throw new RegError(
+      "permission-denied",
+      "Action réservée à l'équipe Bike-eco.",
+    );
   }
 }
 
@@ -296,12 +358,16 @@ export async function approveCompanyCore(
   const company = await deps.getCompany(companyId);
   if (!company) throw new RegError("not-found", "Entreprise introuvable.");
   if (company.status !== "pending") {
-    throw new RegError("failed-precondition", "Cette entreprise n'est pas en attente de validation.");
+    throw new RegError(
+      "failed-precondition",
+      "Cette entreprise n'est pas en attente de validation.",
+    );
   }
   const users = await deps.getPendingCompanyUsers(companyId);
   for (const user of users) await deps.activateUser(user.uid);
   await deps.setCompanyActive(companyId);
-  if (users.length > 0) await deps.sendApprovalEmail(users[0].email, company.name);
+  if (users.length > 0)
+    await deps.sendApprovalEmail(users[0].email, company.name);
 }
 ```
 
@@ -322,10 +388,12 @@ git commit -m "feat(functions): approveCompanyCore + failed-precondition error c
 ### Task 4: `deleteCompanyCore` (pure cascade logic + tests)
 
 **Files:**
+
 - Modify: `functions/src/registration/backoffice.ts`
 - Test: `functions/src/registration/backoffice.test.ts`
 
 **Interfaces:**
+
 - Produces: `deleteCompanyCore(companyId: string, caller: CallerClaims, deps: BackofficeDeps): Promise<void>` — invokes the four teardown deps in order: `deleteStorage` → `deleteDossiers` → `deleteUsers` → `deleteCompany`.
 
 - [ ] **Step 1: Write the failing test**
@@ -333,7 +401,11 @@ git commit -m "feat(functions): approveCompanyCore + failed-precondition error c
 Extend the existing `./backoffice` import at the top of `functions/src/registration/backoffice.test.ts` to add `deleteCompanyCore` (avoid a second `import` from the same module — `no-duplicate-imports`):
 
 ```ts
-import { approveCompanyCore, deleteCompanyCore, type BackofficeDeps } from "./backoffice";
+import {
+  approveCompanyCore,
+  deleteCompanyCore,
+  type BackofficeDeps,
+} from "./backoffice";
 ```
 
 Then append the cascade tests:
@@ -347,10 +419,18 @@ function cascadeDeps(over: Partial<BackofficeDeps> = {}) {
     activateUser: async () => {},
     setCompanyActive: async () => {},
     sendApprovalEmail: async () => {},
-    deleteStorage: async () => { order.push("storage"); },
-    deleteDossiers: async () => { order.push("dossiers"); },
-    deleteUsers: async () => { order.push("users"); },
-    deleteCompany: async () => { order.push("company"); },
+    deleteStorage: async () => {
+      order.push("storage");
+    },
+    deleteDossiers: async () => {
+      order.push("dossiers");
+    },
+    deleteUsers: async () => {
+      order.push("users");
+    },
+    deleteCompany: async () => {
+      order.push("company");
+    },
     ...over,
   };
   return { deps, order };
@@ -365,7 +445,11 @@ test("deleteCompany cascades storage → dossiers → users → company", async 
 test("deleteCompany rejects a non-backoffice caller", async () => {
   const { deps } = cascadeDeps();
   await expect(
-    deleteCompanyCore("comp_1", { uid: "u", role: "b2b", status: "active", companyId: "c" }, deps),
+    deleteCompanyCore(
+      "comp_1",
+      { uid: "u", role: "b2b", status: "active", companyId: "c" },
+      deps,
+    ),
   ).rejects.toMatchObject({ code: "permission-denied" });
 });
 ```
@@ -414,12 +498,14 @@ git commit -m "feat(functions): deleteCompanyCore cascade"
 ### Task 5: Wire the `approveCompany` / `deleteCompany` callables
 
 **Files:**
+
 - Modify: `functions/src/registration/schemas.ts`
 - Modify: `functions/src/registration/emails.ts`
 - Modify: `functions/src/registration/index.ts`
 - Modify: `functions/src/index.ts` (re-export)
 
 **Interfaces:**
+
 - Consumes: `approveCompanyCore`, `deleteCompanyCore`, `BackofficeDeps` from `./backoffice`; `sendApprovalEmail` from `./emails`.
 - Produces: deployed callables `approveCompany({ companyId }) → { ok: true }` and `deleteCompany({ companyId }) → { ok: true }`.
 
@@ -428,7 +514,9 @@ git commit -m "feat(functions): deleteCompanyCore cascade"
 In `functions/src/registration/schemas.ts`, append:
 
 ```ts
-export const companyActionSchema = z.object({ companyId: z.string().trim().min(1) });
+export const companyActionSchema = z.object({
+  companyId: z.string().trim().min(1),
+});
 export type CompanyActionInput = z.infer<typeof companyActionSchema>;
 ```
 
@@ -437,7 +525,10 @@ export type CompanyActionInput = z.infer<typeof companyActionSchema>;
 In `functions/src/registration/emails.ts`, append:
 
 ```ts
-export async function sendApprovalEmail(to: string, companyName: string): Promise<void> {
+export async function sendApprovalEmail(
+  to: string,
+  companyName: string,
+): Promise<void> {
   await sendMail({
     to,
     subject: "Bike-eco — Votre compte est validé",
@@ -462,11 +553,22 @@ import { getStorage } from "firebase-admin/storage";
 Extend the `./backoffice`, `./emails`, and `./schemas` imports:
 
 ```ts
-import { approveCompanyCore, deleteCompanyCore, type BackofficeDeps } from "./backoffice";
-import { sendApplicantEmail, sendApprovalEmail, sendInviteEmail } from "./emails";
 import {
-  acceptInviteSchema, companyActionSchema, registerCompanySchema,
-  resolveInviteSchema, sendInviteSchema,
+  approveCompanyCore,
+  deleteCompanyCore,
+  type BackofficeDeps,
+} from "./backoffice";
+import {
+  sendApplicantEmail,
+  sendApprovalEmail,
+  sendInviteEmail,
+} from "./emails";
+import {
+  acceptInviteSchema,
+  companyActionSchema,
+  registerCompanySchema,
+  resolveInviteSchema,
+  sendInviteSchema,
 } from "./schemas";
 ```
 
@@ -476,15 +578,21 @@ Extend the existing `./core` import (near the top of the file) to also bring in 
 import {
   acceptInviteCore,
   RegError,
-  registerCompanyCore, resolveInviteCore, sendInviteCore,
-  type CallerClaims, type Deps, type StoredInvitation,
+  registerCompanyCore,
+  resolveInviteCore,
+  sendInviteCore,
+  type CallerClaims,
+  type Deps,
+  type StoredInvitation,
 } from "./core";
 ```
 
 Add a `CallerClaims` builder and the backoffice deps factory (after `realDeps()`):
 
 ```ts
-function callerFrom(req: { auth?: { uid: string; token: Record<string, unknown> } }): CallerClaims {
+function callerFrom(req: {
+  auth?: { uid: string; token: Record<string, unknown> };
+}): CallerClaims {
   const token = req.auth!.token;
   return {
     uid: req.auth!.uid,
@@ -503,38 +611,63 @@ function backofficeDeps(): BackofficeDeps {
       return { name: d.name, status: d.status };
     },
     getPendingCompanyUsers: async (companyId) => {
-      const snap = await db().collection("users")
-        .where("companyId", "==", companyId).where("status", "==", "pending").get();
-      return snap.docs.map((doc) => ({ uid: doc.id, email: doc.data().email as string }));
+      const snap = await db()
+        .collection("users")
+        .where("companyId", "==", companyId)
+        .where("status", "==", "pending")
+        .get();
+      return snap.docs.map((doc) => ({
+        uid: doc.id,
+        email: doc.data().email as string,
+      }));
     },
     activateUser: async (uid) => {
       await db().collection("users").doc(uid).update({
-        status: "active", updatedAt: FieldValue.serverTimestamp(),
+        status: "active",
+        updatedAt: FieldValue.serverTimestamp(),
       });
       const existing = (await getAuth().getUser(uid)).customClaims ?? {};
-      await getAuth().setCustomUserClaims(uid, { ...existing, status: "active" });
+      await getAuth().setCustomUserClaims(uid, {
+        ...existing,
+        status: "active",
+      });
     },
     setCompanyActive: async (id) => {
       await db().collection("companies").doc(id).update({
-        status: "active", validatedAt: FieldValue.serverTimestamp(),
+        status: "active",
+        validatedAt: FieldValue.serverTimestamp(),
       });
     },
     sendApprovalEmail,
     deleteStorage: async (companyId) => {
-      await getStorage().bucket().deleteFiles({ prefix: `dossiers/${companyId}/` });
+      await getStorage()
+        .bucket()
+        .deleteFiles({ prefix: `dossiers/${companyId}/` });
     },
     deleteDossiers: async (companyId) => {
-      const snap = await db().collection("dossiers").where("companyId", "==", companyId).get();
+      const snap = await db()
+        .collection("dossiers")
+        .where("companyId", "==", companyId)
+        .get();
       await Promise.all(snap.docs.map((doc) => db().recursiveDelete(doc.ref)));
     },
     deleteUsers: async (companyId) => {
-      const snap = await db().collection("users").where("companyId", "==", companyId).get();
-      await Promise.all(snap.docs.map(async (doc) => {
-        await getAuth().deleteUser(doc.id).catch(() => undefined); // Auth user may already be gone
-        await doc.ref.delete();
-      }));
+      const snap = await db()
+        .collection("users")
+        .where("companyId", "==", companyId)
+        .get();
+      await Promise.all(
+        snap.docs.map(async (doc) => {
+          await getAuth()
+            .deleteUser(doc.id)
+            .catch(() => undefined); // Auth user may already be gone
+          await doc.ref.delete();
+        }),
+      );
     },
-    deleteCompany: async (id) => { await db().collection("companies").doc(id).delete(); },
+    deleteCompany: async (id) => {
+      await db().collection("companies").doc(id).delete();
+    },
   };
 }
 ```
@@ -542,14 +675,20 @@ function backofficeDeps(): BackofficeDeps {
 Add the two callables (after `acceptInvite`):
 
 ```ts
-export const approveCompany = onCall({ secrets: B2C_EMAIL_SECRETS }, async (req) => {
-  if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
-  try {
-    const { companyId } = companyActionSchema.parse(req.data);
-    await approveCompanyCore(companyId, callerFrom(req), backofficeDeps());
-    return { ok: true };
-  } catch (e) { toHttps(e); }
-});
+export const approveCompany = onCall(
+  { secrets: B2C_EMAIL_SECRETS },
+  async (req) => {
+    if (!req.auth)
+      throw new HttpsError("unauthenticated", "Connexion requise.");
+    try {
+      const { companyId } = companyActionSchema.parse(req.data);
+      await approveCompanyCore(companyId, callerFrom(req), backofficeDeps());
+      return { ok: true };
+    } catch (e) {
+      toHttps(e);
+    }
+  },
+);
 
 export const deleteCompany = onCall(async (req) => {
   if (!req.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
@@ -557,7 +696,9 @@ export const deleteCompany = onCall(async (req) => {
     const { companyId } = companyActionSchema.parse(req.data);
     await deleteCompanyCore(companyId, callerFrom(req), backofficeDeps());
     return { ok: true };
-  } catch (e) { toHttps(e); }
+  } catch (e) {
+    toHttps(e);
+  }
 });
 ```
 
@@ -575,8 +716,12 @@ In `functions/src/index.ts`, change the re-export line to:
 
 ```ts
 export {
-  registerCompany, sendInvite, resolveInvite, acceptInvite,
-  approveCompany, deleteCompany,
+  registerCompany,
+  sendInvite,
+  resolveInvite,
+  acceptInvite,
+  approveCompany,
+  deleteCompany,
 } from "./registration";
 ```
 
@@ -597,9 +742,11 @@ git commit -m "feat(functions): approveCompany + deleteCompany callables"
 ### Task 6: Client callable wrappers
 
 **Files:**
+
 - Modify: `src/lib/data/registration.ts`
 
 **Interfaces:**
+
 - Produces: `callApproveCompany(companyId: string): Promise<void>`, `callDeleteCompany(companyId: string): Promise<void>`.
 
 - [ ] **Step 1: Map the new error code**
@@ -616,9 +763,13 @@ Append to `src/lib/data/registration.ts`:
 
 ```ts
 export const callApproveCompany = (companyId: string) =>
-  call<{ companyId: string }, { ok: true }>("approveCompany", { companyId }).then(() => undefined);
+  call<{ companyId: string }, { ok: true }>("approveCompany", {
+    companyId,
+  }).then(() => undefined);
 export const callDeleteCompany = (companyId: string) =>
-  call<{ companyId: string }, { ok: true }>("deleteCompany", { companyId }).then(() => undefined);
+  call<{ companyId: string }, { ok: true }>("deleteCompany", {
+    companyId,
+  }).then(() => undefined);
 ```
 
 - [ ] **Step 3: Typecheck**
@@ -638,12 +789,14 @@ git commit -m "feat(data): approveCompany/deleteCompany callable wrappers"
 ### Task 7: Live company hooks + region selector + indexes
 
 **Files:**
+
 - Create: `src/lib/data/selectCompanies.ts`
 - Create: `src/lib/data/selectCompanies.test.ts`
 - Create: `src/lib/data/useCompanies.ts`
 - Modify: `firestore.indexes.json`
 
 **Interfaces:**
+
 - Consumes: `companiesRef`, `WithId` from `@/lib/firestore/collections`; `useAuth`; `useRegionFilter`.
 - Produces: `filterCompaniesByRegion(list, region)`; `useCompanies(status: CompanyStatus, region?: Region | null): { data: WithId<Company>[]; loading: boolean; error: string | null }`; `useCompany(id)`; `useCompanyUsers(companyId)`.
 
@@ -657,16 +810,21 @@ import type { WithId } from "@/lib/firestore/collections";
 import type { Company } from "@/lib/firestore/schema";
 
 const make = (id: string, region: "NORTH" | "SOUTH"): WithId<Company> =>
-  ({ id, region } as WithId<Company>);
+  ({ id, region }) as WithId<Company>;
 
 test("null region keeps every company", () => {
   const list = [make("a", "NORTH"), make("b", "SOUTH")];
-  expect(filterCompaniesByRegion(list, null).map((c) => c.id)).toEqual(["a", "b"]);
+  expect(filterCompaniesByRegion(list, null).map((c) => c.id)).toEqual([
+    "a",
+    "b",
+  ]);
 });
 
 test("a region keeps only matching companies", () => {
   const list = [make("a", "NORTH"), make("b", "SOUTH")];
-  expect(filterCompaniesByRegion(list, "SOUTH").map((c) => c.id)).toEqual(["b"]);
+  expect(filterCompaniesByRegion(list, "SOUTH").map((c) => c.id)).toEqual([
+    "b",
+  ]);
 });
 ```
 
@@ -709,12 +867,25 @@ Create `src/lib/data/useCompanies.ts`:
 ```ts
 import { useEffect, useState } from "react";
 import {
-  doc, onSnapshot, orderBy, query, where,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  where,
   type FirestoreError,
 } from "firebase/firestore";
 
-import { companiesRef, usersRef, type WithId } from "@/lib/firestore/collections";
-import type { AppUser, Company, CompanyStatus, Region } from "@/lib/firestore/schema";
+import {
+  companiesRef,
+  usersRef,
+  type WithId,
+} from "@/lib/firestore/collections";
+import type {
+  AppUser,
+  Company,
+  CompanyStatus,
+  Region,
+} from "@/lib/firestore/schema";
 import { mapDataError } from "./dataErrors";
 import { filterCompaniesByRegion } from "./selectCompanies";
 
@@ -734,18 +905,34 @@ export function useCompanies(status: CompanyStatus, region?: Region | null) {
   useEffect(() => {
     const q =
       status === "pending"
-        ? query(companiesRef, where("status", "==", "pending"), orderBy("createdAt", "asc"))
-        : query(companiesRef, where("status", "==", "active"), orderBy("validatedAt", "desc"));
+        ? query(
+            companiesRef,
+            where("status", "==", "pending"),
+            orderBy("createdAt", "asc"),
+          )
+        : query(
+            companiesRef,
+            where("status", "==", "active"),
+            orderBy("validatedAt", "desc"),
+          );
     return onSnapshot(
       q,
-      (snap) => setResolved({ status, data: snap.docs.map((d) => ({ ...d.data(), id: d.id })), error: null }),
-      (err: FirestoreError) => setResolved({ status, data: [], error: mapDataError(err.code) }),
+      (snap) =>
+        setResolved({
+          status,
+          data: snap.docs.map((d) => ({ ...d.data(), id: d.id })),
+          error: null,
+        }),
+      (err: FirestoreError) =>
+        setResolved({ status, data: [], error: mapDataError(err.code) }),
     );
   }, [status]);
 
   const loading = resolved?.status !== status;
   return {
-    data: loading ? [] : filterCompaniesByRegion(resolved!.data, region ?? null),
+    data: loading
+      ? []
+      : filterCompaniesByRegion(resolved!.data, region ?? null),
     loading,
     error: loading ? null : resolved!.error,
   };
@@ -762,13 +949,23 @@ export function useCompany(id: string) {
   useEffect(() => {
     return onSnapshot(
       doc(companiesRef, id),
-      (snap) => setResolved({ id, data: snap.exists() ? { ...snap.data(), id: snap.id } : null, error: null }),
-      (err: FirestoreError) => setResolved({ id, data: null, error: mapDataError(err.code) }),
+      (snap) =>
+        setResolved({
+          id,
+          data: snap.exists() ? { ...snap.data(), id: snap.id } : null,
+          error: null,
+        }),
+      (err: FirestoreError) =>
+        setResolved({ id, data: null, error: mapDataError(err.code) }),
     );
   }, [id]);
 
   const loading = resolved?.id !== id;
-  return { data: loading ? null : resolved!.data, loading, error: loading ? null : resolved!.error };
+  return {
+    data: loading ? null : resolved!.data,
+    loading,
+    error: loading ? null : resolved!.error,
+  };
 }
 
 /** All users of a company, live. */
@@ -782,13 +979,23 @@ export function useCompanyUsers(companyId: string) {
   useEffect(() => {
     return onSnapshot(
       query(usersRef, where("companyId", "==", companyId)),
-      (snap) => setResolved({ companyId, data: snap.docs.map((d) => ({ ...d.data(), id: d.id })), error: null }),
-      (err: FirestoreError) => setResolved({ companyId, data: [], error: mapDataError(err.code) }),
+      (snap) =>
+        setResolved({
+          companyId,
+          data: snap.docs.map((d) => ({ ...d.data(), id: d.id })),
+          error: null,
+        }),
+      (err: FirestoreError) =>
+        setResolved({ companyId, data: [], error: mapDataError(err.code) }),
     );
   }, [companyId]);
 
   const loading = resolved?.companyId !== companyId;
-  return { data: loading ? [] : resolved!.data, loading, error: loading ? null : resolved!.error };
+  return {
+    data: loading ? [] : resolved!.data,
+    loading,
+    error: loading ? null : resolved!.error,
+  };
 }
 ```
 
@@ -832,9 +1039,11 @@ git commit -m "feat(data): useCompanies/useCompany/useCompanyUsers hooks + index
 ### Task 8: Seed pending + active companies for manual testing
 
 **Files:**
+
 - Modify: `scripts/seed.ts`
 
 **Interfaces:**
+
 - Produces: emulator data containing at least one `pending` company (approvable/declinable) and `active` companies carrying `region`/`departement`/`validatedAt`/`createdByName`.
 
 - [ ] **Step 1: Add the new fields to existing company docs**
@@ -842,17 +1051,17 @@ git commit -m "feat(data): useCompanies/useCompany/useCompanyUsers hooks + index
 In `scripts/seed.ts`, update every `companies/...` `.set({...})` call to include the new fields. For `comp_nord`:
 
 ```ts
-  await db.doc(`companies/comp_nord`).set({
-    siret: "11111111111111",
-    name: "Garage du Nord",
-    status: "active",
-    departement: "75 - Paris",
-    region: "NORTH",
-    createdBy: "user_b2b",
-    createdByName: "Camille Durand",
-    validatedAt: now,
-    createdAt: now,
-  });
+await db.doc(`companies/comp_nord`).set({
+  siret: "11111111111111",
+  name: "Garage du Nord",
+  status: "active",
+  departement: "75 - Paris",
+  region: "NORTH",
+  createdBy: "user_b2b",
+  createdByName: "Camille Durand",
+  validatedAt: now,
+  createdAt: now,
+});
 ```
 
 For `comp_sud`, mirror it with `departement: "13 - Bouches-du-Rhône"`, `region: "SOUTH"`, `createdBy`/`createdByName` matching its seeded owner, `validatedAt: now`.
@@ -862,24 +1071,32 @@ For `comp_sud`, mirror it with `departement: "13 - Bouches-du-Rhône"`, `region:
 In `scripts/seed.ts`, after the existing seeds, add:
 
 ```ts
-  // A pending company for exercising the 4b validation loop.
-  await db.doc(`companies/comp_pending`).set({
-    siret: "22222222222222",
-    name: "Garage Nouveau",
-    status: "pending",
-    departement: "33 - Gironde",
-    region: "SOUTH",
-    createdBy: "user_pending_owner",
-    createdByName: "Alex Martin",
-    validatedAt: null,
-    createdAt: now,
-  });
-  await db.doc(`users/user_pending_owner`).set({
-    role: "b2b", companyId: "comp_pending", region: null,
-    nom: "Martin", prenom: "Alex", email: "alex@nouveau.fr",
-    telephone: "0655667788", departement: "33 - Gironde", ville: "Bordeaux",
-    status: "pending", createdAt: now, updatedAt: now,
-  });
+// A pending company for exercising the 4b validation loop.
+await db.doc(`companies/comp_pending`).set({
+  siret: "22222222222222",
+  name: "Garage Nouveau",
+  status: "pending",
+  departement: "33 - Gironde",
+  region: "SOUTH",
+  createdBy: "user_pending_owner",
+  createdByName: "Alex Martin",
+  validatedAt: null,
+  createdAt: now,
+});
+await db.doc(`users/user_pending_owner`).set({
+  role: "b2b",
+  companyId: "comp_pending",
+  region: null,
+  nom: "Martin",
+  prenom: "Alex",
+  email: "alex@nouveau.fr",
+  telephone: "0655667788",
+  departement: "33 - Gironde",
+  ville: "Bordeaux",
+  status: "pending",
+  createdAt: now,
+  updatedAt: now,
+});
 ```
 
 - [ ] **Step 3: Run the seed against the emulator**
@@ -901,10 +1118,12 @@ git commit -m "chore(seed): company region/validatedAt fields + a pending compan
 ### Task 9: `CompanyCard` + `CompaniesSection` components
 
 **Files:**
+
 - Create: `src/components/ui/CompanyCard.tsx`
 - Create: `src/components/ui/CompaniesSection.tsx`
 
 **Interfaces:**
+
 - Consumes: `WithId<Company>`, `tokens`.
 - Produces: `CompanyCard({ title, subtitle, onManage })`; `CompaniesSection({ title, companies, loading, emptyMessage, renderCard })`.
 
@@ -926,10 +1145,18 @@ export default function CompanyCard({ title, subtitle, onManage }: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={1}>{title}</Text>
-        <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text style={styles.subtitle} numberOfLines={1}>
+          {subtitle}
+        </Text>
       </View>
-      <TouchableOpacity style={styles.manage} onPress={onManage} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.manage}
+        onPress={onManage}
+        activeOpacity={0.7}
+      >
         <Text style={styles.manageText}>Gérer</Text>
       </TouchableOpacity>
     </View>
@@ -956,7 +1183,11 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.sm,
     backgroundColor: tokens.colors.primary,
   },
-  manageText: { color: tokens.colors.primaryText, fontSize: 14, fontWeight: "600" },
+  manageText: {
+    color: tokens.colors.primaryText,
+    fontSize: 14,
+    fontWeight: "600",
+  },
 });
 ```
 
@@ -980,13 +1211,20 @@ interface Props {
 }
 
 export default function CompaniesSection({
-  title, companies, loading, emptyMessage, renderCard,
+  title,
+  companies,
+  loading,
+  emptyMessage,
+  renderCard,
 }: Props) {
   return (
     <View style={styles.section}>
       <Text style={styles.title}>{title}</Text>
       {loading ? (
-        <ActivityIndicator style={styles.spinner} color={tokens.colors.primary} />
+        <ActivityIndicator
+          style={styles.spinner}
+          color={tokens.colors.primary}
+        />
       ) : companies.length === 0 ? (
         <Text style={styles.empty}>{emptyMessage}</Text>
       ) : (
@@ -1022,10 +1260,12 @@ git commit -m "feat(ui): CompanyCard + CompaniesSection"
 ### Task 10: Companies list screen + route
 
 **Files:**
+
 - Create: `src/app/(backoffice)/companies/index.tsx`
 - Modify: `src/app/(backoffice)/_layout.tsx`
 
 **Interfaces:**
+
 - Consumes: `useCompanies`, `useRegionFilter`, `CompaniesSection`, `CompanyCard`.
 - Produces: route `/(backoffice)/companies` rendering the two-section list.
 
@@ -1101,7 +1341,7 @@ Expected: PASS.
 
 - [ ] **Step 4: Manual verification**
 
-With emulators + seed running and signed in as the back-office user, navigate to `/(backoffice)/companies`. Expected: "Vendeurs à valider" shows *Garage Nouveau* (Alex Martin); "Vendeurs enregistrées" shows the active companies. Set "Région gérée" to "Moitié sud" in settings → only SOUTH companies remain.
+With emulators + seed running and signed in as the back-office user, navigate to `/(backoffice)/companies`. Expected: "Vendeurs à valider" shows _Garage Nouveau_ (Alex Martin); "Vendeurs enregistrées" shows the active companies. Set "Région gérée" to "Moitié sud" in settings → only SOUTH companies remain.
 
 - [ ] **Step 5: Commit**
 
@@ -1115,11 +1355,13 @@ git commit -m "feat(backoffice): companies list screen + routes"
 ### Task 11: Company detail screen (approve / decline / delete)
 
 **Files:**
+
 - Create: `src/components/native/CompanyInfoList.tsx`
 - Create: `src/app/(backoffice)/companies/[id].tsx`
 - Modify: `docs/specs/page-company.md`
 
 **Interfaces:**
+
 - Consumes: `useCompany`, `useCompanyUsers`, `callApproveCompany`, `callDeleteCompany`, `AccountInfoList`.
 - Produces: route `/(backoffice)/companies/[id]` with the pending and approved branches.
 
@@ -1135,7 +1377,11 @@ import type { Company } from "@/lib/firestore/schema";
 const LABEL = { fontSize: 14, color: "#71727A" } as const;
 const VALUE = { fontSize: 14, fontWeight: "500", color: "#111" } as const;
 
-export default function CompanyInfoList({ company }: { company: WithId<Company> }) {
+export default function CompanyInfoList({
+  company,
+}: {
+  company: WithId<Company>;
+}) {
   const rows: [string, string][] = [
     ["Entreprise", company.name],
     ["SIRET", company.siret],
@@ -1165,7 +1411,15 @@ Create `src/app/(backoffice)/companies/[id].tsx`:
 ```tsx
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import AccountInfoList from "@/components/native/AccountInfoList";
 import CompanyInfoList from "@/components/native/CompanyInfoList";
@@ -1183,13 +1437,16 @@ export default function CompanyDetailScreen() {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   if (company.loading || users.loading) {
-    return <ActivityIndicator style={styles.center} color={tokens.colors.primary} />;
+    return (
+      <ActivityIndicator style={styles.center} color={tokens.colors.primary} />
+    );
   }
   if (!company.data) {
     return <Text style={styles.center}>Entreprise introuvable.</Text>;
   }
 
-  const owner = users.data.find((u) => u.id === company.data!.createdBy) ?? users.data[0];
+  const owner =
+    users.data.find((u) => u.id === company.data!.createdBy) ?? users.data[0];
   const isPending = company.data.status === "pending";
 
   async function run(action: () => Promise<void>) {
@@ -1199,7 +1456,10 @@ export default function CompanyDetailScreen() {
       await action();
       router.back();
     } catch (err) {
-      Alert.alert("Action impossible", err instanceof Error ? err.message : "Veuillez réessayer.");
+      Alert.alert(
+        "Action impossible",
+        err instanceof Error ? err.message : "Veuillez réessayer.",
+      );
     } finally {
       setBusy(false);
     }
@@ -1211,7 +1471,11 @@ export default function CompanyDetailScreen() {
       "Cette entreprise et son compte seront définitivement supprimés.",
       [
         { text: "Annuler", style: "cancel" },
-        { text: "Décliner", style: "destructive", onPress: () => run(() => callDeleteCompany(id)) },
+        {
+          text: "Décliner",
+          style: "destructive",
+          onPress: () => run(() => callDeleteCompany(id)),
+        },
       ],
     );
   }
@@ -1224,8 +1488,19 @@ export default function CompanyDetailScreen() {
             Voulez-vous autoriser cette entreprise à vendre des véhicules
           </Text>
           <View style={styles.row}>
-            <Button label="Autoriser" onPress={() => run(() => callApproveCompany(id))} style={styles.flex} disabled={busy} />
-            <Button variant="outlined" label="Décliner inscription" onPress={onDecline} style={styles.flex} disabled={busy} />
+            <Button
+              label="Autoriser"
+              onPress={() => run(() => callApproveCompany(id))}
+              style={styles.flex}
+              disabled={busy}
+            />
+            <Button
+              variant="outlined"
+              label="Décliner inscription"
+              onPress={onDecline}
+              style={styles.flex}
+              disabled={busy}
+            />
           </View>
         </View>
       ) : null}
@@ -1245,35 +1520,59 @@ export default function CompanyDetailScreen() {
       {!isPending ? (
         <>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Autres utilisateurs de cette entreprise</Text>
+            <Text style={styles.sectionTitle}>
+              Autres utilisateurs de cette entreprise
+            </Text>
             {users.data.length === 0 ? (
               <Text style={styles.empty}>Aucun autre utilisateur.</Text>
             ) : (
               users.data.map((u) => (
-                <Text key={u.id} style={styles.userLine}>{`${u.prenom} ${u.nom} — ${u.email}`}</Text>
+                <Text
+                  key={u.id}
+                  style={styles.userLine}
+                >{`${u.prenom} ${u.nom} — ${u.email}`}</Text>
               ))
             )}
           </View>
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Gérer cette entreprise</Text>
-            <Button variant="text" label="Supprimer cette entreprise" onPress={() => setConfirmDelete(true)} style={styles.danger} disabled={busy} />
+            <Button
+              variant="text"
+              label="Supprimer cette entreprise"
+              onPress={() => setConfirmDelete(true)}
+              style={styles.danger}
+              disabled={busy}
+            />
           </View>
         </>
       ) : null}
 
-      <Modal visible={confirmDelete} transparent animationType="fade" onRequestClose={() => setConfirmDelete(false)}>
+      <Modal
+        visible={confirmDelete}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setConfirmDelete(false)}
+      >
         <View style={styles.backdrop}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Supprimer cette entreprise ?</Text>
             <Text style={styles.modalBody}>
-              Cette action supprime définitivement l'entreprise, ses utilisateurs, tous ses dossiers,
-              les conversations et les documents stockés.
+              Cette action supprime définitivement l'entreprise, ses
+              utilisateurs, tous ses dossiers, les conversations et les
+              documents stockés.
             </Text>
-            <Button label="Annuler" onPress={() => setConfirmDelete(false)} disabled={busy} />
+            <Button
+              label="Annuler"
+              onPress={() => setConfirmDelete(false)}
+              disabled={busy}
+            />
             <Button
               variant="text"
-              label="Supprimer tout"
-              onPress={() => { setConfirmDelete(false); void run(() => callDeleteCompany(id)); }}
+              label="Tout supprimer"
+              onPress={() => {
+                setConfirmDelete(false);
+                void run(() => callDeleteCompany(id));
+              }}
               style={styles.danger}
               disabled={busy}
             />
@@ -1286,16 +1585,35 @@ export default function CompanyDetailScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: tokens.space.lg, gap: tokens.space.xl },
-  center: { flex: 1, textAlignVertical: "center", textAlign: "center", padding: tokens.space.xl },
+  center: {
+    flex: 1,
+    textAlignVertical: "center",
+    textAlign: "center",
+    padding: tokens.space.xl,
+  },
   section: { gap: tokens.space.md },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: tokens.colors.primary },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: tokens.colors.primary,
+  },
   row: { flexDirection: "row", gap: tokens.space.md },
   flex: { flex: 1 },
   empty: { fontSize: 14, color: tokens.colors.muted },
   userLine: { fontSize: 14, color: tokens.colors.primary },
   danger: { alignSelf: "flex-start" },
-  backdrop: { flex: 1, backgroundColor: "#0008", justifyContent: "center", padding: tokens.space.lg },
-  modal: { backgroundColor: tokens.colors.surface, borderRadius: tokens.radius.md, padding: tokens.space.lg, gap: tokens.space.md },
+  backdrop: {
+    flex: 1,
+    backgroundColor: "#0008",
+    justifyContent: "center",
+    padding: tokens.space.lg,
+  },
+  modal: {
+    backgroundColor: tokens.colors.surface,
+    borderRadius: tokens.radius.md,
+    padding: tokens.space.lg,
+    gap: tokens.space.md,
+  },
   modalTitle: { fontSize: 18, fontWeight: "700", color: tokens.colors.primary },
   modalBody: { fontSize: 14, color: tokens.colors.muted },
 });
@@ -1303,7 +1621,7 @@ const styles = StyleSheet.create({
 
 - [ ] **Step 3: Sync the spec**
 
-In `docs/specs/page-company.md`, add a line under the pending-section description noting: "Both *Décliner inscription* and *Supprimer cette entreprise* call the same server `deleteCompany` cascade (hard-delete: users + dossiers + chats + stored documents). *Décliner* is the pending-state entry point; *Supprimer* the active-state one."
+In `docs/specs/page-company.md`, add a line under the pending-section description noting: "Both _Décliner inscription_ and _Supprimer cette entreprise_ call the same server `deleteCompany` cascade (hard-delete: users + dossiers + chats + stored documents). _Décliner_ is the pending-state entry point; _Supprimer_ the active-state one."
 
 - [ ] **Step 4: Typecheck + lint**
 
@@ -1312,7 +1630,7 @@ Expected: PASS.
 
 - [ ] **Step 5: Manual verification**
 
-Signed in as back-office: open *Garage Nouveau* → tap **Autoriser** → returns to the list, the company moves to "Vendeurs enregistrées", and (with `DEV_EMAIL_OVERRIDE`) the approval email is logged. Open an active company → **Supprimer cette entreprise** → confirm modal → **Supprimer tout** → the company disappears and its dossiers/users are gone. Re-seed, then try **Décliner** on the pending company → it disappears and its SIRET is reusable.
+Signed in as back-office: open _Garage Nouveau_ → tap **Autoriser** → returns to the list, the company moves to "Vendeurs enregistrées", and (with `DEV_EMAIL_OVERRIDE`) the approval email is logged. Open an active company → **Supprimer cette entreprise** → confirm modal → **Tout supprimer** → the company disappears and its dossiers/users are gone. Re-seed, then try **Décliner** on the pending company → it disappears and its SIRET is reusable.
 
 - [ ] **Step 6: Commit**
 
@@ -1326,6 +1644,7 @@ git commit -m "feat(backoffice): company detail — approve/decline/delete"
 ### Task 12: Pending banner + settings entry point
 
 **Files:**
+
 - Create: `src/components/ui/PendingCompaniesBanner.tsx`
 - Modify: `src/components/screens/DashboardScreen.tsx`
 - Modify: `src/app/(backoffice)/(tabs)/dashboard.tsx`
@@ -1335,6 +1654,7 @@ git commit -m "feat(backoffice): company detail — approve/decline/delete"
 - Modify: `docs/specs/page-dashboard.md`, `docs/specs/page-settings.md`
 
 **Interfaces:**
+
 - Consumes: `useCompanies`, `useRegionFilter`.
 - Produces: `PendingCompaniesBanner({ onPress })`; `DashboardScreen` gains optional `onOpenCompanies?: () => void`; `SettingsList`/`SettingsScreen` gain optional `onManageCompanies?: () => void`.
 
@@ -1349,13 +1669,23 @@ import { useRegionFilter } from "@/lib/data/useRegionFilter";
 import { tokens } from "@/theme/tokens";
 
 /** Back-office only. Renders nothing until there is ≥1 pending registration. */
-export default function PendingCompaniesBanner({ onPress }: { onPress: () => void }) {
+export default function PendingCompaniesBanner({
+  onPress,
+}: {
+  onPress: () => void;
+}) {
   const { region } = useRegionFilter();
   const pending = useCompanies("pending", region);
   if (pending.data.length === 0) return null;
   return (
-    <TouchableOpacity style={styles.banner} activeOpacity={0.85} onPress={onPress}>
-      <Text style={styles.bannerText}>{`${pending.data.length} nouveaux vendeurs à valider`}</Text>
+    <TouchableOpacity
+      style={styles.banner}
+      activeOpacity={0.85}
+      onPress={onPress}
+    >
+      <Text
+        style={styles.bannerText}
+      >{`${pending.data.length} nouveaux vendeurs à valider`}</Text>
     </TouchableOpacity>
   );
 }
@@ -1366,7 +1696,11 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.md,
     backgroundColor: tokens.colors.primary,
   },
-  bannerText: { color: tokens.colors.primaryText, fontSize: 15, fontWeight: "700" },
+  bannerText: {
+    color: tokens.colors.primaryText,
+    fontSize: 15,
+    fontWeight: "700",
+  },
 });
 ```
 
@@ -1394,7 +1728,9 @@ interface Props {
 Add `onOpenCompanies` to the destructure, and inside the `role === "backoffice"` branch's `ScrollView`, before the first `DossiersSection`:
 
 ```tsx
-        {onOpenCompanies ? <PendingCompaniesBanner onPress={onOpenCompanies} /> : null}
+{
+  onOpenCompanies ? <PendingCompaniesBanner onPress={onOpenCompanies} /> : null;
+}
 ```
 
 (No `useCompanies` call is added to `DashboardScreen` itself — the query lives entirely inside the banner component, which only renders for back-office.)
@@ -1424,13 +1760,15 @@ export default function BackofficeDashboard() {
 In `src/components/form/SettingsList.tsx`, add `onManageCompanies?: () => void` to `Props`, destructure it, and render a back-office-only button above the "Région gérée" dropdown:
 
 ```tsx
-      {role === "backoffice" ? (
-        <Button
-          variant="outlined"
-          label="Gérer les entreprises"
-          onPress={() => onManageCompanies?.()}
-        />
-      ) : null}
+{
+  role === "backoffice" ? (
+    <Button
+      variant="outlined"
+      label="Gérer les entreprises"
+      onPress={() => onManageCompanies?.()}
+    />
+  ) : null;
+}
 ```
 
 - [ ] **Step 5: Thread the prop through `SettingsScreen`**
@@ -1438,7 +1776,13 @@ In `src/components/form/SettingsList.tsx`, add `onManageCompanies?: () => void` 
 In `src/components/screens/SettingsScreen.tsx`, add `onManageCompanies?: () => void` to `Props`, accept it, and pass it to `SettingsList`:
 
 ```tsx
-export default function SettingsScreen({ role, onInvite, onDelete, onSignOut, onManageCompanies }: Props) {
+export default function SettingsScreen({
+  role,
+  onInvite,
+  onDelete,
+  onSignOut,
+  onManageCompanies,
+}: Props) {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <SettingsList
@@ -1470,8 +1814,18 @@ export default function BackofficeSettings() {
     <SettingsScreen
       role="backoffice"
       onManageCompanies={() => router.push("/(backoffice)/companies")}
-      onInvite={() => Alert.alert("Inviter un collègue", "Action non disponible pour le moment.")}
-      onDelete={() => Alert.alert("Supprimer son compte", "Action non disponible pour le moment.")}
+      onInvite={() =>
+        Alert.alert(
+          "Inviter un collègue",
+          "Action non disponible pour le moment.",
+        )
+      }
+      onDelete={() =>
+        Alert.alert(
+          "Supprimer son compte",
+          "Action non disponible pour le moment.",
+        )
+      }
       onSignOut={signOut}
     />
   );
@@ -1503,6 +1857,7 @@ git commit -m "feat(backoffice): pending banner + Gérer les entreprises setting
 ### Task 13: Capture the company département at registration
 
 **Files:**
+
 - Modify: `src/features/b2b-registration/schema.ts`
 - Modify: `src/features/b2b-registration/steps.tsx`
 - Modify: `src/features/b2b-registration/submit.ts`
@@ -1512,6 +1867,7 @@ git commit -m "feat(backoffice): pending banner + Gérer les entreprises setting
 - Modify: `docs/specs/form-b2b-company-registration.md`
 
 **Interfaces:**
+
 - Consumes: `DEPARTMENTS`, `ControlledDropdown`.
 - Produces: the form carries `companyDepartement`, sent to `registerCompany`; step 3's user `departement` pre-fills from it.
 
@@ -1520,7 +1876,10 @@ git commit -m "feat(backoffice): pending banner + Gérer les entreprises setting
 In `src/features/b2b-registration/__tests__/schema.test.ts`, add (adjust the import if the file already imports the schema/defaults):
 
 ```ts
-import { b2bCompanyRegistrationSchema, B2B_COMPANY_REGISTRATION_DEFAULTS } from "../schema";
+import {
+  b2bCompanyRegistrationSchema,
+  B2B_COMPANY_REGISTRATION_DEFAULTS,
+} from "../schema";
 
 test("companyDepartement is required", () => {
   const result = b2bCompanyRegistrationSchema.safeParse({
@@ -1530,8 +1889,11 @@ test("companyDepartement is required", () => {
     companyDepartement: "",
     email: "a@b.fr",
     password: "password123",
-    nom: "N", prenom: "P", telephone: "0600000000",
-    departement: "75 - Paris", ville: "Paris",
+    nom: "N",
+    prenom: "P",
+    telephone: "0600000000",
+    departement: "75 - Paris",
+    ville: "Paris",
   });
   expect(result.success).toBe(false);
 });
@@ -1574,9 +1936,29 @@ import { DEPARTMENTS } from "@/constants/departments";
 function EntrepriseFields() {
   return (
     <>
-      <ControlledField name="siret" label="Numéro SIRET *" placeholder="14 chiffres" keyboardType="numeric" maxLength={14} transform={digitsOnly(14)} returnKeyType="next" />
-      <ControlledField name="companyName" label="Nom de votre entreprise *" placeholder="Nom de votre entreprise" autoCapitalize="words" returnKeyType="next" />
-      <ControlledDropdown name="companyDepartement" label="Département *" placeholder="Département" options={DEPARTMENTS} searchable />
+      <ControlledField
+        name="siret"
+        label="Numéro SIRET *"
+        placeholder="14 chiffres"
+        keyboardType="numeric"
+        maxLength={14}
+        transform={digitsOnly(14)}
+        returnKeyType="next"
+      />
+      <ControlledField
+        name="companyName"
+        label="Nom de votre entreprise *"
+        placeholder="Nom de votre entreprise"
+        autoCapitalize="words"
+        returnKeyType="next"
+      />
+      <ControlledDropdown
+        name="companyDepartement"
+        label="Département *"
+        placeholder="Département"
+        options={DEPARTMENTS}
+        searchable
+      />
       <Text style={styles.note}>* Champs obligatoires</Text>
     </>
   );
@@ -1594,28 +1976,28 @@ Update step 1's `fields`:
 In `src/app/(auth)/register.tsx`, pre-fill the user `departement` from `companyDepartement` when the user hasn't set it. Add, inside the component after `useStepForm`:
 
 ```tsx
-  const companyDept = form.watch("companyDepartement");
-  useEffect(() => {
-    if (companyDept && !form.getValues("departement")) {
-      form.setValue("departement", companyDept);
-    }
-  }, [companyDept, form]);
+const companyDept = form.watch("companyDepartement");
+useEffect(() => {
+  if (companyDept && !form.getValues("departement")) {
+    form.setValue("departement", companyDept);
+  }
+}, [companyDept, form]);
 ```
 
 Add `useEffect` to the React import. Then add `companyDepartement` to the Google-path payload in the same file:
 
 ```tsx
-            await callRegisterCompany({
-              method: "google",
-              siret: values.siret,
-              companyName: values.companyName,
-              companyDepartement: values.companyDepartement,
-              nom: values.nom,
-              prenom: values.prenom,
-              telephone: values.telephone,
-              departement: values.departement,
-              ville: values.ville,
-            });
+await callRegisterCompany({
+  method: "google",
+  siret: values.siret,
+  companyName: values.companyName,
+  companyDepartement: values.companyDepartement,
+  nom: values.nom,
+  prenom: values.prenom,
+  telephone: values.telephone,
+  departement: values.departement,
+  ville: values.ville,
+});
 ```
 
 - [ ] **Step 7: Send the field on the password path + extend the payload type**

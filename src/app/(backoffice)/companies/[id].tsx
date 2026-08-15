@@ -28,15 +28,22 @@ export default function CompanyDetailScreen() {
   // One action per button, so the button that is actually working is the one
   // that spins; `busy` then locks every other button on the screen, since
   // approve and decline are alternatives on the same decision.
-  const onError = (message: string) => alertDialog("Action impossible", message);
-  const approving = useAsyncAction(async () => {
-    await callApproveCompany(id);
-    router.back();
-  }, { onError });
-  const deleting = useAsyncAction(async () => {
-    await callDeleteCompany(id);
-    router.back();
-  }, { onError });
+  const onError = (message: string) =>
+    alertDialog("Action impossible", message);
+  const approving = useAsyncAction(
+    async () => {
+      await callApproveCompany(id);
+      router.back();
+    },
+    { onError },
+  );
+  const deleting = useAsyncAction(
+    async () => {
+      await callDeleteCompany(id);
+      router.back();
+    },
+    { onError },
+  );
   const busy = approving.pending || deleting.pending;
 
   if (company.loading || users.loading) return <ScreenLoader />;
@@ -62,8 +69,8 @@ export default function CompanyDetailScreen() {
   }
 
   return (
-    <ScrollView>
-      <SectionWrapper>
+    <ScrollView contentContainerStyle={styles.content}>
+      <SectionWrapper style={styles.content}>
         {isPending ? (
           <Section title="Voulez-vous autoriser cette entreprise à vendre des véhicules">
             <View style={styles.row}>
@@ -114,15 +121,17 @@ export default function CompanyDetailScreen() {
         </Section>
 
         {!isPending ? (
-          <Section title="Gérer cette entreprise">
-            <Button
-              variant="danger"
-              label="Supprimer cette entreprise"
-              onPress={() => setConfirmDelete(true)}
-              loading={deleting.pending}
-              disabled={busy}
-            />
-          </Section>
+          <View style={styles.toBottom}>
+            <Section title="Supprimer cette entreprise">
+              <Button
+                variant="danger"
+                label="Tout supprimer"
+                onPress={() => setConfirmDelete(true)}
+                loading={deleting.pending}
+                disabled={busy}
+              />
+            </Section>
+          </View>
         ) : null}
       </SectionWrapper>
 
@@ -130,7 +139,7 @@ export default function CompanyDetailScreen() {
         visible={confirmDelete}
         title="Supprimer cette entreprise ?"
         message="Cette action supprime définitivement l'entreprise, ses utilisateurs, tous ses dossiers, les conversations et les documents stockés."
-        confirmLabel="Supprimer tout"
+        confirmLabel="Tout supprimer"
         disabled={busy}
         onCancel={() => setConfirmDelete(false)}
         onConfirm={() => {
@@ -143,6 +152,8 @@ export default function CompanyDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  content: { flexGrow: 1 },
+  toBottom: { marginTop: "auto", gap: tokens.space.sm },
   row: { flexDirection: "row", gap: tokens.space.md },
   flex: { flex: 1 },
 });
