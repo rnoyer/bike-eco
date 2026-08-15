@@ -22,6 +22,7 @@ import { unregisterPushToken } from "@/lib/notifications/pushRegistration";
 import {
   buildSessionUser,
   isAccountDeleted,
+  isNewlyActivated,
   parseClaims,
   type SessionUser,
 } from "./session";
@@ -143,6 +144,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // callable creates `users/{uid}`), and signing that user out would break
   // registration instead of fixing anything.
   const uid = session?.id;
+  // Read inside the snapshot callback rather than closed over, so the listener
+  // is not torn down and re-armed every time the session changes.
+  const statusRef = useRef<UserStatus | null>(null);
+  useEffect(() => {
+    statusRef.current = session?.status ?? null;
+  }, [session?.status]);
+  // The activation refresh is async and a burst of snapshots would each start
+  // one; `loadSession`'s generation counter makes the extras harmless, but they
+  // are still a forced token refresh and a profile read apiece.
+  const refreshingRef = useRef(false);
   useEffect(() => {
     if (!uid) return;
     return onSnapshot(
@@ -157,6 +168,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // The profile is already gone, so the push-token delete inside
           // `signOut` is a no-op — it is the FCM listener teardown that matters.
           void signOut();
+          return;
+        }
+        // Activation watch, riding the same listener. `approveCompany` sets the
+        // claim and the profile field together, but only the profile change is
+        // pushed to this device — claims are read from the ID token, which
+        // `onAuthStateChanged` does not re-fire for. Without this the approved
+        // user sits on the pending screen until they relaunch the app, and
+        // `usePushRegistration`, which needs a session to register under, waits
+        // just as long.
+        if (
+          isNewlyActivated({
+            profileStatus: (snap.data() as AppUser | undefined)?.status,
+            sessionStatus: statusRef.current,
+          }) &&
+          !refreshingRef.current
+        ) {
+          refreshingRef.current = true;
+          void refreshSession().finally(() => {
+            refreshingRef.current = false;
+          });
         }
       },
       // Not a sign-out trigger: the owner-read rule cannot deny a live
@@ -164,7 +195,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // and the SDK ends that session on its own.
       (err) => console.warn("[auth] account watch failed", err),
     );
-  }, [uid, signOut]);
+    // `signOut` and `refreshSession` are both `useCallback([])`, so this arms
+    // once per uid — adding them cannot resubscribe the listener.
+  }, [uid, signOut, refreshSession]);
 
   const value = useMemo<AuthState>(
     () => ({

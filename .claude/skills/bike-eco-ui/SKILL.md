@@ -25,9 +25,33 @@ Everything in `src/components/ui/` and `src/components/form/` is React Native st
 violation. (The tab bars are `NativeTabs` from `expo-router/unstable-native-tabs`, which is
 unrelated to `@expo/ui`.)
 
+**Never wrap a universal `@expo/ui` component that renders its own `Host` in another
+`Host`.** `BottomSheet` has rendered its own since `@expo/ui` 56.0.10 — absolutely
+positioned, so it costs no layout and needs no wrapper. The scaffold's leftover
+`<Host style={{ position: "absolute", width: 0, height: 0 }}>` around it shipped as an
+iOS bug: with no `snapPoints` the sheet auto-sizes to its content (`fitToContents` →
+`presentationDetents([.height(measured)])`), and content measured inside a zero-sized
+host collapses to a detent too short to show both buttons. Android was unaffected —
+Compose's `ModalBottomSheet` sizes to intrinsic content — so this is only visible on a
+device or iOS simulator. Check the installed `@expo/ui` source before adding a `Host`.
+
 The info lists that used to live in `src/components/native/` were replaced by `InfoCard`
 (see below) precisely because `@expo/ui`'s `Row` + `Spacer(flexible)` can't do dividers,
 icon buttons, or a value that wraps instead of squeezing its label.
+
+## Icons are assets; `react-native-svg` is for drawn marks only
+
+`svg` is in Metro's default `assetExts`, so `import personIcon from
+"@/assets/images/icons/person.svg"` is an **image source** — `expo-image` renders it and
+`tintColor` colours it. That is how every icon in the app works, and it stays that way.
+
+`react-native-svg` is installed for exactly one thing: a vector whose *stroke* has to be
+animated, which an asset cannot do. Today that is `ui/AnimatedCheck`, the confirmation
+mark. Author those paths in JSX and keep them in step with the `.svg` file they mirror.
+
+Do **not** add `react-native-svg-transformer`. It moves `svg` from `assetExts` to
+`sourceExts`, which turns every existing `.svg` import into a component and breaks
+`expo-image`'s `source` / `tintColor` at every call site.
 
 ## Tokens are the only source of style
 
@@ -244,9 +268,26 @@ on an `isNearBottom` helper so history-reading was never interrupted, and it was
 on purpose. The first scroll does not animate — flying past the history is a glitch, not
 an arrival — and neither does a re-focus, for the same reason.
 
+**iOS does not scroll a focused input into view; Android does.** Android's native
+ScrollView brings a focused descendant onto screen itself, so a form only breaks on iOS:
+the offset stays put, `KeyboardAvoidingView` shrinks the scroll view under it, and a
+field near the bottom is left behind the keyboard. Any scrolling form has to do it
+itself — `FormLayout` is the worked example. It measures on `keyboardDidShow` (not the
+field's `onFocus`, which fires before the lift, when the frame is still full height and
+the numbers are stale), compares the focused input's window rect against the scroll
+view's own, and scrolls by the smaller of "reveal the bottom" and "reveal the top" so a
+box taller than the window shows its first line rather than its last. `ScrollView`
+itself is not measurable — `getNativeScrollRef()` is.
+
+`automaticallyAdjustKeyboardInsets` is *not* the fix here: it scrolls the field to the
+top of the keyboard, which is behind the Précédent/Suivant bar.
+
 A bottom bar that pads itself with `insets.bottom` must drop that inset while the
-keyboard is open (`Keyboard.addListener("keyboardDidShow"/"keyboardDidHide")`) — the
-keyboard already covers the home indicator, so keeping it leaves a dead band.
+keyboard is open — the keyboard already covers the home indicator, so keeping it leaves
+a dead band. **`useKeyboardOpen()`** (`src/lib/ui/useKeyboardOpen.ts`) is that flag; both
+bars that ride above the keyboard use it. `FormLayout`'s Précédent/Suivant bar also
+tightens its own vertical padding while open: 16 + 52 + 34 + 16 of chrome stacked on a
+raised keyboard left almost no form visible on a small screen.
 
 ## Copy
 
@@ -275,4 +316,5 @@ never invent its own.
 | A long free-text value in an `InfoRows` row instead of an `InfoComment`                                   | Squeezes the label; text overflows off-screen                                              |
 | Gating a `tel:` / `mailto:` button on `canOpenURL`                                                        | Android package visibility answers `false`; the button vanishes on device but shows on web |
 | New modal without its own `GestureHandlerRootView`                                                        | Gestures silently dead inside the modal                                                    |
+| A `Host` wrapped around a universal `@expo/ui` component that already renders one                         | On iOS the 0×0 host collapses the measured content — the auto-sized `BottomSheet` came out too short to show its buttons |
 | `KeyboardAvoidingView` with no `behavior` on Android, or no `keyboardVerticalOffset` under a Stack header | Keyboard covers the input                                                                  |

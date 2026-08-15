@@ -1,11 +1,14 @@
 import { type Href, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import AnimatedCheck, { CHECK_DRAW_MS } from "@/components/ui/AnimatedCheck";
 import { tokens } from "@/theme/tokens";
 
 interface Props {
   title: string;
   message?: string;
+  /** Defaults to the time the check takes to draw — a shorter wait redirects
+   *  mid-stroke. Both concrete routes pass 1500 ms, to leave the copy readable. */
   delay?: number;
   redirectTo: Href;
 }
@@ -13,7 +16,7 @@ interface Props {
 export default function ConfirmationView({
   title,
   message,
-  delay = 500,
+  delay = CHECK_DRAW_MS,
   redirectTo,
 }: Props) {
   const router = useRouter();
@@ -24,7 +27,7 @@ export default function ConfirmationView({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.check}>✓</Text>
+      <AnimatedCheck />
       <Text style={styles.title}>{title}</Text>
       {message ? <Text style={styles.message}>{message}</Text> : null}
     </View>
@@ -39,11 +42,6 @@ const styles = StyleSheet.create({
     padding: tokens.space.lg,
     gap: tokens.space.md,
     backgroundColor: tokens.colors.surface,
-  },
-  check: {
-    fontSize: 56,
-    color: tokens.colors.success,
-    fontWeight: "bold",
   },
   title: { ...tokens.text.title, textAlign: "center" },
   message: { ...tokens.text.subtitle, textAlign: "center" },

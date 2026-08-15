@@ -93,6 +93,31 @@ const moto = (v: DossierVehicle) =>
   the `onDocumentUpdated` trigger (which carries no auth context) skip the person who made
   the change.
 
+## Registration timing
+
+The device registers as soon as the user is **signed in**, not once the account is
+active, and the OS permission prompt goes with it. `usePushRegistration` is mounted on
+the first screen each role reaches: both dashboards, and `(auth)/pending` for an account
+awaiting validation — which is where a brand-new b2b signup lands, so the prompt is part
+of first login. The pending screen says why: *"Activez les notifications pour être
+prévenu dès que votre compte est validé."*
+
+A pending account registering a token is not a leak — the audience is filtered
+server-side on `users/{uid}.status == "active"`, so it can hold tokens and still never be
+a recipient. Gating the *client* on active instead was a real bug: a fresh account had no
+`pushTokens` row until it was approved **and** the client noticed, measured at 6m49s on a
+live signup, and every notification in that window resolved to zero tokens and was
+dropped. `dispatch` now logs `No registered device for recipient` with the uids when a
+resolved audience has no reachable device — it used to be an early `return` with no
+trace, so a user who received nothing and a fan-out that worked produced identical logs.
+
+The second half of that window was the client not noticing. `approveCompany` writes the
+`status` claim and `users/{uid}.status` together, but only the document is pushed to the
+device — `onAuthStateChanged` does not re-fire for a claims change. `AuthProvider`'s
+account watch (the same `onSnapshot` that catches deletion) now also calls
+`refreshSession()` when the profile goes active while the session still says otherwise,
+which is what re-reads the claims and moves the user off the pending screen.
+
 ## Gotchas
 
 - **`firebase.json` must repeat the Android channel and colour, or the app will not

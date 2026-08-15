@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import type { AndroidSymbol } from "expo-symbols";
-import type { ImageSourcePropType } from "react-native";
+import { Platform, type ImageSourcePropType } from "react-native";
 import type { SFSymbol } from "sf-symbols-typescript";
 
 import buildingIcon from "@/assets/images/icons/building.svg";
@@ -33,6 +33,17 @@ export interface TabConfig {
 }
 
 type Group = "(b2b)" | "(backoffice)";
+
+/**
+ * The dossier tab's vehicle icon. Android has had `two_wheeler` all along; iOS only got
+ * a motorbike in SF Symbols 6 (iOS 18), and the deployment target is 16.4 — where
+ * `[UIImage systemImageNamed:]` returns nil for an unknown symbol and the tab renders
+ * with no icon at all. So below 18 we keep the (wrong, but present) bicycle.
+ */
+const vehicleSf: SFSymbol =
+  Platform.OS === "ios" && parseInt(String(Platform.Version), 10) >= 18
+    ? "motorcycle.fill"
+    : "bicycle";
 
 /** Dashboard · Mon compte · Paramètres — the app-level tabs, identical for both roles. */
 function appTabs(group: Group): TabConfig[] {
@@ -76,7 +87,7 @@ function dossierTabs(group: Group, id: string): TabConfig[] {
     {
       name: "index",
       label: "Dossier",
-      sf: "bicycle",
+      sf: vehicleSf,
       md: "two_wheeler",
       icon: twoWheelerIcon,
       href: `/${group}/dossier/${id}`,

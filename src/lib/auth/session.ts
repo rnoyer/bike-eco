@@ -50,6 +50,29 @@ export function isAccountDeleted(snapshot: {
   return !snapshot.exists && !snapshot.fromCache;
 }
 
+/**
+ * Whether a live `users/{uid}` snapshot says the account has been activated
+ * while the session — built from the ID token's claims — still says otherwise.
+ *
+ * `approveCompany` writes both halves (`users/{uid}.status` **and** the custom
+ * claim, `functions/src/registration/index.ts`), but only the document reaches
+ * this device: `onAuthStateChanged` does not re-fire when claims change. So an
+ * approved user keeps a `pending` session until the next launch, and nothing
+ * that reads the session — the route guard, `usePushRegistration` — knows they
+ * are in. The document is the nudge to go re-read the claims.
+ *
+ * No `fromCache` guard, unlike {@link isAccountDeleted}: that one has to
+ * distinguish "absent from the server" from "absent from this cache", while a
+ * cached `"active"` can only have come from a server read that really said so.
+ * A stale *`pending`* simply fails this test, which is the safe direction.
+ */
+export function isNewlyActivated(input: {
+  profileStatus: UserStatus | undefined;
+  sessionStatus: UserStatus | null;
+}): boolean {
+  return input.profileStatus === "active" && input.sessionStatus !== "active";
+}
+
 /** Narrow a raw Firebase ID-token claims bag to our typed shape. */
 export function parseClaims(raw: Record<string, unknown>): AuthClaims {
   return {

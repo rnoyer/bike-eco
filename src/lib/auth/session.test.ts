@@ -1,6 +1,6 @@
 import { expect, test } from "@jest/globals";
 import { Timestamp } from "firebase/firestore";
-import { buildSessionUser, isAccountDeleted } from "./session";
+import { buildSessionUser, isAccountDeleted, isNewlyActivated } from "./session";
 import type { AppUser } from "@/lib/firestore/schema";
 
 const profile: AppUser = {
@@ -32,4 +32,26 @@ test("a profile that still exists is not a deletion", () => {
 
 test("a cache-only miss is not a deletion — offline, absent means unknown", () => {
   expect(isAccountDeleted({ exists: false, fromCache: true })).toBe(false);
+});
+
+test("a profile that went active while the claims still say pending is an activation", () => {
+  expect(
+    isNewlyActivated({ profileStatus: "active", sessionStatus: "pending" }),
+  ).toBe(true);
+});
+
+test("an already-active session is not re-activated", () => {
+  expect(
+    isNewlyActivated({ profileStatus: "active", sessionStatus: "active" }),
+  ).toBe(false);
+});
+
+test("a profile that is not active is never an activation", () => {
+  expect(
+    isNewlyActivated({ profileStatus: "pending", sessionStatus: "pending" }),
+  ).toBe(false);
+  // The deleted-account watch owns the missing-profile case.
+  expect(
+    isNewlyActivated({ profileStatus: undefined, sessionStatus: "pending" }),
+  ).toBe(false);
 });
