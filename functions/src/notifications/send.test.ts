@@ -1,7 +1,7 @@
 import { expect, test } from "@jest/globals";
 import type { NotificationContent, NotificationTarget } from "./copy";
 import type { Delivery } from "./core";
-import { FCM_BATCH_SIZE, chunk, dispatch, targetData, type DispatchDeps, type MulticastResult, type TokenRow } from "./send";
+import { FCM_BATCH_SIZE, chunk, dispatch, recipientsWithoutDevices, targetData, type DispatchDeps, type MulticastResult, type TokenRow } from "./send";
 
 test("chunk splits into batches of at most `size`", () => {
   expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
@@ -17,6 +17,25 @@ test("chunk leaves a list shorter than `size` in one batch", () => {
 
 test("the FCM batch size respects sendEachForMulticast's 500-token cap", () => {
   expect(FCM_BATCH_SIZE).toBeLessThanOrEqual(500);
+});
+
+test("a recipient with no token row is reported as unreachable", () => {
+  const rows: TokenRow[] = [{ uid: "u1", deviceId: "d1", token: "t1" }];
+  expect(recipientsWithoutDevices(["u1", "u2"], rows)).toEqual(["u2"]);
+});
+
+test("every recipient reachable reports nobody", () => {
+  const rows: TokenRow[] = [
+    { uid: "u1", deviceId: "d1", token: "t1" },
+    { uid: "u2", deviceId: "d2", token: "t2" },
+  ];
+  expect(recipientsWithoutDevices(["u1", "u2"], rows)).toEqual([]);
+});
+
+test("a recipient whose only row was dropped as malformed is unreachable", () => {
+  // `dispatch` filters non-string/empty tokens out before this runs, so such a
+  // recipient reaches it with no rows at all — the same shape as having none.
+  expect(recipientsWithoutDevices(["u1"], [])).toEqual(["u1"]);
 });
 
 test("targetData serializes every target as flat strings", () => {

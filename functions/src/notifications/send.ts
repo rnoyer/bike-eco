@@ -26,6 +26,25 @@ const DEAD_TOKEN_CODES = new Set([
   "messaging/invalid-registration-token",
 ]);
 
+/**
+ * The recipients this dispatch cannot reach: the ones with no `pushTokens` row
+ * at all, or with only rows whose `token` failed validation.
+ *
+ * Worth naming because it is this function's one **invisible** outcome. A dead
+ * token comes back as a per-token error and gets logged; a resolved audience
+ * with no devices used to hit an early `return` and leave no trace anywhere —
+ * so "no notification arrived" and "everything worked" produced identical logs.
+ * It is not necessarily a fault (a user may simply have refused notifications),
+ * which is why it is one line naming the uids rather than an error.
+ */
+export function recipientsWithoutDevices(
+  recipients: string[],
+  rows: TokenRow[],
+): string[] {
+  const reachable = new Set(rows.map((row) => row.uid));
+  return recipients.filter((uid) => !reachable.has(uid));
+}
+
 export function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
@@ -132,7 +151,8 @@ const firestoreDeps: DispatchDeps = {
 export async function dispatch(deliveries: Delivery[], deps: DispatchDeps = firestoreDeps): Promise<void> {
   if (deliveries.length === 0) return;
 
-  const rawRows = await deps.tokensFor([...new Set(deliveries.map((d) => d.uid))]);
+  const recipients = [...new Set(deliveries.map((d) => d.uid))];
+  const rawRows = await deps.tokensFor(recipients);
   // The defensive filter lives here, not inside `tokensFor`: passing
   // `undefined` into `sendMulticast`'s token list would reject the *whole*
   // batch, turning one malformed `pushTokens` row into zero notifications for
@@ -140,6 +160,18 @@ export async function dispatch(deliveries: Delivery[], deps: DispatchDeps = fire
   const rows: TokenRow[] = rawRows.filter(
     (row): row is TokenRow => typeof row.token === "string" && row.token.length > 0,
   );
+  const unreachable = recipientsWithoutDevices(recipients, rows);
+  if (unreachable.length > 0) {
+    // Capped: the audience is a région's back office plus one company today,
+    // but `dispatch` batches at 500 tokens for a reason and a log entry is not
+    // the place to find out. The count carries what the list drops.
+    logger.warn("No registered device for recipient", {
+      uids: unreachable.slice(0, 20),
+      unreachable: unreachable.length,
+      recipients: recipients.length,
+    });
+  }
+
   if (rows.length === 0) return;
 
   const byUid = new Map<string, TokenRow[]>();

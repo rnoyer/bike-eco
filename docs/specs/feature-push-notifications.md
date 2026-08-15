@@ -107,7 +107,9 @@ server-side on `users/{uid}.status == "active"`, so it can hold tokens and still
 a recipient. Gating the *client* on active instead was a real bug: a fresh account had no
 `pushTokens` row until it was approved **and** the client noticed, measured at 6m49s on a
 live signup, and every notification in that window resolved to zero tokens and was
-dropped silently.
+dropped. `dispatch` now logs `No registered device for recipient` with the uids when a
+resolved audience has no reachable device — it used to be an early `return` with no
+trace, so a user who received nothing and a fan-out that worked produced identical logs.
 
 The second half of that window was the client not noticing. `approveCompany` writes the
 `status` claim and `users/{uid}.status` together, but only the document is pushed to the
