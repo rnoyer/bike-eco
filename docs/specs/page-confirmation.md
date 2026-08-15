@@ -8,11 +8,18 @@ none
 
 The confirmation page is intended to show user its action have been done accordingly. Afte a short delay, there is an auto-redirection to a specified page
 
+Above the title sits the confirmation mark: `ui/AnimatedCheck`, the
+`assets/images/icons/tick.svg` circle-and-tick drawn stroke by stroke in
+`tokens.colors.success` — the arc sweeps closed over 600 ms and the tick strokes
+through it from 400 ms, 750 ms in total. It renders already-drawn when the system
+asks for reduced motion.
+
 Confirmation Page props :
 
 - title : mandatory
 - message : optional
-- delay : default 500ms
+- delay : default 750ms, the time the mark takes to draw — anything shorter
+  redirects mid-stroke
 - redirection-link : mandatory
 
 The back-office route (`/(backoffice)/confirmation`) takes `title`, `message`

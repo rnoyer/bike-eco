@@ -39,6 +39,20 @@ The info lists that used to live in `src/components/native/` were replaced by `I
 (see below) precisely because `@expo/ui`'s `Row` + `Spacer(flexible)` can't do dividers,
 icon buttons, or a value that wraps instead of squeezing its label.
 
+## Icons are assets; `react-native-svg` is for drawn marks only
+
+`svg` is in Metro's default `assetExts`, so `import personIcon from
+"@/assets/images/icons/person.svg"` is an **image source** — `expo-image` renders it and
+`tintColor` colours it. That is how every icon in the app works, and it stays that way.
+
+`react-native-svg` is installed for exactly one thing: a vector whose *stroke* has to be
+animated, which an asset cannot do. Today that is `ui/AnimatedCheck`, the confirmation
+mark. Author those paths in JSX and keep them in step with the `.svg` file they mirror.
+
+Do **not** add `react-native-svg-transformer`. It moves `svg` from `assetExts` to
+`sourceExts`, which turns every existing `.svg` import into a component and breaks
+`expo-image`'s `source` / `tintColor` at every call site.
+
 ## Tokens are the only source of style
 
 `src/theme/tokens.ts` holds colours, spacing, radius, button height, title/subtitle text
