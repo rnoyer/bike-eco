@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Button from "@/components/ui/Button";
+import { useKeyboardOpen } from "@/lib/ui/useKeyboardOpen";
 import { tokens } from "@/theme/tokens";
 
 interface Props {
@@ -36,6 +37,7 @@ export default function FormLayout({
   busy = false,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const keyboardOpen = useKeyboardOpen();
 
   return (
     <KeyboardAvoidingView
@@ -55,6 +57,9 @@ export default function FormLayout({
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        // A number pad has no return key, and `FormField` drops the toolbar iOS would
+        // otherwise build to carry one — so dragging the form is what closes it.
+        keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>{title}</Text>
@@ -63,7 +68,18 @@ export default function FormLayout({
         <View style={styles.fields}>{children}</View>
       </ScrollView>
 
-      <View style={[styles.buttons, { paddingBottom: insets.bottom + 16 }]}>
+      {/* The bar rides above the keyboard, so while the keyboard is up it must drop
+       *  the home-indicator inset the keys already cover — and it tightens its own
+       *  padding, because 16 + 52 + 34 + 16 of chrome above a raised keyboard leaves
+       *  almost nothing of the form on a small screen. */}
+      <View
+        style={[
+          styles.buttons,
+          keyboardOpen
+            ? { paddingTop: tokens.space.md, paddingBottom: tokens.space.md }
+            : { paddingBottom: insets.bottom + 16 },
+        ]}
+      >
         <Button
           variant="outlined"
           label="Précédent"

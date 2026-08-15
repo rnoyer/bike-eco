@@ -255,8 +255,11 @@ on purpose. The first scroll does not animate — flying past the history is a g
 an arrival — and neither does a re-focus, for the same reason.
 
 A bottom bar that pads itself with `insets.bottom` must drop that inset while the
-keyboard is open (`Keyboard.addListener("keyboardDidShow"/"keyboardDidHide")`) — the
-keyboard already covers the home indicator, so keeping it leaves a dead band.
+keyboard is open — the keyboard already covers the home indicator, so keeping it leaves
+a dead band. **`useKeyboardOpen()`** (`src/lib/ui/useKeyboardOpen.ts`) is that flag; both
+bars that ride above the keyboard use it. `FormLayout`'s Précédent/Suivant bar also
+tightens its own vertical padding while open: 16 + 52 + 34 + 16 of chrome stacked on a
+raised keyboard left almost no form visible on a small screen.
 
 ## Copy
 

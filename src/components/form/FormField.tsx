@@ -19,6 +19,20 @@ interface Props extends TextInputProps {
   suffix?: string;
 }
 
+/** The keyboards iOS draws without a return key. RN compensates by building a
+ *  `UIToolbar` accessory above the keys carrying a button labelled from
+ *  `returnKeyType` — the floating "Next" pill
+ *  (`RCTBaseTextInputView.setDefaultInputAccessoryView`). Note `numeric` is one of
+ *  them: it maps to `UIKeyboardTypeDecimalPad`, not to a keyboard with a return key. */
+const NUMBER_PAD_KEYBOARDS: TextInputProps["keyboardType"][] = [
+  "numeric",
+  "number-pad",
+  "decimal-pad",
+  "phone-pad",
+];
+// (RN's native side counts `ascii-capable-number-pad` too, but it is absent from
+//  `KeyboardTypeOptions`, so no typechecked call site can reach it.)
+
 export default function FormField({
   label,
   error,
@@ -26,8 +40,14 @@ export default function FormField({
   style,
   multiline,
   secureTextEntry,
+  keyboardType,
+  returnKeyType,
   ...props
 }: Props) {
+  // No field here wires `onSubmitEditing`, so `returnKeyType` only ever labels a key.
+  // On a number pad there is no key to label, and iOS pays for the label with a whole
+  // toolbar above the keyboard — so drop it rather than spend the height on nothing.
+  const labelsARealKey = !NUMBER_PAD_KEYBOARDS.includes(keyboardType);
   // Any masked field gets a reveal toggle. The `TextInput` below stays mounted
   // across the flip (no `key`, no remount) — remounting it lets iOS autofill
   // wipe the value.
@@ -49,6 +69,8 @@ export default function FormField({
           multiline={multiline}
           textAlignVertical={multiline ? 'top' : 'auto'}
           secureTextEntry={secureTextEntry && hidden}
+          keyboardType={keyboardType}
+          returnKeyType={labelsARealKey ? returnKeyType : undefined}
           {...props}
         />
         {suffix && <Text style={styles.suffix}>{suffix}</Text>}

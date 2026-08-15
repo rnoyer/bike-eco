@@ -95,6 +95,20 @@ All of these exist. Reach for them instead of re-declaring option lists or helpe
 The registration field groups require the schema to use exact field names:
 `email, password, nom, prenom, telephone, departement, ville`.
 
+## `returnKeyType` on a number pad
+
+`FormField` strips `returnKeyType` when the keyboard is a number pad (`numeric`,
+`number-pad`, `decimal-pad`, `phone-pad`) — leave it there rather than pruning the call
+sites. Those keyboards have no return key, so RN's iOS `TextInput` compensates by
+building a whole `UIToolbar` above the keys just to carry a button with that label
+(`RCTBaseTextInputView.setDefaultInputAccessoryView`): a floating "Next" pill eating
+~50pt above an already-raised keyboard. Note `keyboardType="numeric"` is one of them —
+it maps to `UIKeyboardTypeDecimalPad`.
+
+It costs nothing because no field wires `onSubmitEditing`; the label never advanced
+focus. `FormLayout`'s `ScrollView` sets `keyboardDismissMode="on-drag"` so a number pad
+can still be dismissed without that toolbar's button.
+
 ## Password fields
 
 Any form with a confirmation field enforces equality **in the schema**, not in the UI, so

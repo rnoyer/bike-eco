@@ -3,7 +3,6 @@ import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useRef, useState } from "react";
 import {
-  Keyboard,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +15,7 @@ import Spinner from "@/components/ui/Spinner";
 import type { PickedFile } from "@/lib/data/useSendMessage";
 import { alertDialog } from "@/lib/ui/dialog";
 import { useAsyncAction } from "@/lib/ui/useAsyncAction";
+import { useKeyboardOpen } from "@/lib/ui/useKeyboardOpen";
 import { tokens } from "@/theme/tokens";
 
 /** Pure of component state so the picker flow stays readable: both return the
@@ -70,20 +70,7 @@ export default function ChatComposer({
   const [sheetOpen, setSheetOpen] = useState(false);
   // The keyboard covers the home indicator / navigation bar, so keeping the bottom
   // inset while it is open would leave a dead band between the bar and the keys.
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
-
-  useEffect(() => {
-    const shown = Keyboard.addListener("keyboardDidShow", () =>
-      setKeyboardOpen(true),
-    );
-    const hidden = Keyboard.addListener("keyboardDidHide", () =>
-      setKeyboardOpen(false),
-    );
-    return () => {
-      shown.remove();
-      hidden.remove();
-    };
-  }, []);
+  const keyboardOpen = useKeyboardOpen();
 
   const canSend = text.trim().length > 0 || files.length > 0;
 
