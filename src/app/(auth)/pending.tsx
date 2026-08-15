@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import PhotoBackground from "@/components/ui/PhotoBackground";
 import { frenchAuthMessage } from "@/lib/auth/authErrors";
 import { useSession } from "@/lib/data/useSession";
+import { usePushRegistration } from "@/lib/notifications/usePushRegistration";
 import { alertDialog } from "@/lib/ui/dialog";
 import { useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { tokens } from "@/theme/tokens";
@@ -13,6 +14,12 @@ export default function PendingScreen() {
   const insets = useSafeAreaInsets();
   const { signOut } = useSession();
   const router = useRouter();
+
+  // For an account awaiting validation this is the first screen after signing
+  // in, so it is where the permission prompt belongs: the copy below is the
+  // reason to say yes, and the device ends up registered *before* the approval
+  // that produces its first notification rather than minutes after it.
+  usePushRegistration();
 
   const signingOut = useAsyncAction(
     async () => {
@@ -33,6 +40,9 @@ export default function PendingScreen() {
           <Text style={styles.body}>
             Votre inscription a bien été reçue. Un membre de l’équipe Bike-eco doit
             valider votre compte avant que vous puissiez accéder à votre tableau de bord.
+          </Text>
+          <Text style={styles.body}>
+            Activez les notifications pour être prévenu dès que votre compte est validé.
           </Text>
           <Button
             label="Se déconnecter"

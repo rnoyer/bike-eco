@@ -10,11 +10,26 @@ import {
 } from "./pushRegistration";
 
 /**
- * Register this device once the user is signed in and active.
+ * Register this device as soon as the user is signed in — including while the
+ * account is still `pending`.
  *
- * Mounted from the dashboards rather than the root layout so the OS prompt
- * lands on a screen that explains itself — and never in front of the sign-in
- * form, where iOS's one-shot prompt would be spent on a stranger.
+ * Mounted from the first screen each role lands on (the dashboards, and the
+ * pending gate for an account awaiting validation) rather than the root layout,
+ * so the OS prompt lands on a screen that explains itself — and never in front
+ * of the sign-in form, where iOS's one-shot prompt would be spent on a stranger.
+ *
+ * **Deliberately not gated on `status === "active"`.** It was, and that left a
+ * fresh account with no `pushTokens` row for as long as it took to be approved
+ * *and* for this client to notice — measured at 6m49s on a real signup. Every
+ * notification aimed at that user in the meantime resolved to zero tokens and
+ * was dropped without a trace (`dispatch` returns early, silently), which reads
+ * from the outside as "the first notification took a minute or more".
+ *
+ * Registering while pending cannot leak anything: the audience is filtered
+ * server-side on `users/{uid}.status == "active"`
+ * (`functions/src/notifications/index.ts`), so a pending account is never a
+ * recipient however many tokens it has registered. The row is simply ready for
+ * the moment it becomes one.
  *
  * A single mount-time attempt is not enough. The permission can be granted
  * from *outside* the app — the Settings row sends the user into the OS
@@ -32,11 +47,11 @@ import {
  *    dismissed. Prompting is the mount path's job and happens once.
  */
 export function usePushRegistration(): void {
-  const { session, status } = useAuth();
+  const { session } = useAuth();
   const uid = session?.id ?? null;
 
   useEffect(() => {
-    if (!uid || status !== "active") return;
+    if (!uid) return;
     let cancelled = false;
     let unsubscribe: (() => void) | null = null;
     // `unsubscribe` is only assigned once `registerPushToken` resolves, so it
@@ -80,7 +95,7 @@ export function usePushRegistration(): void {
       subscription.remove();
       unsubscribe?.();
     };
-  }, [uid, status]);
+  }, [uid]);
 }
 
 /**
