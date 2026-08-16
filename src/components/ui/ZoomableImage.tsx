@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { Dimensions, StyleSheet, View } from "react-native";
+import { type LayoutChangeEvent, StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
@@ -7,7 +7,6 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const MAX_SCALE = 4;
 
 /**
@@ -25,6 +24,11 @@ export function ZoomableImage({ uri }: { uri: string }) {
   const translateY = useSharedValue(0);
   const savedTranslateX = useSharedValue(0);
   const savedTranslateY = useSharedValue(0);
+  // The pan bounds are relative to the box the image is drawn in, which is not
+  // the window: on web the viewer is capped at the app's column width. Shared
+  // values because the gesture reads them on the UI thread.
+  const boxWidth = useSharedValue(0);
+  const boxHeight = useSharedValue(0);
 
   const pinch = Gesture.Pinch()
     .onUpdate((e) => {
@@ -43,8 +47,8 @@ export function ZoomableImage({ uri }: { uri: string }) {
   const pan = Gesture.Pan()
     .onUpdate((e) => {
       if (scale.value > 1) {
-        const maxX = ((scale.value - 1) * SCREEN_W) / 2;
-        const maxY = ((scale.value - 1) * SCREEN_H) / 2;
+        const maxX = ((scale.value - 1) * boxWidth.value) / 2;
+        const maxY = ((scale.value - 1) * boxHeight.value) / 2;
         translateX.value = Math.min(
           maxX,
           Math.max(-maxX, savedTranslateX.value + e.translationX),
@@ -86,9 +90,14 @@ export function ZoomableImage({ uri }: { uri: string }) {
 
   const composed = Gesture.Race(doubleTap, Gesture.Simultaneous(pinch, pan));
 
+  function measure(e: LayoutChangeEvent) {
+    boxWidth.value = e.nativeEvent.layout.width;
+    boxHeight.value = e.nativeEvent.layout.height;
+  }
+
   return (
     <GestureDetector gesture={composed}>
-      <View style={styles.container}>
+      <View style={styles.container} onLayout={measure}>
         <Animated.View style={[styles.imageWrap, animatedStyle]}>
           <Image source={{ uri }} style={styles.image} contentFit="contain" />
         </Animated.View>

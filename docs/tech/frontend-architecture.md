@@ -74,6 +74,7 @@ src/
     ui/                             # RN + StyleSheet components
       Button, StatusBadge, DossierCard, DossiersSection,
       PhotoCarousel, ConfirmationView, ThirdPartyAuthButtons,
+      WebColumn,                    # web-only max-width column (root + each Modal)
       chat/{ChatThread, ChatComposer}
   lib/
     data/                          # mocked data layer (swap to Firestore later)

@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import WebColumn from "@/components/ui/WebColumn";
 import { tokens } from "@/theme/tokens";
 
 interface Props {
@@ -65,45 +66,49 @@ export default function Dropdown({
       {error && <Text style={styles.error}>{error}</Text>}
 
       <Modal visible={open} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={styles.modal}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{label}</Text>
-            <TouchableOpacity onPress={handleClose} hitSlop={12}>
-              <Text style={styles.closeBtn}>Fermer</Text>
-            </TouchableOpacity>
-          </View>
-
-          {searchable && (
-            <View style={styles.searchWrap}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Rechercher..."
-                placeholderTextColor={tokens.colors.disabled}
-                value={search}
-                onChangeText={setSearch}
-                autoFocus
-                clearButtonMode="while-editing"
-              />
-            </View>
-          )}
-
-          <FlatList
-            data={filtered}
-            keyExtractor={(item) => item}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.option, value === item && styles.optionSelected]}
-                onPress={() => handleSelect(item)}
-              >
-                <Text style={[styles.optionText, value === item && styles.optionTextSelected]}>
-                  {item}
-                </Text>
-                {value === item && <Text style={styles.check}>✓</Text>}
+        {/* The sheet is full-screen, and on web it portals out of the root
+            column — so it declares its own or it spans the whole browser. */}
+        <WebColumn>
+          <SafeAreaView style={styles.modal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{label}</Text>
+              <TouchableOpacity onPress={handleClose} hitSlop={12}>
+                <Text style={styles.closeBtn}>Fermer</Text>
               </TouchableOpacity>
+            </View>
+
+            {searchable && (
+              <View style={styles.searchWrap}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Rechercher..."
+                  placeholderTextColor={tokens.colors.disabled}
+                  value={search}
+                  onChangeText={setSearch}
+                  autoFocus
+                  clearButtonMode="while-editing"
+                />
+              </View>
             )}
-          />
-        </SafeAreaView>
+
+            <FlatList
+              data={filtered}
+              keyExtractor={(item) => item}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.option, value === item && styles.optionSelected]}
+                  onPress={() => handleSelect(item)}
+                >
+                  <Text style={[styles.optionText, value === item && styles.optionTextSelected]}>
+                    {item}
+                  </Text>
+                  {value === item && <Text style={styles.check}>✓</Text>}
+                </TouchableOpacity>
+              )}
+            />
+          </SafeAreaView>
+        </WebColumn>
       </Modal>
     </View>
   );

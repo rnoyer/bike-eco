@@ -1,5 +1,6 @@
 import { Modal, Pressable, StyleSheet, Text } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import WebColumn from "./WebColumn";
 import { ZoomableImage } from "./ZoomableImage";
 
 /**
@@ -26,18 +27,22 @@ export default function ImageViewerModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <GestureHandlerRootView style={styles.root}>
-        <ZoomableImage uri={uri} />
+      {/* Full-screen, and on web it portals out of the root column — so it
+          declares its own, over a black page rather than the app's charcoal. */}
+      <WebColumn pageStyle={styles.root}>
+        <GestureHandlerRootView style={styles.root}>
+          <ZoomableImage uri={uri} />
 
-        <Pressable
-          style={styles.close}
-          onPress={onClose}
-          accessibilityLabel="Fermer"
-          hitSlop={12}
-        >
-          <Text style={styles.closeText}>✕</Text>
-        </Pressable>
-      </GestureHandlerRootView>
+          <Pressable
+            style={styles.close}
+            onPress={onClose}
+            accessibilityLabel="Fermer"
+            hitSlop={12}
+          >
+            <Text style={styles.closeText}>✕</Text>
+          </Pressable>
+        </GestureHandlerRootView>
+      </WebColumn>
     </Modal>
   );
 }

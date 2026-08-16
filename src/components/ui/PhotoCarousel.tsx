@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import {
-  Dimensions,
+  type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Pressable,
@@ -16,7 +16,8 @@ import { tokens } from "@/theme/tokens";
 import ImageViewerModal from "./ImageViewerModal";
 import StatusBadge from "./StatusBadge";
 
-const W = Dimensions.get("window").width;
+/** Photo box: 4:3, i.e. height = 0.75 × width. */
+const RATIO = 4 / 3;
 
 export default function PhotoCarousel({
   photos,
@@ -30,31 +31,43 @@ export default function PhotoCarousel({
 }) {
   const [index, setIndex] = useState(0);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
+  // A page is as wide as the carousel, which is not the window: on web the app
+  // is a centred column narrower than the browser, and on native a rotation
+  // changes it. Measured, therefore — a module-level `Dimensions.get("window")`
+  // is read once at import and was wrong in both cases.
+  const [width, setWidth] = useState(0);
   // Normalized once, so the carousel, the dots' keys and the full-screen viewer
   // all agree on the same uri.
   const uris = photos.map((uri) => storageUrl(uri));
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
-    setIndex(Math.round(e.nativeEvent.contentOffset.x / W));
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (width > 0) setIndex(Math.round(e.nativeEvent.contentOffset.x / width));
+  };
+
+  function measure(e: LayoutChangeEvent) {
+    setWidth(e.nativeEvent.layout.width);
+  }
 
   return (
-    <View style={styles.wrap}>
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onScroll}
-      >
-        {uris.map((uri) => (
-          <Pressable key={uri} onPress={() => setViewerUri(uri)}>
-            <Image
-              source={{ uri }}
-              style={styles.photo}
-              contentFit="cover"
-              transition={150}
-            />
-          </Pressable>
-        ))}
-      </ScrollView>
+    <View style={styles.wrap} onLayout={measure}>
+      {width > 0 ? (
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={onScroll}
+        >
+          {uris.map((uri) => (
+            <Pressable key={uri} onPress={() => setViewerUri(uri)}>
+              <Image
+                source={{ uri }}
+                style={{ width, height: width / RATIO }}
+                contentFit="cover"
+                transition={150}
+              />
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
       {topLeft ? <View style={styles.topLeft}>{topLeft}</View> : null}
       {status ? (
         <View style={styles.badge}>
@@ -75,8 +88,11 @@ export default function PhotoCarousel({
 }
 
 const styles = StyleSheet.create({
-  wrap: { width: W, height: W * 0.75, backgroundColor: tokens.colors.divider },
-  photo: { width: W, height: W * 0.75 },
+  wrap: {
+    width: "100%",
+    aspectRatio: RATIO,
+    backgroundColor: tokens.colors.divider,
+  },
   badge: { position: "absolute", top: tokens.space.md, right: tokens.space.md },
   topLeft: { position: "absolute", top: tokens.space.md, left: tokens.space.md },
   dots: {
