@@ -1,7 +1,8 @@
 import * as ImagePicker from "expo-image-picker";
+import { useState } from "react";
 import {
   Image,
-  ScrollView,
+  type LayoutChangeEvent,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -23,7 +24,10 @@ interface Props {
   max?: number;
 }
 
-/** Pick photos from the gallery or camera, with a removable thumbnail strip. */
+/** Photos per row in the thumbnail grid. */
+const COLUMNS = 3;
+
+/** Pick photos from the gallery or camera, with a removable thumbnail grid. */
 export default function PhotoPicker({
   value,
   onChange,
@@ -33,6 +37,20 @@ export default function PhotoPicker({
 }: Props) {
   const room = Math.max(0, max - value.length);
   const full = room === 0;
+
+  // The tiles are squares sized from the measured grid width rather than a
+  // percentage: with a gap between columns there is no percentage that divides
+  // evenly, and `aspectRatio` on a percentage width leaves the last column
+  // slightly off. Zero until the first layout, which is why the grid renders
+  // nothing on that first pass.
+  const [gridWidth, setGridWidth] = useState(0);
+  const tileSize = Math.floor(
+    (gridWidth - tokens.space.sm * (COLUMNS - 1)) / COLUMNS,
+  );
+
+  function measureGrid(e: LayoutChangeEvent) {
+    setGridWidth(e.nativeEvent.layout.width);
+  }
 
   // One action for both sources: only one picker can be open at a time, and it
   // covers the permission prompt as well as the launch, which is the part that
@@ -124,24 +142,32 @@ export default function PhotoPicker({
       </View>
 
       {value.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.carousel}
-        >
-          {value.map((uri, index) => (
-            <View key={`${uri}-${index}`} style={styles.photoWrap}>
-              <Image source={{ uri }} style={styles.photo} resizeMode="cover" />
-              <TouchableOpacity
-                style={styles.deleteBtn}
-                onPress={() => confirmDelete(index)}
-                hitSlop={6}
+        // A plain wrapping row, not a nested ScrollView: the grid grows with
+        // its rows and the form's own ScrollView scrolls it.
+        <View style={styles.grid} onLayout={measureGrid}>
+          {tileSize > 0 &&
+            value.map((uri, index) => (
+              <View
+                key={`${uri}-${index}`}
+                style={[styles.photoWrap, { width: tileSize }]}
               >
-                <Text style={styles.deleteBtnText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </ScrollView>
+                <Image
+                  source={{ uri }}
+                  style={[styles.photo, { height: tileSize }]}
+                  resizeMode="cover"
+                />
+                <TouchableOpacity
+                  style={styles.deleteBtn}
+                  onPress={() => confirmDelete(index)}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Supprimer la photo ${index + 1}`}
+                >
+                  <Text style={styles.deleteBtnText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+        </View>
       )}
 
       {error ? (
@@ -184,16 +210,16 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: tokens.colors.primary,
   },
-  carousel: {
-    gap: tokens.space.md,
-    paddingVertical: 2,
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: tokens.space.sm,
   },
   photoWrap: {
     position: "relative",
   },
   photo: {
-    width: 120,
-    height: 120,
+    width: "100%",
     borderRadius: tokens.radius.md,
     backgroundColor: tokens.colors.divider,
   },

@@ -61,6 +61,13 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.md,
     padding: tokens.space.lg,
     gap: tokens.space.md,
+    // The backdrop covers the browser window — react-native-web portals a
+    // `Modal` out of the root column — so the card caps itself at the app's
+    // width instead of stretching across a desktop viewport. No effect on a
+    // phone, which is narrower than the cap.
+    width: "100%",
+    maxWidth: tokens.layout.maxContentWidth,
+    alignSelf: "center",
   },
   title: { fontSize: 18, fontWeight: "700", color: tokens.colors.primary },
   body: { fontSize: 14, color: tokens.colors.muted },

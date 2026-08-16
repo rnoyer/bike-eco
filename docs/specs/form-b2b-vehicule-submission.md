@@ -278,8 +278,9 @@ subtitle : "Ajoutez au moins 1 photo récente"
 - Message de préconisation : Ajoutez des photos de bonne qualité, montrant plusieurs faces de la moto.
 - bouton "Gallerie" : ouvre la gallerie de photo
 - bouton "Appareil Photo" : ouvre l'appareil photo
-- caroussel des photos ajoutées
-  - horizontal slider
+- galerie des photos ajoutées
+  - vignettes carrées en grille, 3 par ligne, autant de lignes que nécessaire
+    (la page défile avec le formulaire)
   - croix sur chaque photo pour la supprimer (avec popup de confirmation "voulez-vous supprimer cette photo?")
     mandatory : 1 photo
     maximum : 10 photos — les deux boutons sont désactivés une fois la limite atteinte,

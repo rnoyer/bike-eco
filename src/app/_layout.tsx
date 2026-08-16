@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ScreenLoader } from "@/components/ui/Spinner";
+import WebColumn from "@/components/ui/WebColumn";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 import { redirectFor, resolveAuthRoute } from "@/lib/auth/routeGuard";
 import { useForegroundNotifications } from "@/lib/notifications/useForegroundNotifications";
@@ -52,11 +53,16 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <AuthGate>
-            {/* Groups own their headers; the root must not draw one per group screen
-                (that produced the stacked "(b2b)" / "(tabs)" headers). */}
-            <Stack screenOptions={{ headerShown: false }} />
-          </AuthGate>
+          {/* The whole app — headers and tab bar included, which is why this
+              sits above the navigator rather than inside a screen. Modals
+              portal out of it on web and carry their own; see `WebColumn`. */}
+          <WebColumn>
+            <AuthGate>
+              {/* Groups own their headers; the root must not draw one per group screen
+                  (that produced the stacked "(b2b)" / "(tabs)" headers). */}
+              <Stack screenOptions={{ headerShown: false }} />
+            </AuthGate>
+          </WebColumn>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
