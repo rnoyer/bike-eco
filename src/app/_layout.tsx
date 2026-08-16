@@ -1,5 +1,6 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
+import { Platform, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ScreenLoader } from "@/components/ui/Spinner";
@@ -7,6 +8,7 @@ import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 import { redirectFor, resolveAuthRoute } from "@/lib/auth/routeGuard";
 import { useForegroundNotifications } from "@/lib/notifications/useForegroundNotifications";
 import { useNotificationRouting } from "@/lib/notifications/useNotificationRouting";
+import { tokens } from "@/theme/tokens";
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { loading, initializing, session, status } = useAuth();
@@ -47,16 +49,44 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Web only: a desktop browser is far wider than any screen this UI was drawn
+ *  for, so the whole app — headers and tab bar included, which is why this sits
+ *  above the navigator rather than inside a screen — is capped at
+ *  `tokens.layout.maxContentWidth` and centred. The page behind it is
+ *  `primary`, so the excess reads as the app's own frame instead of dead white.
+ *  On native it is a passthrough: no wrapper view, no extra layout pass. */
+function WebFrame({ children }: { children: React.ReactNode }) {
+  if (Platform.OS !== "web") return <>{children}</>;
+  return (
+    <View style={styles.webPage}>
+      <View style={styles.webColumn}>{children}</View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  webPage: { flex: 1, backgroundColor: tokens.colors.primary },
+  webColumn: {
+    flex: 1,
+    width: "100%",
+    maxWidth: tokens.layout.maxContentWidth,
+    alignSelf: "center",
+    overflow: "hidden",
+  },
+});
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <AuthGate>
-            {/* Groups own their headers; the root must not draw one per group screen
-                (that produced the stacked "(b2b)" / "(tabs)" headers). */}
-            <Stack screenOptions={{ headerShown: false }} />
-          </AuthGate>
+          <WebFrame>
+            <AuthGate>
+              {/* Groups own their headers; the root must not draw one per group screen
+                  (that produced the stacked "(b2b)" / "(tabs)" headers). */}
+              <Stack screenOptions={{ headerShown: false }} />
+            </AuthGate>
+          </WebFrame>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

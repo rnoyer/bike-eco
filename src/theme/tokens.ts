@@ -31,6 +31,10 @@ export const tokens = {
     en_cours: { bg: "#DBEAFE", fg: "#1E40AF" },
     cloture: { bg: "#DCFCE7", fg: "#166534" },
   },
+  /** Web only: the app is a phone-shaped column, so the whole UI is capped at
+   *  this width and centred, with `colors.primary` filling the space either
+   *  side. Native ignores it — the device already is the frame. */
+  layout: { maxContentWidth: 768 },
   radius: { sm: 8, md: 12, lg: 16 },
   space: { xs: 4, sm: 8, md: 12, lg: 24, xl: 28 },
   button: { height: 52 },
