@@ -1,3 +1,8 @@
+// Must stay the first import: every feature module imports this file before it
+// defines a callable, so this is what guarantees setGlobalOptions has already run
+// by then — regardless of import order in `index.ts`. See ./options.
+import "./options";
+
 import { getApp, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall, type CallableOptions } from "firebase-functions/https";

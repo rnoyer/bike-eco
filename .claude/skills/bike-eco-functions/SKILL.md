@@ -137,6 +137,22 @@ radius and pins **every** function to `europe-west9`, co-located with `bike-eco-
 the Storage bucket (both are there, and neither location can be changed after creation).
 A function buffering uploads in memory also sets its own `memory` and `concurrency`.
 
+It lives in **`functions/src/options.ts`**, imported for its side effect as the first
+import of both `index.ts` and `callable.ts`. That placement is load-bearing:
+**`setGlobalOptions` only affects functions defined after it runs, and imports are
+hoisted.** Calling it in the body of `index.ts` reads correctly and silently is not —
+every `export { … } from "./registration"` evaluates first, so all twelve callables are
+already defined by the time it executes. That exact bug shipped once: the callables stayed
+`us-central1` while `sendB2cSubmission` (declared lower in the same body) moved, splitting
+the deployment across two regions with no error anywhere.
+
+Verify the resolved region **before** deploying — every export carries its endpoint:
+
+```bash
+npm run build && node -e 'for (const [k,v] of Object.entries(require("./lib/index.js")))
+  if (v?.__endpoint) console.log(k, v.__endpoint.region ?? "(none → us-central1)")'
+```
+
 **The region is a two-sided contract.** Changing it means changing the callers in the same
 commit — `getFunctions(app, "europe-west9")` in `firebase.core.ts` and the `REGION`
 constant in `src/features/b2c-submission/submit.ts` (a bare `fetch`, so it builds its own
@@ -157,3 +173,4 @@ already-shipped client pinned to the old region breaks permanently.
 | Sending email without `{ secrets: B2C_EMAIL_SECRETS }` | Runtime failure — credentials unavailable |
 | Flipping `DEV_EMAIL_OVERRIDE` back to `true` and shipping | No real recipient gets an email |
 | Substring-matching a URL for validation | Bypassable; parse the URL and check host + path |
+| Calling `setGlobalOptions` anywhere but `options.ts` | Hoisted imports define functions first; the options apply to nothing and the deploy splits regions |
