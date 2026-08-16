@@ -22,10 +22,14 @@ export const storage = getStorage(app);
 // minutes, so an offline submit surfaces its error fast. This caps only the
 // retry window for a *failing* upload — a slow but succeeding one is unaffected.
 storage.maxUploadRetryTime = 20000;
-// No region: Task 4's callables are deployed region-less (default
-// us-central1), matching `sendB2cSubmission` — a mismatched region here would
-// call the wrong URL in production.
-export const functions = getFunctions(app);
+// Must match the functions' deploy region — `setGlobalOptions({ region })` in
+// `functions/src/index.ts` pins every function to `europe-west9`, co-located
+// with `bike-eco-db` and the Storage bucket. A mismatch here silently calls a
+// URL with no function behind it (the client surfaces it as `internal`), so the
+// two are changed together, and `REGION` in
+// `src/features/b2c-submission/submit.ts` — the one endpoint called with a bare
+// `fetch` rather than through this handle — moves with them.
+export const functions = getFunctions(app, "europe-west9");
 
 /** Dev opt-in: point every SDK at the local emulators. */
 export const USE_EMULATORS =

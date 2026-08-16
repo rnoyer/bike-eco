@@ -99,9 +99,9 @@ for unknown values so a submission is never dropped.
 
 1. `EXPO_PUBLIC_FUNCTIONS_URL` (base up to but excluding the function name) — set
    this to reach the emulator from a physical device over the LAN, e.g.
-   `http://192.168.1.x:5001/bike-eco-43a84/us-central1`.
-2. Dev default: `http://localhost:5001/bike-eco-43a84/us-central1/sendB2cSubmission`.
-3. Production: `https://us-central1-bike-eco-43a84.cloudfunctions.net/sendB2cSubmission`.
+   `http://192.168.1.x:5001/bike-eco-43a84/europe-west9`.
+2. Dev default: `http://localhost:5001/bike-eco-43a84/europe-west9/sendB2cSubmission`.
+3. Production: `https://europe-west9-bike-eco-43a84.cloudfunctions.net/sendB2cSubmission`.
 
 ## Local testing
 
@@ -109,7 +109,7 @@ The functions emulator runs `sendB2cSubmission` on port `5001`. With no SMTP
 secrets set, emails are logged (JSON transport) rather than sent. Example:
 
 ```bash
-URL="http://127.0.0.1:5001/bike-eco-43a84/us-central1/sendB2cSubmission"
+URL="http://127.0.0.1:5001/bike-eco-43a84/europe-west9/sendB2cSubmission"
 curl -X POST "$URL" \
   -F "payload=<payload.json;type=application/json" \
   -F "photos=@photo.png;type=image/png"

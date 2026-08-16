@@ -60,7 +60,7 @@ Join our community of developers creating universal apps.
 ### Start Expo Go
 
 ```bash
-EXPO_PUBLIC_FUNCTIONS_URL=http://192.168.0.4:5001/bike-eco-43a84/us-central1 npx expo start --clear
+EXPO_PUBLIC_FUNCTIONS_URL=http://192.168.0.4:5001/bike-eco-43a84/europe-west9 npx expo start --clear
 ```
 
 ### Start Firebase Emulator

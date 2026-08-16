@@ -17,10 +17,11 @@ import { dispatch } from "./send";
  *
  * No `region` on purpose. A 2nd-gen Firestore trigger must be co-located with
  * its database, and naming `database` is enough for the SDK to resolve that:
- * `bike-eco-db` lives in `europe-west9`, and all four functions are deployed
- * there (`firebase functions:list`) even though `setGlobalOptions` sets no
- * region and the callables default to `us-central1`. Adding an explicit region
- * here would be redundant, and pinning the wrong one would break the trigger.
+ * `bike-eco-db` lives in `europe-west9`, and all four functions deploy there
+ * (`firebase functions:list`). `setGlobalOptions` now pins that same region for
+ * the whole codebase, so the two agree — but this trigger's region is dictated
+ * by its database, not by the global option. Never override it here: pinning a
+ * region other than the database's would break the trigger.
  */
 const TRIGGER = { database: "bike-eco-db", retry: false } as const;
 

@@ -83,8 +83,8 @@ firebase emulators:start --only functions
 Wait for:
 
 ```
-✔  functions[us-central1-sendB2cSubmission]: http function initialized
-   (http://127.0.0.1:5001/bike-eco-43a84/us-central1/sendB2cSubmission).
+✔  functions[europe-west9-sendB2cSubmission]: http function initialized
+   (http://127.0.0.1:5001/bike-eco-43a84/europe-west9/sendB2cSubmission).
 ```
 
 If you see the warning `SMTP secrets not set — using JSON transport`, the
@@ -103,7 +103,7 @@ cat > pl.json <<'JSON'
 {"nom":"Dupont","prenom":"Jean","email":"jean@example.com","telephone":"0612345678","departement":"13 - Bouches-du-Rhône","ville":"Marseille","electrique":"non","materiel":[],"marque":"Honda","modele":"CB500","cylindree":"500","annee":"2018","kilometrage":"24000","accessoires":"top case","etat":"Bon état","prix":"3500","commentaires":"Bien entretenue","modalite":"Je dépose la moto au centre de Vitrolles","carteGrise":"oui","controleTechnique":"oui","resultatCT":"Favorable"}
 JSON
 curl -s -w "\nHTTP %{http_code}\n" \
-  -X POST "http://127.0.0.1:5001/bike-eco-43a84/us-central1/sendB2cSubmission" \
+  -X POST "http://127.0.0.1:5001/bike-eco-43a84/europe-west9/sendB2cSubmission" \
   -F "payload=<pl.json;type=application/json" \
   -F "photos=@p.png;type=image/png"
 ```
@@ -127,7 +127,7 @@ emulator automatically. On a **physical device**, point the app at your
 machine's LAN IP with an env var before `expo start`:
 
 ```bash
-EXPO_PUBLIC_FUNCTIONS_URL=http://192.168.1.x:5001/bike-eco-43a84/us-central1 npx expo start
+EXPO_PUBLIC_FUNCTIONS_URL=http://192.168.1.x:5001/bike-eco-43a84/europe-west9 npx expo start
 ```
 
 Complete the funnel (a real photo is required at step 7) and submit; the success

@@ -5,7 +5,9 @@ import { emulatorHost, USE_EMULATORS } from "../../../firebase.core";
 import type { B2cSubmissionForm } from "./schema";
 
 const PROJECT_ID = "bike-eco-43a84";
-const REGION = "us-central1";
+// Must match the functions' deploy region (`setGlobalOptions` in
+// `functions/src/index.ts`); mirrors `getFunctions(app, ...)` in firebase.core.ts.
+const REGION = "europe-west9";
 const FUNCTION = "sendB2cSubmission";
 
 /**

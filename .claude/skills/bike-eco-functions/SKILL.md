@@ -132,8 +132,18 @@ npm run test:rules          # rules tests, emulator-backed
 Use `firebase-tools@latest`; a JDK error means raising `JAVA_HOME` (system default is 17),
 not pinning an older major.
 
-`setGlobalOptions({ maxInstances: 10 })` bounds autoscaling blast radius. A function
-buffering uploads in memory also sets its own `memory` and `concurrency`.
+`setGlobalOptions({ maxInstances: 10, region: "europe-west9" })` bounds autoscaling blast
+radius and pins **every** function to `europe-west9`, co-located with `bike-eco-db` and
+the Storage bucket (both are there, and neither location can be changed after creation).
+A function buffering uploads in memory also sets its own `memory` and `concurrency`.
+
+**The region is a two-sided contract.** Changing it means changing the callers in the same
+commit — `getFunctions(app, "europe-west9")` in `firebase.core.ts` and the `REGION`
+constant in `src/features/b2c-submission/submit.ts` (a bare `fetch`, so it builds its own
+URL). A mismatch is silent: the SDK calls a URL with no function behind it and the user
+sees the generic `internal` message. Note also that a region change is **not** an in-place
+update — the CLI creates the function in the new region and deletes the old one, so any
+already-shipped client pinned to the old region breaks permanently.
 
 ## Common mistakes
 

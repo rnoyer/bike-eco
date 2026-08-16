@@ -19,7 +19,15 @@ export {
 export { deleteColleague, deleteMyAccount, setColleagueAdmin } from "./users";
 
 // Per-function caps still apply; this bounds the blast radius of autoscaling.
-setGlobalOptions({ maxInstances: 10 });
+//
+// `region` pins every function to `europe-west9` — the location of both
+// `bike-eco-db` and the default Storage bucket. Co-location is what keeps a
+// callable's Firestore round-trips off the transatlantic hop, and the Firestore
+// triggers in `notifications/` *must* sit there regardless (a 2nd-gen trigger
+// has to be co-located with its database). Client callers must agree: see
+// `getFunctions(app, ...)` in `firebase.core.ts` and `REGION` in
+// `src/features/b2c-submission/submit.ts`.
+setGlobalOptions({ maxInstances: 10, region: "europe-west9" });
 
 // Upload guard rails — reject oversized payloads instead of buffering them.
 const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8 MB per photo
