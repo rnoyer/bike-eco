@@ -14,6 +14,12 @@ App data lives in the **named `bike-eco-db`** database (Standard edition), not
 `(default)`. The client is built in `firebaseConfig.ts` (`db`, `storage`, `app`); the
 admin side calls `db()` from `functions/src/callable.ts`, which also names the database.
 
+`bike-eco-db` and the default Storage bucket are both in **`europe-west9`**, and every
+Cloud Function is pinned there to match. Two consequences: a Firestore location is fixed
+at creation and a bucket's too, so "move it to another region" is a data migration into a
+new database/bucket, never a setting; and a 2nd-gen Firestore trigger must be co-located
+with its database, so a trigger can never be pinned elsewhere.
+
 Activate the `firebase-firestore` skill for Firestore mechanics. This skill covers what is
 specific to bike-eco. Gate with `docs/tech/verification.md`; the model is documented in
 `docs/tech/firestore-data-model.md`.

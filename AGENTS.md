@@ -95,6 +95,10 @@ and the typed-routes regeneration step required after adding a route file.
 
 - App data lives in the **named `bike-eco-db`** database (Standard edition), not
   `(default)`. The client is initialized in `firebaseConfig.ts` (`db`, `storage`, `app`).
+- Everything is hosted in **`europe-west9`**: `bike-eco-db`, the default Storage bucket,
+  and every Cloud Function (`setGlobalOptions` in `functions/src/index.ts`, mirrored by
+  the callers in `firebase.core.ts` and `src/features/b2c-submission/submit.ts`). The
+  database and bucket locations are immutable — changing either means migrating data.
 - The data model is typed in `src/lib/firestore/schema.ts` (collections: `companies`,
   `users`, `invitations`, `dossiers`, `dossiers/*/messages`) with typed, converter-backed
   refs in `src/lib/firestore/collections.ts`. Keep these in sync when the model changes.

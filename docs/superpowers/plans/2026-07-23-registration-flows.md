@@ -1041,6 +1041,8 @@ export const functions = getFunctions(app, "europe-west9");
 ```
 
 > `europe-west9` matches the Firestore location; 2nd-gen functions default to `us-central1` unless deployed elsewhere — set the functions' region to `europe-west9` in Task 4's `onCall` options if you want them co-located, OR use the default region here. Use whichever region the functions are actually deployed to; for the emulator the region is ignored.
+>
+> **RESOLVED 2026-08-16:** co-located on `europe-west9`, set once via `setGlobalOptions` rather than per-`onCall`. This line as written is the shipped code.
 
 In `connectDataEmulators()`, after the storage line add:
 
@@ -1603,3 +1605,4 @@ Expected: all clean.
 - **Testability:** all business logic is in `core.ts`/`inviteCode.ts`/`schemas.ts` unit-tested with fakes; wrappers, client bindings, Google, and screens are thin and verified in the walkthrough — no mock-only tests.
 - **Deliberate:** `sendInviteCore` reuses `deps.newCompanyId()` as a generic random-id source (Firestore `.doc().id`) rather than adding a near-duplicate dep — noted so a reviewer doesn't read it as a copy-paste error.
 - **Open flag for the implementer:** confirm the functions' deploy **region** matches the client `getFunctions(app, region)` (Task 5 Step 1) — either set `region: "europe-west9"` in the `onCall` options or use the default `us-central1` consistently on both sides. The emulator ignores region.
+  - **RESOLVED 2026-08-16:** the implementation took the `us-central1` default on both sides, which worked but left the callables a transatlantic hop from `bike-eco-db`. Now closed the other way: `setGlobalOptions({ region: "europe-west9" })` in `functions/src/index.ts` pins every function, with `firebase.core.ts` and `src/features/b2c-submission/submit.ts` as the matching callers. See the `bike-eco-functions` skill for the two-sided contract.
