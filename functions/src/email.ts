@@ -23,9 +23,9 @@ export const B2C_EMAIL_SECRETS = [SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS];
  * DEV_EMAIL_OVERRIDE off when going live.
  */
 const DEV_EMAIL_OVERRIDE = false;
-const DEV_EMAIL = "romain.noyer@gmail.com";
-const NORTH_MAILBOX = "romain.noyer@gmail.com"; // TODO: real NORTH mailbox
-const SOUTH_MAILBOX = "romain.noyer@gmail.com"; // TODO: real SOUTH mailbox
+const DEV_EMAIL = "rnoyer.dev@gmail.com";
+const NORTH_MAILBOX = "eric@gam-motos.fr";
+const SOUTH_MAILBOX = "ao.pmc13@gmail.com";
 
 /**
  * Sender address. Most SMTP providers (Gmail included) require the From to be
