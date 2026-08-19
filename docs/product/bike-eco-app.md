@@ -10,7 +10,7 @@ A non logued funnel where a customer can fill the B2C form and submit it to the 
 When submitted, two emails are sent :
 
 - To Customer : An email to summarize the form he sent (relevant input fields), and additionnal information (to be provided)
-- To Bike-eco : An email with all the information contained in the form (images + relevant input fields). Depending on which part of France it is (SOUTH or NORTH) the email will be sent to a different mailbox. During development phase, all emails are sent to romain.noyer@gmail.com
+- To Bike-eco : An email with all the information contained in the form (images + relevant input fields). Depending on which part of France it is (SOUTH or NORTH) the email will be sent to a different mailbox. During development phase, all emails are sent to rnoyer.dev@gmail.com
 
 ### Second Path : Concessionnaires/Garagistes (B2B)
 

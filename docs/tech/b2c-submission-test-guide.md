@@ -2,7 +2,7 @@
 
 How to exercise the `sendB2cSubmission` Cloud Function end-to-end against the
 Firebase emulator and actually deliver both emails to a real inbox
-(`romain.noyer@gmail.com` during development).
+(`rnoyer.dev@gmail.com` during development).
 
 For the function's design and request contract, see
 [b2c-submission-email.md](./b2c-submission-email.md).
@@ -10,7 +10,7 @@ For the function's design and request contract, see
 ## What you'll verify
 
 A single submission produces **two emails**, both routed to
-`romain.noyer@gmail.com` when `DEV_EMAIL_OVERRIDE` is flipped to `true` (it is `false` today):
+`rnoyer.dev@gmail.com` when `DEV_EMAIL_OVERRIDE` is flipped to `true` (it is `false` today):
 
 1. **Team notification** — _Nouvelle demande B2C — SOUTH — Jean Dupont_, all form
    fields, with the photo(s) **attached**.
@@ -31,7 +31,7 @@ This file is gitignored (`*.local`) — never commit it.
 ```
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=romain.noyer@gmail.com
+SMTP_USER=rnoyer.dev@gmail.com
 SMTP_PASS=<your provider password / app password>
 ```
 
