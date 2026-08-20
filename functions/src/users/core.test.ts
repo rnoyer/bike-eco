@@ -1,7 +1,7 @@
 import type { CallerClaims } from "../errors";
 import {
-  deleteColleagueCore, deleteMyAccountCore, setColleagueAdminCore,
-  type TargetUser, type UsersDeps,
+  chunk, deleteColleagueCore, deleteMyAccountCore, setColleagueAdminCore,
+  updateMyProfileCore, type ProfilePatch, type TargetUser, type UsersDeps,
 } from "./core";
 
 const admin: CallerClaims = { uid: "admin1", role: "b2b", status: "active", companyId: "comp_1" };
@@ -9,7 +9,8 @@ const member: CallerClaims = { uid: "mem1", role: "b2b", status: "active", compa
 const boAdmin: CallerClaims = { uid: "bo1", role: "backoffice", status: "active", companyId: null };
 
 const user = (over: Partial<TargetUser> & { uid: string }): TargetUser => ({
-  role: "b2b", companyId: "comp_1", isAdmin: false, ...over,
+  role: "b2b", companyId: "comp_1", isAdmin: false,
+  nom: "Noyer", prenom: "Romain", telephone: "0601020304", ...over,
 });
 
 const USERS: Record<string, TargetUser> = {
@@ -22,10 +23,20 @@ const USERS: Record<string, TargetUser> = {
   bo2: user({ uid: "bo2", role: "backoffice", companyId: null }),
 };
 
-interface Calls { admins: { uid: string; isAdmin: boolean }[]; authDeleted: string[]; docsDeleted: string[] }
+interface Calls {
+  admins: { uid: string; isAdmin: boolean }[];
+  authDeleted: string[];
+  docsDeleted: string[];
+  profiles: { uid: string; patch: ProfilePatch }[];
+  dossiers: { uid: string; patch: ProfilePatch }[];
+  createdByNames: { companyId: string; name: string }[];
+}
 
 function fakeDeps(over: Partial<UsersDeps> = {}): UsersDeps & { calls: Calls } {
-  const calls: Calls = { admins: [], authDeleted: [], docsDeleted: [] };
+  const calls: Calls = {
+    admins: [], authDeleted: [], docsDeleted: [],
+    profiles: [], dossiers: [], createdByNames: [],
+  };
   return {
     calls,
     getUser: async (uid) => USERS[uid] ?? null,
@@ -33,6 +44,12 @@ function fakeDeps(over: Partial<UsersDeps> = {}): UsersDeps & { calls: Calls } {
     setAdmin: async (uid, isAdmin) => { calls.admins.push({ uid, isAdmin }); },
     deleteAuthUser: async (uid) => { calls.authDeleted.push(uid); },
     deleteUserDoc: async (uid) => { calls.docsDeleted.push(uid); },
+    updateProfile: async (uid, patch) => { calls.profiles.push({ uid, patch }); },
+    propagateToDossiers: async (uid, patch) => { calls.dossiers.push({ uid, patch }); },
+    getCompanyCreator: async () => "admin1",
+    setCompanyCreatedByName: async (companyId, name) => {
+      calls.createdByNames.push({ companyId, name });
+    },
     ...over,
   };
 }
@@ -137,4 +154,68 @@ test("an inactive caller cannot manage colleagues", async () => {
   const d = fakeDeps();
   await expect(setColleagueAdminCore({ uid: "mem1", isAdmin: true }, { ...admin, status: "pending" }, d))
     .rejects.toMatchObject({ code: "permission-denied" });
+});
+
+// ─── updateMyProfile ─────────────────────────────────────────────────────────
+
+test("updating a field writes the profile and every dossier that carries it", async () => {
+  const d = fakeDeps();
+  await updateMyProfileCore({ telephone: "0700000000" }, member, d);
+  expect(d.calls.profiles).toEqual([{ uid: "mem1", patch: { telephone: "0700000000" } }]);
+  expect(d.calls.dossiers).toEqual([{ uid: "mem1", patch: { telephone: "0700000000" } }]);
+});
+
+test("only the fields that actually differ are written", async () => {
+  const d = fakeDeps();
+  await updateMyProfileCore(
+    { nom: "Noyer", prenom: "Romaine", telephone: "0601020304" },
+    member,
+    d,
+  );
+  expect(d.calls.profiles).toEqual([{ uid: "mem1", patch: { prenom: "Romaine" } }]);
+});
+
+test("resubmitting unchanged values writes nothing at all", async () => {
+  const d = fakeDeps();
+  await updateMyProfileCore({ nom: "Noyer", telephone: "0601020304" }, member, d);
+  expect(d.calls.profiles).toEqual([]);
+  expect(d.calls.dossiers).toEqual([]);
+  expect(d.calls.createdByNames).toEqual([]);
+});
+
+test("the company creator's denormalized name follows a name change", async () => {
+  const d = fakeDeps();
+  await updateMyProfileCore({ prenom: "Romaine" }, admin, d);
+  expect(d.calls.createdByNames).toEqual([{ companyId: "comp_1", name: "Romaine Noyer" }]);
+});
+
+test("a colleague who did not register the company leaves createdByName alone", async () => {
+  const d = fakeDeps();
+  await updateMyProfileCore({ prenom: "Romaine" }, member, d);
+  expect(d.calls.createdByNames).toEqual([]);
+});
+
+test("a phone-only change never touches createdByName", async () => {
+  const d = fakeDeps();
+  await updateMyProfileCore({ telephone: "0700000000" }, admin, d);
+  expect(d.calls.dossiers).toHaveLength(1);
+  expect(d.calls.createdByNames).toEqual([]);
+});
+
+test("a back-office user has no company to propagate to", async () => {
+  const d = fakeDeps();
+  await updateMyProfileCore({ nom: "Dupont" }, boAdmin, d);
+  expect(d.calls.profiles).toEqual([{ uid: "bo1", patch: { nom: "Dupont" } }]);
+  expect(d.calls.createdByNames).toEqual([]);
+});
+
+test("a caller with no profile document is refused", async () => {
+  const d = fakeDeps({ getUser: async () => null });
+  await expect(updateMyProfileCore({ nom: "Dupont" }, member, d))
+    .rejects.toMatchObject({ code: "not-found" });
+});
+
+test("chunk splits a list into batches and keeps the order", () => {
+  expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
+  expect(chunk([], 2)).toEqual([]);
 });

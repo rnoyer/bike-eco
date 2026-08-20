@@ -19,7 +19,7 @@ export {
   acceptInvite,
   approveCompany, deleteCompany, registerCompany, resolveInvite, sendInvite
 } from "./registration";
-export { deleteColleague, deleteMyAccount, setColleagueAdmin } from "./users";
+export { deleteColleague, deleteMyAccount, setColleagueAdmin, updateMyProfile } from "./users";
 
 // Upload guard rails — reject oversized payloads instead of buffering them.
 const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8 MB per photo

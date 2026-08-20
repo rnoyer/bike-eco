@@ -1,6 +1,7 @@
 import Button from "@/components/ui/Button";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import InfoCard from "@/components/ui/InfoCard";
+import InfoEditableRow from "@/components/ui/InfoEditableRow";
 import InfoRows from "@/components/ui/InfoRows";
 import ScreenMessage from "@/components/ui/ScreenMessage";
 import Section from "@/components/ui/Section";
@@ -20,13 +21,25 @@ import { callDeleteMyAccount } from "@/lib/data/users";
 import { alertDialog, confirmDialog } from "@/lib/ui/dialog";
 import { useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { tokens } from "@/theme/tokens";
+import {
+  PROFILE_FIELDS,
+  type EditableProfileField,
+} from "@/features/profile/fields";
 import { sendPasswordResetEmail } from "firebase/auth";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { auth } from "../../../firebaseConfig";
 
+/** Which group's edit route this screen sends the pencil buttons to — the two
+ *  differ only in their prefix, and each stays inside its own stack. */
+type EditProfileHref =
+  | "/(b2b)/edit-profile"
+  | "/(backoffice)/edit-profile";
+
 export default function AccountScreen() {
   const { data, loading } = useAccount();
+  const router = useRouter();
   const company = useCompany(data?.companyId ?? "");
   const { signOut } = useSession();
   const { firebaseUser } = useAuth();
@@ -34,6 +47,13 @@ export default function AccountScreen() {
   const isAdmin = useIsAdmin();
 
   const email = firebaseUser?.email ?? null;
+
+  // The account tab is mounted in both groups, and each must push its own edit
+  // route — a b2b user pushed onto `(backoffice)` would hit that group's guard.
+  const editProfileHref: EditProfileHref =
+    data?.role === "backoffice" ? "/(backoffice)/edit-profile" : "/(b2b)/edit-profile";
+  const editProfile = (field: EditableProfileField) =>
+    router.push({ pathname: editProfileHref, params: { field } });
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -85,15 +105,29 @@ export default function AccountScreen() {
     <ScrollView contentContainerStyle={styles.scrollContent}>
       <SectionWrapper style={styles.fill}>
         <InfoCard title="Mes informations personnelles">
-          {/* No action buttons on the contact rows here: it is the viewer's own
-              number and address. */}
-          <InfoRows
-            rows={[
-              ["Nom", data.nom],
-              ["Prénom", data.prenom],
-              ["Email", data.email],
-              ["Téléphone", data.telephone],
-            ]}
+          {/* One part per row, not one `InfoRows` of four: the card draws the
+              hairline between consecutive parts, and that line above and below
+              is what makes an editable row read as its own thing.
+
+              No phone / mail action buttons here: it is the viewer's own number
+              and address, so the one action a row carries is "modifier". */}
+          <InfoEditableRow
+            label={PROFILE_FIELDS.nom.rowLabel}
+            value={data.nom}
+            onPress={() => editProfile("nom")}
+          />
+          <InfoEditableRow
+            label={PROFILE_FIELDS.prenom.rowLabel}
+            value={data.prenom}
+            onPress={() => editProfile("prenom")}
+          />
+          {/* Not editable: the email *is* the sign-in credential, and changing
+              it is an auth flow, not a profile write. */}
+          <InfoRows rows={[["Email", data.email]]} />
+          <InfoEditableRow
+            label={PROFILE_FIELDS.telephone.rowLabel}
+            value={data.telephone}
+            onPress={() => editProfile("telephone")}
           />
         </InfoCard>
         {data.companyId ? (
