@@ -384,6 +384,17 @@ type : dropdown
 - "Je dépose la moto au centre de Vitrolles"
   mandatory : no
 
+Mention légale (fin du formulaire, juste au-dessus des boutons Précédent /
+Envoyer) : "En cliquant sur Envoyer, vous acceptez les Conditions
+d'utilisation, la Politique de confidentialité et la Politique relative aux
+cookies de Bike-eco."
+
+"Conditions d'utilisation" et "Politique de confidentialité" sont des liens vers
+les documents publiés sur le site (URLs dans `src/constants/legal.ts` —
+**provisoires**, à remplacer quand les pages seront en ligne). Rendue par
+`LegalNotice`, passée au `footer` de `FormLayout` sur la dernière étape
+uniquement.
+
 ---
 
 Form : step 10

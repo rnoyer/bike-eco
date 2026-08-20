@@ -5,6 +5,7 @@ import { FormProvider } from "react-hook-form";
 
 import FormConfirmation from "@/components/form/FormConfirmation";
 import FormLayout from "@/components/form/FormLayout";
+import LegalNotice from "@/components/form/LegalNotice";
 import {
   B2B_COMPANY_REGISTRATION_DEFAULTS,
   b2bCompanyRegistrationSchema,
@@ -115,6 +116,7 @@ export default function RegisterScreen() {
             onPrev={handlePrev}
             onNext={next}
             nextLabel={isLast ? "S'inscrire" : "Suivant"}
+            footer={isLast ? <LegalNotice action="S'inscrire" /> : null}
             // "Précédent" on step 1 signs out before it navigates, so the row
             // has to lock for that round-trip too.
             busy={submitting || goingHome.pending}
