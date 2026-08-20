@@ -39,7 +39,7 @@ export const b2bSubmissionSchema = z
     factureEntretien: optionalChoice,
     photos: z
       .array(z.string())
-      .min(1, "Ajoutez au moins 1 photo du véhicule")
+      .min(1, "Ajoutez au moins 1 photo récente")
       .max(MAX_PHOTOS, `Ajoutez ${MAX_PHOTOS} photos maximum`),
     prix: optionalText,
     commentaires: optionalText,
