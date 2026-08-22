@@ -7,7 +7,7 @@
  */
 export const LEGAL_URLS = {
   /** docs/legal/cgu.md */
-  cgu: "https://www.bike-eco.fr/conditions-utilisation",
+  cgu: "https://bikeeco-services.fr/cgu/",
   /** docs/legal/politique-confidentialité.md */
-  confidentialite: "https://www.bike-eco.fr/politique-de-confidentialite",
+  confidentialite: "https://bikeeco-services.fr/politique-de-confidentialite-application-bike-eco",
 } as const;
