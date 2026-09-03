@@ -41,7 +41,7 @@ button groups ("Actions sur mon compte", "Gérer ce collaborateur") and lists of
 
 ## Parts
 
-Four kinds, all in `src/components/ui/`.
+Five kinds, all in `src/components/ui/`.
 
 ### `InfoRows` — liste d'information
 
@@ -144,11 +144,34 @@ right-aligned `IconButton`, and the card's hairlines above and below it.
 - Sub-rows render through `InfoRows`, inset `space.md` from the left so they read as
   children of the header.
 
+### `InfoEditableRow` — information modifiable
+
+```tsx
+<InfoEditableRow label="Nom" value={data.nom} onPress={() => editProfile("nom")} />
+```
+
+A label/value row whose value is followed by a right-aligned pencil button opening that
+field's edit form. Same shape as `InfoContactRow` and a collapsed `InfoCollapsibleRow` —
+the same row, the same `IconButton`, the card's hairlines above and below it.
+
+- The button is the shared `IconButton` with `assets/images/icons/pen-line.svg`, and a
+  French accessibility label "Modifier : {label}" — an icon-only button is otherwise
+  unreachable by a screen reader.
+- It carries **no state and does no writing**: the row knows the value it shows and
+  nothing about where the edit goes. `onPress` is the whole contract.
+- Empty values render `"—"`, and the button stays — an unset field is exactly the one you
+  want to fill in.
+- Because the hairline above and below is the *card's*, each editable row is its own child
+  of the `InfoCard`, never a row inside an `InfoRows`.
+
+Used only where the viewer may change the value. Its one caller today is
+[My account](page-my-account.md) — "Mes informations personnelles".
+
 ## Callers
 
 | Screen | Card | Parts |
 |---|---|---|
-| [My account](page-my-account.md) | "Mes informations personnelles" | Nom · Prénom · Email · Téléphone |
+| [My account](page-my-account.md) | "Mes informations personnelles" | Nom* · Prénom* · Email · Téléphone*  (`*` = `InfoEditableRow`) |
 | My account (B2B only) | "Informations {entreprise}" | SIRET · N° TVA · Département · Ville |
 | [Dossier](page-dossier.md) | "Informations Dossier" | Date de soumission · Statut · Prix validé · Région |
 | Dossier | "Informations véhicule" | 11 parts — see [page-dossier.md](page-dossier.md) |

@@ -10,10 +10,16 @@
 
 From top to bottom
 
-- [`InfoCard`](component-info-card.md) "Mes informations personnelles" : one part
-  (liste d'information) — Nom / Prénom / Email / Téléphone. Email and téléphone are plain
-  rows here, **without** the call / mail action buttons used elsewhere: this is the
-  viewer's own contact information.
+- [`InfoCard`](component-info-card.md) "Mes informations personnelles" : **four parts**,
+  one per field, so each carries the card's hairline above and below it —
+  Nom / Prénom / Email / Téléphone. Email and téléphone are plain rows here,
+  **without** the call / mail action buttons used elsewhere: this is the viewer's own
+  contact information.
+  - Nom, Prénom and Téléphone are [`InfoEditableRow`](component-info-card.md)s: each
+    carries a pencil button opening
+    [the update form](form-update-personal-information.md) for that field.
+  - **Email is a plain `InfoRows`, with no pencil.** It is the account's sign-in
+    credential, not a profile field — changing it is an auth flow, not a profile write.
 - `InfoCard` "Informations [nom entreprise]" (B2B only, i.e. the user has a `companyId`;
   hidden for back-office users) : one part (liste d'information) — SIRET / N° TVA /
   Département / Ville. `N° TVA` is optional at registration and renders `"—"` when absent.

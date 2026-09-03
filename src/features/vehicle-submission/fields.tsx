@@ -237,7 +237,8 @@ export function PhotosFields() {
   return (
     <>
       <Text style={styles.hint}>
-        Ajoutez des photos de bonne qualité, montrant plusieurs faces de la moto.
+        Ajoutez des photos de bonne qualité, montrant plusieurs faces de la
+        moto.
       </Text>
       <Controller
         control={control}
@@ -250,6 +251,10 @@ export function PhotosFields() {
           />
         )}
       />
+      <Text style={styles.notice}>
+        Vos photos servent uniquement à estimer le véhicule. Évitez d&apos;y
+        faire apparaître des personnes ou des documents personnels.
+      </Text>
     </>
   );
 }
@@ -345,4 +350,12 @@ export const VEHICLE_STEP_FIELDS = {
 
 const styles = StyleSheet.create({
   hint: { fontSize: 14, color: tokens.colors.muted, lineHeight: 20 },
+  // Same scale as `LegalNotice`: a legal mention, quieter than the step's own
+  // advice line above the picker.
+  notice: {
+    fontSize: 13,
+    color: tokens.colors.muted,
+    lineHeight: 18,
+    textAlign: "center",
+  },
 });

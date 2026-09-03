@@ -24,6 +24,8 @@ feature. Keep a spec in sync in the same change that alters its feature.
   - `form-b2b-vehicule-submission.md` — logged-in B2B "Vendre une moto" submission form.
   - `form-b2b-company-registration.md` — B2B company signup (SIRET + company, account, contact).
   - `form-b2b-invited-registration.md` — invited team-member registration (prefilled disabled email; 3 steps).
+  - `form-update-personal-information.md` — editing one's own nom / prénom / téléphone from
+    "Mon compte", and the denormalized copies the update rewrites.
 
 - **Page specs** (`docs/specs/`) — navbar/main/tab-bar layout per screen. Read the
   matching file before building or editing a page:
