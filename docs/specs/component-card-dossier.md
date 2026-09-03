@@ -6,6 +6,9 @@ Dossier's Card props :
 
 - image : On the left side, a thumbnail of the first photo uploaded. This thumbnail is low-res generated image of the uploaded one. While it loads, and for a dossier with no photo at all, the placeholder is `brandTint` — a grey square read as a hole in the card.
 - title : Relevant information to identify Dossier
+- licensePlateSubtitle : The vehicle's immatriculation, shown between the title and
+  the subtitle on both the B2B and the back-office dashboards. Optional — when the
+  dossier has no plate, no line is rendered.
 - subtitle : Additionnal information to identify Dossier. Optional — when absent,
   no subtitle line is rendered. On the B2B dashboard it shows
   "Prix validé : [X] €" only once the back-office has set a validated price.

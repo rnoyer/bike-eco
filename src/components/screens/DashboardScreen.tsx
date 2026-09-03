@@ -47,6 +47,7 @@ export default function DashboardScreen({
           key={d.id}
           thumbnailUrl={d.thumbnailUrl}
           title={`${d.submitter.companyName} - ${d.submitter.prenom} ${d.submitter.nom}`}
+          licensePlateSubtitle={d.vehicle.immatriculation || undefined}
           subtitle={
             d.validatedPrice !== null
               ? `Prix validé : ${d.validatedPrice} € - ${vehicle}`
@@ -99,6 +100,7 @@ export default function DashboardScreen({
       key={d.id}
       thumbnailUrl={d.thumbnailUrl}
       title={`${d.vehicle.marque} ${d.vehicle.modele}`}
+      licensePlateSubtitle={d.vehicle.immatriculation || undefined}
       subtitle={
         d.validatedPrice !== null
           ? `Prix validé : ${d.validatedPrice} €`
