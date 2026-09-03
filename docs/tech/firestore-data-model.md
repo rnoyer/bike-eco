@@ -89,7 +89,6 @@ A user carries **no location** — `departement`/`ville`/`region` live on the co
 | `companyId` | string \| null | the inviter's company; **null** for a back-office invitation |
 | `invitedBy` | uid            |                                                              |
 | `tokenHash` | string         | store a hash, never the raw token                            |
-| `status`    | string         | `pending` \| `accepted` \| `expired`                         |
 | `expiresAt` | timestamp      | one-time, time-limited                                       |
 | `createdAt` | timestamp      |                                                              |
 

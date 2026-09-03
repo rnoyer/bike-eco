@@ -30,12 +30,6 @@ export type CompanyStatus = (typeof COMPANY_STATUSES)[number];
 export const USER_STATUSES = ["pending", "active"] as const;
 export type UserStatus = (typeof USER_STATUSES)[number];
 
-// An invitation only ever exists in `pending` state: acceptance and expiry
-// both delete the document (see functions/src/registration) rather than
-// transitioning its status.
-export const INVITATION_STATUSES = ["pending"] as const;
-export type InvitationStatus = (typeof INVITATION_STATUSES)[number];
-
 /** `a_traiter` = new, `en_cours` = ongoing, `cloture` = closed. */
 export const DOSSIER_STATUSES = ["a_traiter", "en_cours", "cloture"] as const;
 export type DossierStatus = (typeof DOSSIER_STATUSES)[number];
@@ -117,7 +111,6 @@ export interface Invitation {
   companyId: string | null;
   invitedBy: string; // uid
   tokenHash: string; // store a hash, never the raw token
-  status: InvitationStatus;
   expiresAt: Timestamp; // one-time, time-limited
   createdAt: Timestamp;
 }

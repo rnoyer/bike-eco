@@ -87,7 +87,7 @@ test("sendInvite writes a hashed, 1h invitation for an active b2b caller", async
   const d = fakeDeps();
   await sendInviteCore({ email: "new@x.fr" }, { role: "b2b", status: "active", companyId: "comp_1", uid: "u1" }, d);
   const [id] = Object.keys(d.calls.invitations);
-  expect(d.calls.invitations[id]).toMatchObject({ email: "new@x.fr", role: "b2b", companyId: "comp_1", invitedBy: "u1", status: "pending", expiresAt: 1_000_000 + 3_600_000 });
+  expect(d.calls.invitations[id]).toMatchObject({ email: "new@x.fr", role: "b2b", companyId: "comp_1", invitedBy: "u1", expiresAt: 1_000_000 + 3_600_000 });
   expect(d.calls.invitations[id].tokenHash).toMatch(/^[0-9a-f]{64}$/);
   expect(d.calls.emails[0]).toMatchObject({ kind: "invite", to: "new@x.fr", organisationName: "Garage X" });
 });
@@ -237,7 +237,7 @@ test("sendInvite from a back-office admin writes a company-less back-office invi
   await sendInviteCore({ email: "team@bike-eco.fr" }, { role: "backoffice", status: "active", companyId: null, uid: "bo1" }, d);
   const [id] = Object.keys(d.calls.invitations);
   expect(d.calls.invitations[id]).toMatchObject({
-    email: "team@bike-eco.fr", role: "backoffice", companyId: null, invitedBy: "bo1", status: "pending",
+    email: "team@bike-eco.fr", role: "backoffice", companyId: null, invitedBy: "bo1",
   });
   expect(d.calls.emails[0]).toMatchObject({ kind: "invite", to: "team@bike-eco.fr", organisationName: "Bike-eco" });
 });
