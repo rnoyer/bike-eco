@@ -22,10 +22,10 @@ export const B2C_EMAIL_SECRETS = [SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS];
  * (per the product spec). Swap these for the real mailboxes and flip
  * DEV_EMAIL_OVERRIDE off when going live.
  */
-const DEV_EMAIL_OVERRIDE = false;
-const DEV_EMAIL = "romain.noyer@gmail.com";
-const NORTH_MAILBOX = "romain.noyer@gmail.com"; // TODO: real NORTH mailbox
-const SOUTH_MAILBOX = "romain.noyer@gmail.com"; // TODO: real SOUTH mailbox
+const DEV_EMAIL_OVERRIDE = true; // TODO : turn off email override
+const DEV_EMAIL = "rnoyer.dev@gmail.com";
+const NORTH_MAILBOX = "eric@gam-motos.fr";
+const SOUTH_MAILBOX = "ao.pmc13@gmail.com";
 
 /**
  * Sender address. Most SMTP providers (Gmail included) require the From to be
@@ -186,13 +186,18 @@ const demandeSection = (f: B2cPayload, photoCount?: number) =>
   ]);
 
 const clesSection = (f: B2cPayload) =>
-  section("Clés et télécommandes", [
+  section("Clés", [
     ["Clés de contact", yesNo(f.aClesContact)],
     ["Clé noire", f.cleNoire],
     ["Clé marron", f.cleMarron],
     ["Clé rouge", f.cleRouge],
-    ["Télécommande / Bip", yesNo(f.aTelecommande)],
-    ["Nb télécommandes", f.telecommande],
+    ["Clé main libre (keyless)", yesNo(f.aKeyless)],
+    // The funnel stores the checked labels ("Code", "Clé de secours"), so the
+    // row prints them as-is rather than mapping them to a second vocabulary.
+    // `b2cPayloadSchema` has already dropped them if the answer was not "oui",
+    // so this cannot read "Clé main libre (keyless) : Non" followed by
+    // "Éléments keyless : Code"; `rowsHtml` then drops the empty row.
+    ["Éléments keyless", f.keyless.join(", ")],
   ]);
 
 const papiersSection = (f: B2cPayload) =>
@@ -210,6 +215,7 @@ const papiersSection = (f: B2cPayload) =>
 /** Shared tail of the vehicle block. The head differs: the customer sees one
  *  "Véhicule" line, the team sees Marque and Modèle apart for scanning. */
 const vehicleTailRows = (f: B2cPayload): Row[] => [
+  ["Immatriculation", f.immatriculation],
   ["Cylindrée", f.cylindree && `${f.cylindree} cc`],
   ["Année", f.annee],
   ["Kilométrage", f.kilometrage && `${f.kilometrage} km`],

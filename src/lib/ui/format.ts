@@ -1,4 +1,9 @@
-import { MATERIEL_BATTERIE, MATERIEL_CHARGEUR } from "@/constants/vehicle";
+import {
+  KEYLESS_CLE_SECOURS,
+  KEYLESS_CODE,
+  MATERIEL_BATTERIE,
+  MATERIEL_CHARGEUR,
+} from "@/constants/vehicle";
 import type {
   DossierStatus,
   OuiNon,
@@ -111,3 +116,16 @@ export const hasMateriel = (
   (materiel ?? []).includes(
     item === "batterie" ? MATERIEL_BATTERIE : MATERIEL_CHARGEUR,
   );
+
+/**
+ * Whether the seller checked "Code" / "Clé de secours" for the keyless system.
+ *
+ * Same coupling as `hasMateriel`: `keys.keyless` stores the funnel's checkbox
+ * *labels*, so the dependency on that French copy lives here and the dossier
+ * asks for `"code"` / `"secours"`.
+ */
+export const hasKeyless = (
+  keyless: string[] | null | undefined,
+  item: "code" | "secours",
+): boolean =>
+  (keyless ?? []).includes(item === "code" ? KEYLESS_CODE : KEYLESS_CLE_SECOURS);

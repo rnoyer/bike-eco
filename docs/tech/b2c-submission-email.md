@@ -24,7 +24,7 @@ path), and the funnel spec `docs/specs/form-b2c-vehicule-submission.md`.
   - **Customer recap** → the submitter, with a summary of relevant fields, no
     attachments.
 - **Dev override.** When `DEV_EMAIL_OVERRIDE` is flipped to `true` (it is `false` today), both emails route to
-  `romain.noyer@gmail.com` regardless of region (per the product spec).
+  `rnoyer.dev@gmail.com` regardless of region (per the product spec).
 - **Transport = Nodemailer + SMTP**, pooled and reused across invocations. When
   SMTP secrets are absent (e.g. the local emulator) it falls back to a JSON
   transport that **logs** the composed message instead of sending — the full flow
@@ -89,9 +89,9 @@ to avoid double-sends.
 for unknown values so a submission is never dropped.
 
 | Recipient | Dev (`DEV_EMAIL_OVERRIDE = true`, not the default) | Production                                  |
-| --------- | --------------------------------- | ------------------------------------------- |
-| Team      | `romain.noyer@gmail.com`          | `NORTH_MAILBOX` / `SOUTH_MAILBOX` by region |
-| Customer  | `romain.noyer@gmail.com`          | the submitter's `email`                     |
+| --------- | -------------------------------------------------- | ------------------------------------------- |
+| Team      | `rnoyer.dev@gmail.com`                             | `NORTH_MAILBOX` / `SOUTH_MAILBOX` by region |
+| Customer  | `rnoyer.dev@gmail.com`                             | the submitter's `email`                     |
 
 ## Client endpoint resolution
 

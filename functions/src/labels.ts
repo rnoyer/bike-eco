@@ -71,6 +71,17 @@ export const hasMateriel = (
     item === "batterie" ? MATERIEL_BATTERIE : MATERIEL_CHARGEUR,
   );
 
+// Same coupling for the "clé main libre (keyless)" checkbox group, stored in
+// `keys.keyless`. Mirrors `KEYLESS_*` in src/constants/vehicle.ts.
+const KEYLESS_CODE = "Code";
+const KEYLESS_CLE_SECOURS = "Clé de secours";
+
+export const hasKeyless = (
+  keyless: string[] | null | undefined,
+  item: "code" | "secours",
+): boolean =>
+  (keyless ?? []).includes(item === "code" ? KEYLESS_CODE : KEYLESS_CLE_SECOURS);
+
 /**
  * "26 juil. 2026 14:30" — JJ MMM AAAA hh:mm, in Paris time.
  *

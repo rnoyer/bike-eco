@@ -17,6 +17,7 @@ import { alertDialog } from "@/lib/ui/dialog";
 import {
   dash,
   euros,
+  hasKeyless,
   hasMateriel,
   isOui,
   kilometres,
@@ -66,10 +67,12 @@ function VehicleCard({ dossier }: { dossier: Dossier }) {
           // displacement in one "Modèle et Cylindrée" field, so they are one
           // row and `vehicle.cylindree` is always null and never rendered.
           ["Modèle et Cylindrée", vehicle.modele],
+          ["Immatriculation", vehicle.immatriculation],
           // `InfoRows` dashes empty values itself; `dash()` here is what turns a
           // non-string field into the `[label, value]` pair's string.
           ["Année", dash(vehicle.annee)],
           ["Kilométrage", kilometres(vehicle.kilometrage)],
+          ["Déjà en stock", dash(vehicle.stock)],
         ]}
       />
       <InfoCollapsibleRow
@@ -103,7 +106,12 @@ function VehicleCard({ dossier }: { dossier: Dossier }) {
         value={papers.carteGrise}
         rows={
           isOui(papers.carteGrise)
-            ? [["À votre nom", dash(papers.carteGriseAVotreNom)]]
+            ? // Dossiers only ever come from the B2B funnel, which asks a
+              // dealer whether the déclaration d'achat was filed under the
+              // garage's name rather than whether the carte grise is in their
+              // own. Kept short: an `InfoRows` label never shrinks, so a
+              // full-sentence label would push the value off the card.
+              [["Au nom du garage", dash(papers.carteGriseAVotreNom)]]
             : null
         }
       />
@@ -141,11 +149,16 @@ function VehicleCard({ dossier }: { dossier: Dossier }) {
         }
       />
       <InfoCollapsibleRow
-        label="Télécommande ou Bip"
-        value={keys.aTelecommande}
+        label="Clé main libre (keyless)"
+        value={keys.aKeyless}
         rows={
-          isOui(keys.aTelecommande)
-            ? [["Nombre", dash(keys.telecommande)]]
+          isOui(keys.aKeyless)
+            ? [
+                // `keys.keyless` stores the funnel's checkbox labels, same as
+                // `vehicle.materiel` above; `hasKeyless` owns that coupling.
+                ["Code", ouiNon(hasKeyless(keys.keyless, "code"))],
+                ["Clé de secours", ouiNon(hasKeyless(keys.keyless, "secours"))],
+              ]
             : null
         }
       />

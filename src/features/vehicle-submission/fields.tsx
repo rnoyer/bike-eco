@@ -9,9 +9,14 @@ import PhotoPicker from "@/components/form/PhotoPicker";
 import {
   COUNT_OPTIONS,
   ETAT_OPTIONS,
+  FREE_TEXT_MAX,
+  IMMATRICULATION_MAX,
+  KEYLESS_OPTIONS,
   MATERIEL_OPTIONS,
+  NUMBER_TEXT_MAX,
   OUI_NON,
   RESULTAT_CT_OPTIONS,
+  SHORT_TEXT_MAX,
 } from "@/constants/vehicle";
 import { digitsOnly } from "@/lib/forms/transforms";
 import { tokens } from "@/theme/tokens";
@@ -38,14 +43,15 @@ import { tokens } from "@/theme/tokens";
  * rendering — both `B2cSubmissionForm` and `B2bSubmissionForm` are supersets.
  */
 interface VehicleFields {
+  immatriculation: string;
   electrique: string;
   materiel: string[];
   aClesContact: string | null;
   cleNoire: string | null;
   cleMarron: string | null;
   cleRouge: string | null;
-  aTelecommande: string | null;
-  telecommande: string | null;
+  aKeyless: string | null;
+  keyless: string[];
   etat: string | null;
   naturePanne: string;
   carteGrise: string | null;
@@ -59,6 +65,22 @@ interface VehicleFields {
   photos: string[];
   prix: string;
   commentaires: string;
+}
+
+/** Optional plate. Free text rather than a masked/validated input: the funnel
+ *  also takes vehicles registered abroad or not yet registered at all. */
+export function ImmatriculationField() {
+  return (
+    <ControlledField
+      name="immatriculation"
+      label="Numéro d'immatriculation"
+      placeholder="AA-123-AA"
+      autoCapitalize="characters"
+      autoCorrect={false}
+      maxLength={IMMATRICULATION_MAX}
+      returnKeyType="next"
+    />
+  );
 }
 
 export function ElectriqueFields() {
@@ -87,8 +109,8 @@ export function ClesFields() {
   const aClesContact = useWatch<VehicleFields, "aClesContact">({
     name: "aClesContact",
   });
-  const aTelecommande = useWatch<VehicleFields, "aTelecommande">({
-    name: "aTelecommande",
+  const aKeyless = useWatch<VehicleFields, "aKeyless">({
+    name: "aKeyless",
   });
   return (
     <>
@@ -117,15 +139,15 @@ export function ClesFields() {
         </>
       )}
       <ControlledDropdown
-        name="aTelecommande"
+        name="aKeyless"
         label="Avez-vous une clé main libre (keyless) ?"
         options={OUI_NON}
       />
-      {aTelecommande === "oui" && (
-        <ControlledDropdown
-          name="telecommande"
-          label="clé main libre (keyless)"
-          options={COUNT_OPTIONS}
+      {aKeyless === "oui" && (
+        <ControlledCheckboxGroup
+          name="keyless"
+          label="Clé main libre (keyless)"
+          options={KEYLESS_OPTIONS}
         />
       )}
     </>
@@ -147,6 +169,7 @@ export function EtatFields() {
           name="naturePanne"
           label="Connaissez-vous la panne ?"
           placeholder="Nature de la panne"
+          maxLength={SHORT_TEXT_MAX}
           returnKeyType="done"
         />
       )}
@@ -158,8 +181,19 @@ export function EtatFields() {
  * `nonGageLink` renders directly under the "certificat de non-gage" question.
  * Only the public B2C funnel offers it — a dealer already has the SIV account
  * the link points at.
+ *
+ * `carteGriseNomLabel` overrides the ownership question's copy: a private
+ * seller is asked whether the carte grise is in their own name, a dealer
+ * whether the déclaration d'achat was filed under the garage's. Same field
+ * (`carteGriseAVotreNom`), same yes/no answer — only the wording differs.
  */
-export function PapiersFields({ nonGageLink }: { nonGageLink?: ReactNode }) {
+export function PapiersFields({
+  nonGageLink,
+  carteGriseNomLabel = "La carte grise est-elle à votre nom ?",
+}: {
+  nonGageLink?: ReactNode;
+  carteGriseNomLabel?: string;
+}) {
   const carteGrise = useWatch<VehicleFields, "carteGrise">({
     name: "carteGrise",
   });
@@ -176,7 +210,7 @@ export function PapiersFields({ nonGageLink }: { nonGageLink?: ReactNode }) {
       {carteGrise === "oui" && (
         <ControlledDropdown
           name="carteGriseAVotreNom"
-          label="La carte grise est-elle à votre nom ?"
+          label={carteGriseNomLabel}
           options={OUI_NON}
         />
       )}
@@ -263,7 +297,8 @@ export function PrixFields() {
         placeholder="€"
         keyboardType="numeric"
         suffix="€"
-        transform={digitsOnly()}
+        maxLength={NUMBER_TEXT_MAX}
+        transform={digitsOnly(NUMBER_TEXT_MAX)}
         returnKeyType="next"
       />
       <ControlledField
@@ -271,6 +306,7 @@ export function PrixFields() {
         label="Commentaires"
         placeholder="Informations complémentaires"
         multiline
+        maxLength={FREE_TEXT_MAX}
         returnKeyType="done"
       />
     </>
@@ -286,6 +322,7 @@ export function MarqueField() {
       label="Marque"
       placeholder="Marque du véhicule"
       autoCapitalize="words"
+      maxLength={SHORT_TEXT_MAX}
       returnKeyType="next"
     />
   );
@@ -309,7 +346,8 @@ export function AnneeKilometrageFields() {
         placeholder="Kilométrage du véhicule"
         keyboardType="numeric"
         suffix="km"
-        transform={digitsOnly()}
+        maxLength={NUMBER_TEXT_MAX}
+        transform={digitsOnly(NUMBER_TEXT_MAX)}
         returnKeyType="next"
       />
     </>
@@ -319,14 +357,14 @@ export function AnneeKilometrageFields() {
 /** The step field lists shared by both funnels, so a field added to a group
  *  above cannot be forgotten in the per-funnel step tables. */
 export const VEHICLE_STEP_FIELDS = {
-  electrique: ["electrique", "materiel"],
+  electrique: ["immatriculation", "electrique", "materiel"],
   cles: [
     "aClesContact",
     "cleNoire",
     "cleMarron",
     "cleRouge",
-    "aTelecommande",
-    "telecommande",
+    "aKeyless",
+    "keyless",
   ],
   etat: ["etat", "naturePanne"],
   papiers: [

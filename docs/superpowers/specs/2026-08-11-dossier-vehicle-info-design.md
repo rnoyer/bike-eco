@@ -139,15 +139,15 @@ already shared by b2b and back-office, and nothing here branches on role.
 
 | #   | Part            | Rows                                                               | Source                                                                 |
 | --- | --------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| 1   | `InfoRows`      | Prix souhaité · Marque · Modèle et Cylindrée · Année · Kilométrage | `pricing.prix`, `vehicle.*`                                            |
+| 1   | `InfoRows`      | Prix souhaité · Marque · Modèle et Cylindrée · Immatriculation · Année · Kilométrage · Déjà en stock | `pricing.prix`, `vehicle.*`                                            |
 | 2   | **Collapsible** | Électrique → Batterie présente · Chargeur présent                  | `vehicle.electrique`, `vehicle.materiel`                               |
 | 3   | `InfoRows`      | État                                                               | `condition.etat`                                                       |
 | 4   | `InfoComment`   | Nature de la panne — **only when `etat === "En Panne"`**           | `condition.naturePanne`                                                |
-| 5   | **Collapsible** | Carte grise → À votre nom                                          | `papers.carteGrise`, `papers.carteGriseAVotreNom`                      |
+| 5   | **Collapsible** | Carte grise → Au nom du garage                                     | `papers.carteGrise`, `papers.carteGriseAVotreNom`                      |
 | 6   | **Collapsible** | Contrôle technique → Moins de 6 mois · Résultat obtenu             | `papers.controleTechnique`, `papers.ctMoins6Mois`, `papers.resultatCT` |
 | 7   | `InfoRows`      | Certificat de non-gage · Carnet d'entretien · Facture d'entretien  | `papers.*`                                                             |
 | 8   | **Collapsible** | Clés de contact → Clé noire · Clé marron · Clé rouge               | `keys.aClesContact`, `keys.cleNoire/cleMarron/cleRouge`                |
-| 9   | **Collapsible** | Télécommande ou Bip → Nombre                                       | `keys.aTelecommande`, `keys.telecommande`                              |
+| 9   | **Collapsible** | Clé main libre (keyless) → Code · Clé de secours                   | `keys.aKeyless`, `keys.keyless`                                        |
 | 10  | `InfoComment`   | Commentaires véhicule                                              | `vehicle.accessoires`                                                  |
 | 11  | `InfoComment`   | Commentaires complémentaires                                       | `pricing.commentaires`                                                 |
 

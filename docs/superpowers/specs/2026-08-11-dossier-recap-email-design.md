@@ -128,15 +128,17 @@ collapsibles flattened into plain rows:
 | Prix souhaité | `pricing.prix` € |
 | Marque | `vehicle.marque` |
 | Modèle et Cylindrée | `vehicle.modele` |
+| Immatriculation | `vehicle.immatriculation` |
 | Année | `vehicle.annee` |
 | Kilométrage | `vehicle.kilometrage` km |
+| Déjà en stock | `vehicle.stock` |
 | Électrique | `vehicle.electrique` |
 | Batterie présente | only when électrique = oui, from `vehicle.materiel` |
 | Chargeur présent | only when électrique = oui, from `vehicle.materiel` |
 | État | `condition.etat` |
 | Nature de la panne | only when `condition.etat === "En Panne"` |
 | Carte grise | `papers.carteGrise` |
-| À votre nom | only when carte grise = oui |
+| Au nom du garage | only when carte grise = oui |
 | Contrôle technique | `papers.controleTechnique` |
 | Moins de 6 mois | only when CT = oui |
 | Résultat obtenu | only when CT = oui |
@@ -145,8 +147,8 @@ collapsibles flattened into plain rows:
 | Facture d'entretien | `papers.factureEntretien` |
 | Clés de contact | `keys.aClesContact` |
 | Clé noire / marron / rouge | only when clés = oui |
-| Télécommande ou Bip | `keys.aTelecommande` |
-| Nombre | only when télécommande = oui |
+| Clé main libre (keyless) | `keys.aKeyless` |
+| Code / Clé de secours | only when keyless = oui, from `keys.keyless` |
 | Commentaires véhicule | `vehicle.accessoires` |
 | Commentaires complémentaires | `pricing.commentaires` |
 

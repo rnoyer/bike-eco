@@ -137,6 +137,10 @@ export interface DossierSubmitter {
 }
 
 export interface DossierVehicle {
+  /** Whether the dealer already holds the bike. B2B-only question, and dossiers
+   *  are B2B-only, so it is always asked — `null` means left unanswered. */
+  stock: OuiNon | null;
+  immatriculation: string; // plate, free text, "" when unanswered
   electrique: OuiNon;
   materiel: string[]; // e.g. "J'ai la batterie", "J'ai le chargeur"
   marque: string;
@@ -152,8 +156,18 @@ export interface DossierKeys {
   cleNoire: number | null;
   cleMarron: number | null;
   cleRouge: number | null;
-  aTelecommande: OuiNon | null;
-  telecommande: number | null;
+  aKeyless: OuiNon | null;
+  /**
+   * The checked "clé main libre (keyless)" labels — e.g. "Code",
+   * "Clé de secours". Empty unless `aKeyless` is "oui": the funnel keeps a
+   * user's ticks in form state when they flip the parent back to "non", but
+   * `clearUnaskedCheckboxes` drops them on parse, before the dossier is
+   * written (`src/features/vehicle-submission/normalize.ts`).
+   *
+   * Consumers still gate on `aKeyless` — dossiers written before that
+   * normalisation existed are not bound by it. Same for `vehicle.materiel`.
+   */
+  keyless: string[];
 }
 
 export interface DossierCondition {

@@ -2,6 +2,7 @@ import { section, shell, type Row } from "../emailHtml";
 import {
   euros,
   generatedAt,
+  hasKeyless,
   hasMateriel,
   kilometres,
   ouiNon,
@@ -33,6 +34,8 @@ export interface RecapDossier {
     telephone: string;
   };
   vehicle: {
+    stock: OuiNon | null;
+    immatriculation: string;
     electrique: OuiNon;
     materiel: string[];
     marque: string;
@@ -46,8 +49,8 @@ export interface RecapDossier {
     cleNoire: number | null;
     cleMarron: number | null;
     cleRouge: number | null;
-    aTelecommande: OuiNon | null;
-    telecommande: number | null;
+    aKeyless: OuiNon | null;
+    keyless: string[];
   };
   condition: { etat: string | null; naturePanne: string };
   papers: {
@@ -105,11 +108,13 @@ function vehicleSection(d: RecapDossier): string {
     ["Prix souhaité", pricing.prix === null ? null : euros(pricing.prix)],
     ["Marque", vehicle.marque],
     ["Modèle et Cylindrée", vehicle.modele],
+    ["Immatriculation", vehicle.immatriculation],
     ["Année", num(vehicle.annee)],
     [
       "Kilométrage",
       vehicle.kilometrage === null ? null : kilometres(vehicle.kilometrage),
     ],
+    ["Déjà en stock", ouiNon(vehicle.stock)],
     ["Électrique", ouiNon(vehicle.electrique)],
     ...when(vehicle.electrique, [
       ["Batterie présente", hasMateriel(vehicle.materiel, "batterie") ? "Oui" : "Non"],
@@ -123,7 +128,12 @@ function vehicleSection(d: RecapDossier): string {
     // compile the way it does on the app's dossier screen.
     ["Nature de la panne", condition.etat === "En Panne" ? condition.naturePanne : null],
     ["Carte grise", ouiNon(papers.carteGrise)],
-    ...when(papers.carteGrise, [["À votre nom", ouiNon(papers.carteGriseAVotreNom)]]),
+    // Dossiers only ever come from the B2B funnel, which asks a dealer whether
+    // the déclaration d'achat was filed under the garage's name rather than
+    // whether the carte grise is in their own. Same label as the dossier screen.
+    ...when(papers.carteGrise, [
+      ["Au nom du garage", ouiNon(papers.carteGriseAVotreNom)],
+    ]),
     ["Contrôle technique", ouiNon(papers.controleTechnique)],
     ...when(papers.controleTechnique, [
       ["Moins de 6 mois", ouiNon(papers.ctMoins6Mois)],
@@ -138,8 +148,11 @@ function vehicleSection(d: RecapDossier): string {
       ["Clé marron", num(keys.cleMarron)],
       ["Clé rouge", num(keys.cleRouge)],
     ]),
-    ["Télécommande ou Bip", ouiNon(keys.aTelecommande)],
-    ...when(keys.aTelecommande, [["Nombre", num(keys.telecommande)]]),
+    ["Clé main libre (keyless)", ouiNon(keys.aKeyless)],
+    ...when(keys.aKeyless, [
+      ["Code", hasKeyless(keys.keyless, "code") ? "Oui" : "Non"],
+      ["Clé de secours", hasKeyless(keys.keyless, "secours") ? "Oui" : "Non"],
+    ]),
     ["Commentaires véhicule", vehicle.accessoires],
     ["Commentaires complémentaires", pricing.commentaires],
   ]);

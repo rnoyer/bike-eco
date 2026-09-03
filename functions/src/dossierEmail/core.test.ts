@@ -35,6 +35,8 @@ const DOSSIER: RecapDossier = {
     telephone: "0601020304",
   },
   vehicle: {
+    stock: "oui",
+    immatriculation: "AB-123-CD",
     electrique: "non",
     materiel: [],
     marque: "Yamaha",
@@ -48,8 +50,8 @@ const DOSSIER: RecapDossier = {
     cleNoire: 2,
     cleMarron: null,
     cleRouge: null,
-    aTelecommande: "non",
-    telecommande: null,
+    aKeyless: "non",
+    keyless: [],
   },
   condition: { etat: "Bon état", naturePanne: "" },
   papers: {

@@ -65,15 +65,16 @@ Read from the live dossier snapshot, so a back-office update on
 
 Eleven parts, identical for both roles — nothing in this card branches on role.
 
-1. Liste d'information : prix souhaité, marque, modèle et cylindrée, année, kilométrage.
+1. Liste d'information : prix souhaité, marque, modèle et cylindrée, immatriculation,
+   année, kilométrage, déjà en stock.
 2. Repliable : électrique → batterie présente, chargeur présent.
 3. Liste d'information : état.
 4. Comments : nature de la panne — **only when l'état est "En Panne"**.
-5. Repliable : carte grise → à votre nom.
+5. Repliable : carte grise → au nom du garage.
 6. Repliable : contrôle technique → moins de 6 mois, résultat obtenu.
 7. Liste d'information : certificat de non-gage, carnet d'entretien, facture d'entretien.
 8. Repliable : clés de contact → clé noire, clé marron, clé rouge.
-9. Repliable : télécommande ou Bip → nombre.
+9. Repliable : clé main libre (keyless) → code, clé de secours.
 10. Comments : commentaires véhicule.
 11. Comments : commentaires complémentaires.
 
@@ -81,6 +82,14 @@ Every repliable part ([`InfoCollapsibleRow`](component-info-card.md)) is collaps
 when its own answer is "oui" — the funnel leaves each sub-answer `null` otherwise, so
 there would be nothing to reveal. A "non" or "—" answer renders as a plain row with no
 button, keeping its own hairlines so the card's shape is the same for every dossier.
+
+The "carte grise" sub-row and the keyless sub-rows are worded for a dealer: dossiers
+only ever come from the B2B funnel, which asks whether the déclaration d'achat was
+filed under the garage's name rather than whether the carte grise is in the seller's
+own, and which collects the keyless system as two checkboxes ("Code", "Clé de
+secours") rather than a count. "Au nom du garage" is deliberately short — an
+`InfoRows` label never shrinks, so a full-sentence label pushes its value off the
+card.
 
 "Modèle et Cylindrée" is a single row, mirroring the B2B submission form — which is the
 only source of dossiers — where both are one field (`vehicle.modele`).

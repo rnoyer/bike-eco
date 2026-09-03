@@ -92,7 +92,6 @@ test("numeric strings are coerced and blanks become null", () => {
       kilometrage: "18 450",
       prix: "5000",
       cleNoire: "2",
-      telecommande: null,
     },
     session,
     company,
@@ -102,7 +101,6 @@ test("numeric strings are coerced and blanks become null", () => {
   expect(d.vehicle.kilometrage).toBe(18450);
   expect(d.pricing.prix).toBe(5000);
   expect(d.keys.cleNoire).toBe(2);
-  expect(d.keys.telecommande).toBeNull();
   // The B2B funnel merges "Modèle et Cylindrée" into `modele`.
   expect(d.vehicle.cylindree).toBeNull();
 });
@@ -144,6 +142,35 @@ test("free text is trimmed and oui/non answers are narrowed", () => {
   expect(d.papers.carteGrise).toBe("non");
   expect(d.condition.etat).toBe("Bon état");
   expect(d.papers.resultatCT).toBe("Favorable");
+});
+
+test("stock, immatriculation and the keyless checkboxes are carried over", () => {
+  const d = toDossierPayload(
+    {
+      ...B2B_SUBMISSION_DEFAULTS,
+      marque: "Yamaha",
+      stock: "oui",
+      immatriculation: "  ab-123-cd ",
+      aKeyless: "oui",
+      keyless: ["Code"],
+    },
+    session,
+    company,
+    photos,
+  );
+  expect(d.vehicle.stock).toBe("oui");
+  expect(d.vehicle.immatriculation).toBe("ab-123-cd");
+  expect(d.keys.aKeyless).toBe("oui");
+  // The checked labels are stored as-is — `hasKeyless` reads them back.
+  expect(d.keys.keyless).toEqual(["Code"]);
+});
+
+test("an untouched funnel leaves the new answers unanswered", () => {
+  const d = toDossierPayload(B2B_SUBMISSION_DEFAULTS, session, company, photos);
+  expect(d.vehicle.stock).toBeNull();
+  expect(d.vehicle.immatriculation).toBe("");
+  expect(d.keys.aKeyless).toBeNull();
+  expect(d.keys.keyless).toEqual([]);
 });
 
 test("stamps updatedBy with the submitter's uid", () => {
