@@ -15,7 +15,9 @@ import {
 import type { StepConfig } from "@/lib/forms/useStepForm";
 import type { B2bSubmissionForm } from "./schema";
 
-export type B2bStep = StepConfig<B2bSubmissionForm> & { render: () => ReactNode };
+export type B2bStep = StepConfig<B2bSubmissionForm> & {
+  render: () => ReactNode;
+};
 
 /** B2B merges cylindrée into the modèle field and asks for "Commentaires"
  *  rather than the B2C "Accessoires" — see `form-b2b-vehicule-submission.md`. */
@@ -60,7 +62,7 @@ export const B2B_SUBMISSION_STEPS: B2bStep[] = [
   {
     progress: 30,
     title: "Informations véhicule",
-    subtitle: "Quelles clés et télécommandes avez-vous?",
+    subtitle: "Quelles clés avez-vous?",
     fields: [...VEHICLE_STEP_FIELDS.cles],
     render: () => <ClesFields />,
   },

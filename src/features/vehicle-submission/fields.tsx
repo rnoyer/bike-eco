@@ -118,13 +118,13 @@ export function ClesFields() {
       )}
       <ControlledDropdown
         name="aTelecommande"
-        label="Avez-vous une télécommande ou un Bip de démarrage ?"
+        label="Avez-vous une clé main libre (keyless) ?"
         options={OUI_NON}
       />
       {aTelecommande === "oui" && (
         <ControlledDropdown
           name="telecommande"
-          label="Télécommande / Bip de démarrage"
+          label="clé main libre (keyless)"
           options={COUNT_OPTIONS}
         />
       )}

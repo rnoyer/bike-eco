@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 import { useWatch } from "react-hook-form";
-import { Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
@@ -188,7 +194,7 @@ export const B2C_SUBMISSION_STEPS: B2cStep[] = [
   {
     progress: 30,
     title: "Informations véhicule",
-    subtitle: "Quelles clés et télécommandes avez-vous?",
+    subtitle: "Quelles clés avez-vous?",
     fields: [...VEHICLE_STEP_FIELDS.cles],
     render: () => <ClesFields />,
   },

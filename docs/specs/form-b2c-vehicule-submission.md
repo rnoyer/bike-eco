@@ -133,7 +133,7 @@ mandatory : no
 Form : step 4
 slider : 30%
 title : "Informations vehicule"
-subtitle : "Quelles clés et télécommandes avez-vous?"
+subtitle : "Quelles clés avez-vous?"
 
 ---
 
