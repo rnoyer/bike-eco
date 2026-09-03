@@ -105,7 +105,7 @@ export const B2B_SUBMISSION_STEPS: B2bStep[] = [
     // A dealer files a déclaration d'achat rather than putting the carte grise
     // in their own name, so this one question is worded for them.
     render: () => (
-      <PapiersFields carteGriseNomLabel="La Déclaration d'Achat est effectuée au nom de votre garage ?" />
+      <PapiersFields carteGriseNomLabel="La Déclaration d'Achat est-elle effectuée au nom de votre garage ?" />
     ),
   },
   {

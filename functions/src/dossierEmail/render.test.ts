@@ -1,8 +1,14 @@
 import { describe, expect, test } from "@jest/globals";
 import { recapHtml, recapSubject, type RecapDossier } from "./render";
 
+/** A dossier photo as it is stored: a Storage download URL with its token. */
+const PHOTO_URL = (index: number) =>
+  "https://firebasestorage.googleapis.com/v0/b/bkt/o/" +
+  `dossiers%2Fcomp_1%2Fdos_1%2Fphotos%2F${index}.jpg?alt=media&token=t${index}`;
+
 /** A fully answered dossier. Tests narrow it with `dossier({ ... })`. */
 const FULL: RecapDossier = {
+  companyId: "comp_1",
   status: "en_cours",
   region: "SOUTH",
   validatedPrice: 3200,
@@ -45,6 +51,7 @@ const FULL: RecapDossier = {
     factureEntretien: "oui",
   },
   pricing: { prix: 3500, commentaires: "Vente rapide souhaitée" },
+  photos: [PHOTO_URL(0), PHOTO_URL(1)],
 };
 
 /** Fixed clock, so a rendered recap is a function of its inputs alone. */
@@ -74,14 +81,16 @@ describe("recapHtml", () => {
     );
   });
 
-  test("carries the three sections, in reading order", () => {
+  test("carries the four sections, in reading order", () => {
     const html = recapHtml(FULL, NOW);
     const vehicule = html.indexOf("Informations véhicule");
     const vendeur = html.indexOf("Informations vendeur");
     const dossierSection = html.indexOf("Informations Dossier");
+    const photos = html.indexOf("Photos du véhicule");
     expect(vehicule).toBeGreaterThan(-1);
     expect(vendeur).toBeGreaterThan(vehicule);
     expect(dossierSection).toBeGreaterThan(vendeur);
+    expect(photos).toBeGreaterThan(dossierSection);
   });
 
   test("renders the vehicle's own values with their units", () => {
@@ -261,5 +270,22 @@ describe("generation timestamp", () => {
     const a = recapHtml(FULL, new Date("2026-08-11T07:06:21Z"));
     const b = recapHtml(FULL, new Date("2026-08-11T07:06:22Z"));
     expect(a).not.toBe(b);
+  });
+});
+
+describe("photos", () => {
+  test("links every photo, numbered from 1 and named after the vehicle", () => {
+    const html = recapHtml(FULL, NOW);
+    expect(html).toContain(`href="${PHOTO_URL(0).replace(/&/g, "&amp;")}"`);
+    expect(html).toContain("Photo Yamaha MT-07 689 n°1");
+    expect(html).toContain(`href="${PHOTO_URL(1).replace(/&/g, "&amp;")}"`);
+    expect(html).toContain("Photo Yamaha MT-07 689 n°2");
+  });
+
+  test("omits the whole section when the dossier carries no photo", () => {
+    expect(recapHtml(dossier({ photos: [] }), NOW)).not.toContain("Photos du véhicule");
+    expect(recapHtml(dossier({ photos: undefined }), NOW)).not.toContain(
+      "Photos du véhicule",
+    );
   });
 });

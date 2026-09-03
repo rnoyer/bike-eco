@@ -1,4 +1,4 @@
-import { section, shell, type Row } from "../emailHtml";
+import { linkSection, section, shell, type Link, type Row } from "../emailHtml";
 import {
   euros,
   generatedAt,
@@ -15,8 +15,8 @@ import {
 } from "../labels";
 
 /**
- * The subset of a `dossiers/{id}` document the recap prints — which is all of
- * it bar the photos and the routing fields.
+ * The subset of a `dossiers/{id}` document the recap needs — which is all of
+ * it bar the thumbnail and the audit fields.
  *
  * `createdAt` is typed structurally rather than as a `Timestamp` so this module
  * needs no Firebase import and stays testable with a plain object.
@@ -64,6 +64,12 @@ export interface RecapDossier {
     factureEntretien: OuiNon | null;
   };
   pricing: { prix: number | null; commentaires: string };
+  /** Not printed: it scopes the photo URLs `core.ts` accepts. */
+  companyId: string;
+  /** Storage download URLs, in upload order: the first is "n°1". Optional
+   *  because it is read straight off the document, and a dossier filed with no
+   *  photo carries no array at all. */
+  photos?: string[];
 }
 
 /** The dossier screen's collapsibles, flattened: sub-rows only exist when
@@ -191,12 +197,35 @@ function dossierSection(d: RecapDossier, now: Date): string {
   ]);
 }
 
+/**
+ * One link per photo, in upload order, labelled "Photo <marque modèle> n°1".
+ *
+ * Linked, not attached: the recap is a text email, and a dossier can carry a
+ * dozen photos that no mailbox wants as attachments. The URLs are the ones
+ * `getDownloadURL()` returned at upload — they carry their own token, so the
+ * reader needs no session to open one.
+ *
+ * Every URL handed here is linked as-is. `photos` is client-written, so it is
+ * `core.ts` — which knows the dossier's company and our own bucket — that
+ * decides which entries are ours; this stays a renderer.
+ */
+function photosSection(d: RecapDossier): string {
+  const label = vehicleLabel(d);
+  const links = (d.photos ?? []).map(
+    (url, i): Link => [
+      ["Photo", label, `n°${i + 1}`].filter(Boolean).join(" "),
+      url,
+    ],
+  );
+  return linkSection("Photos du véhicule", links);
+}
+
 /** `now` is a parameter, not a `new Date()` inside: this module renders a
  *  document as a function of its inputs, and the caller owns the clock. */
 export function recapHtml(d: RecapDossier, now: Date): string {
   return shell(
     recapSubject(d),
     intro(d),
-    vehicleSection(d) + sellerSection(d) + dossierSection(d, now),
+    vehicleSection(d) + sellerSection(d) + dossierSection(d, now) + photosSection(d),
   );
 }

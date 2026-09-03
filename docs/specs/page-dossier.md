@@ -33,7 +33,8 @@ following up on their own submission, so its status comes first :
 
 Below the last card, a back-office reader gets a primary button, `M'envoyer par
 email`, which mails them a recap of the dossier at the address on their own
-account. A b2b user has no such button.
+account — the three cards' rows as text, then a `Photos du véhicule` section
+linking each of the dossier's photos. A b2b user has no such button.
 
 The button spins while the `sendDossierRecap` callable runs. On success the app
 goes to [page-confirmation](page-confirmation.md) — "Récapitulatif envoyé" /
