@@ -342,6 +342,10 @@ subtitle : "Ajoutez au moins 1 photo récente"
     mandatory : 1 photo
     maximum : 10 photos — les deux boutons sont désactivés une fois la limite atteinte,
     et la sélection multiple de la galerie est plafonnée au nombre de places restantes.
+- Mention d'information (bas de l'étape, sous la galerie, juste au-dessus des
+  boutons Précédent / Suivant) : "Vos photos servent uniquement à estimer le
+  véhicule. Évitez d'y faire apparaître des personnes ou des documents
+  personnels." — rendue par `PhotosFields`, donc partagée par les deux funnels.
 
 ---
 
@@ -385,6 +389,17 @@ type : dropdown
   If "département" (step 1) isSud
 - "Je dépose la moto au centre de Vitrolles"
   mandatory : no
+
+Mention légale (fin du formulaire, juste au-dessus des boutons Précédent /
+Envoyer) : "En cliquant sur Envoyer, vous acceptez les Conditions
+d'utilisation, la Politique de confidentialité et la Politique relative aux
+cookies de Bike-eco."
+
+"Conditions d'utilisation" et "Politique de confidentialité" sont des liens vers
+les documents publiés sur le site (URLs dans `src/constants/legal.ts` —
+**provisoires**, à remplacer quand les pages seront en ligne). Rendue par
+`LegalNotice`, passée au `footer` de `FormLayout` sur la dernière étape
+uniquement.
 
 ---
 

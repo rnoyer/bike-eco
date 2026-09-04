@@ -47,23 +47,110 @@ const USAGE =
   "Usage: node create-b2b.js --email <email> --prenom <prénom> --nom <nom> " +
   "--tel <téléphone>\n" +
   "         (--company <companyId> | --siret <14 chiffres>)\n" +
-  "         [--societe <raison sociale> --departement \"75 - Paris\" --ville <ville>]\n" +
+  '         [--societe <raison sociale> --departement "75 - Paris" --ville <ville>]\n' +
   "         [--status active|pending] [--password <mot de passe>] [--admin true]";
 
 // Mirrors functions/src/regions.ts — duplicated so the script stays pasteable.
 // Keep in sync when the département → centre mapping changes.
 const NORTH_CODES = new Set([
-  "02", "08", "10", "14", "18", "21", "22", "25", "27", "28", "29",
-  "35", "36", "37", "39", "41", "44", "45", "49", "50", "51", "52",
-  "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "67",
-  "68", "70", "71", "72", "75", "76", "77", "78", "80", "85", "88",
-  "89", "90", "91", "92", "93", "94", "95",
+  "02",
+  "03",
+  "08",
+  "10",
+  "14",
+  "18",
+  "21",
+  "22",
+  "27",
+  "28",
+  "29",
+  "33",
+  "35",
+  "36",
+  "37",
+  "39",
+  "41",
+  "44",
+  "45",
+  "49",
+  "50",
+  "51",
+  "52",
+  "53",
+  "54",
+  "55",
+  "56",
+  "57",
+  "58",
+  "59",
+  "60",
+  "61",
+  "62",
+  "67",
+  "68",
+  "70",
+  "71",
+  "72",
+  "75",
+  "76",
+  "77",
+  "78",
+  "80",
+  "85",
+  "88",
+  "89",
+  "90",
+  "91",
+  "92",
+  "93",
+  "94",
+  "95",
 ]);
 const SOUTH_CODES = new Set([
-  "01", "03", "04", "05", "06", "07", "09", "11", "12", "13", "15",
-  "16", "17", "19", "23", "24", "26", "30", "31", "32", "33", "34",
-  "38", "40", "42", "43", "46", "47", "48", "63", "64", "65", "66",
-  "69", "73", "74", "79", "81", "82", "83", "84", "86", "87", "2A", "2B",
+  "01",
+  "04",
+  "05",
+  "06",
+  "07",
+  "09",
+  "11",
+  "12",
+  "13",
+  "15",
+  "16",
+  "17",
+  "19",
+  "23",
+  "24",
+  "25",
+  "26",
+  "30",
+  "31",
+  "32",
+  "34",
+  "38",
+  "40",
+  "42",
+  "43",
+  "46",
+  "47",
+  "48",
+  "63",
+  "64",
+  "65",
+  "66",
+  "69",
+  "73",
+  "74",
+  "79",
+  "81",
+  "82",
+  "83",
+  "84",
+  "86",
+  "87",
+  "2A",
+  "2B",
 ]);
 
 /** Unknown / empty falls back to NORTH so a dossier is never left unrouted. */
@@ -81,7 +168,9 @@ function parseArgs(argv) {
     if (!flag.startsWith("--")) continue;
     args[flag.slice(2)] = argv[i + 1];
   }
-  const problems = REQUIRED.filter((k) => !args[k]).map((k) => `Missing --${k}`);
+  const problems = REQUIRED.filter((k) => !args[k]).map(
+    (k) => `Missing --${k}`,
+  );
   if (!args.company && !args.siret) {
     problems.push("Missing --company <companyId> or --siret <14 chiffres>");
   }
@@ -116,15 +205,20 @@ async function resolveCompany(db, args, uid) {
       process.exit(1);
     }
     console.log(`Using company ${snap.id} (${snap.data().name}).`);
-    return { id: snap.id, created: false };   // existing company by --company
+    return { id: snap.id, created: false }; // existing company by --company
   }
 
   const found = await db
-    .collection("companies").where("siret", "==", args.siret).limit(1).get();
+    .collection("companies")
+    .where("siret", "==", args.siret)
+    .limit(1)
+    .get();
   if (!found.empty) {
     const doc = found.docs[0];
-    console.log(`SIRET ${args.siret} already registered — reusing ${doc.id} (${doc.data().name}).`);
-    return { id: doc.id, created: false };    // existing company found by SIRET
+    console.log(
+      `SIRET ${args.siret} already registered — reusing ${doc.id} (${doc.data().name}).`,
+    );
+    return { id: doc.id, created: false }; // existing company found by SIRET
   }
 
   const missing = ["societe", "departement", "ville"].filter((k) => !args[k]);
@@ -139,20 +233,26 @@ async function resolveCompany(db, args, uid) {
   // Shape must match Company in src/lib/firestore/schema.ts. `region` is derived
   // from the département exactly as registerCompanyCore does — it drives which
   // back-office centre sees the company's dossiers.
-  await db.collection("companies").doc(id).set({
-    siret: args.siret,
-    name: args.societe,
-    status: args.status,
-    departement: args.departement,
-    ville: args.ville,
-    region: resolveRegion(args.departement),
-    createdBy: uid,
-    createdByName: `${args.prenom} ${args.nom}`,
-    validatedAt: args.status === "active" ? FieldValue.serverTimestamp() : null,
-    createdAt: FieldValue.serverTimestamp(),
-  });
-  console.log(`Created company ${id} (${args.societe}, ${resolveRegion(args.departement)}, ${args.status}).`);
-  return { id, created: true };               // company created by this run
+  await db
+    .collection("companies")
+    .doc(id)
+    .set({
+      siret: args.siret,
+      name: args.societe,
+      status: args.status,
+      departement: args.departement,
+      ville: args.ville,
+      region: resolveRegion(args.departement),
+      createdBy: uid,
+      createdByName: `${args.prenom} ${args.nom}`,
+      validatedAt:
+        args.status === "active" ? FieldValue.serverTimestamp() : null,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  console.log(
+    `Created company ${id} (${args.societe}, ${resolveRegion(args.departement)}, ${args.status}).`,
+  );
+  return { id, created: true }; // company created by this run
 }
 
 async function main() {

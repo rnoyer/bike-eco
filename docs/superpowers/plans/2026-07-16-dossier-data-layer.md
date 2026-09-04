@@ -1935,7 +1935,7 @@ export async function submitB2bSubmission(
 ```
 
 > `values.photos` is guaranteed non-empty: `b2bSubmissionSchema` requires
-> `.min(1, "Ajoutez au moins 1 photo du véhicule")`, so `photos[0]` is safe.
+> `.min(1, "Ajoutez au moins 1 photo récente")`, so `photos[0]` is safe.
 
 - [ ] **Step 4: Pass the session at the call site**
 

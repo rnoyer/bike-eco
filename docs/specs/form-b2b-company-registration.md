@@ -142,6 +142,16 @@ mandatory : yes
 
 Texte d'information : "\* Champs obligatoires"
 
+Mention légale (fin du formulaire, juste au-dessus des boutons Précédent /
+S'inscrire) : "En cliquant sur S'inscrire, vous acceptez les Conditions
+d'utilisation et la Politique de confidentialité de Bike-eco."
+
+"Conditions d'utilisation" et "Politique de confidentialité" sont des liens vers
+les documents publiés sur le site (URLs dans `src/constants/legal.ts` —
+**provisoires**, à remplacer quand les pages seront en ligne). Rendue par
+`LegalNotice`, passée au `footer` de `FormLayout` sur la dernière étape
+uniquement.
+
 ---
 
 Form : step 4

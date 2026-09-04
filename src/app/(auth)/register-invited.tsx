@@ -5,6 +5,7 @@ import { FormProvider } from "react-hook-form";
 
 import FormConfirmation from "@/components/form/FormConfirmation";
 import FormLayout from "@/components/form/FormLayout";
+import LegalNotice from "@/components/form/LegalNotice";
 import {
   B2B_INVITED_REGISTRATION_DEFAULTS,
   b2bInvitedRegistrationSchema,
@@ -167,6 +168,7 @@ export default function RegisterInvitedScreen() {
             onPrev={handlePrev}
             onNext={next}
             nextLabel={isLast ? "S'inscrire" : "Suivant"}
+            footer={isLast ? <LegalNotice action="S'inscrire" /> : null}
             busy={submitting}
           >
             {steps[step].render()}

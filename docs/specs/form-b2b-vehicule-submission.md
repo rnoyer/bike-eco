@@ -296,6 +296,10 @@ subtitle : "Ajoutez au moins 1 photo récente"
     mandatory : 1 photo
     maximum : 10 photos — les deux boutons sont désactivés une fois la limite atteinte,
     et la sélection multiple de la galerie est plafonnée au nombre de places restantes.
+- Mention d'information (bas de l'étape, sous la galerie, juste au-dessus des
+  boutons Précédent / Suivant) : "Vos photos servent uniquement à estimer le
+  véhicule. Évitez d'y faire apparaître des personnes ou des documents
+  personnels." — rendue par `PhotosFields`, donc partagée par les deux funnels.
 
 ---
 

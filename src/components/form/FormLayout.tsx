@@ -21,6 +21,11 @@ interface Props {
   onPrev: () => void;
   onNext: () => void;
   nextLabel?: string;
+  /** Rendered at the end of the scroll, under the fields and directly above the
+   *  Précédent / Suivant bar. For the last step's `LegalNotice` — it scrolls
+   *  with the form rather than pinning itself to the bar, which on a small
+   *  screen with the keyboard up would cost three more lines of fixed chrome. */
+  footer?: React.ReactNode;
   /** The submit is in flight: the primary button spins and both nav buttons
    *  lock. Feed it `useStepForm`'s `submitting` — without it the funnel's
    *  longest actions (both photo uploads) leave the button looking idle. */
@@ -35,6 +40,7 @@ export default function FormLayout({
   onPrev,
   onNext,
   nextLabel = "Suivant",
+  footer,
   busy = false,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -116,6 +122,7 @@ export default function FormLayout({
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
 
         <View style={styles.fields}>{children}</View>
+        {footer ? <View style={styles.footer}>{footer}</View> : null}
       </ScrollView>
 
       {/* The bar rides above the keyboard, so while the keyboard is up it must drop
@@ -190,6 +197,9 @@ const styles = StyleSheet.create({
   },
   fields: {
     gap: 20,
+  },
+  footer: {
+    marginTop: tokens.space.lg,
   },
   buttons: {
     flexDirection: "row",

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { FormProvider } from "react-hook-form";
 
 import FormLayout from "@/components/form/FormLayout";
+import LegalNotice from "@/components/form/LegalNotice";
 import {
   B2C_SUBMISSION_DEFAULTS,
   b2cSubmissionSchema,
@@ -73,6 +74,7 @@ export default function FormParticuliersScreen() {
           onPrev={handlePrev}
           onNext={next}
           nextLabel={isLast ? "Envoyer" : "Suivant"}
+          footer={isLast ? <LegalNotice action="Envoyer" /> : null}
           busy={submitting}
         >
           {B2C_SUBMISSION_STEPS[step].render()}
