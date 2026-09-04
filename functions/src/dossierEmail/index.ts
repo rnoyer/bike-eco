@@ -1,4 +1,5 @@
 import { getAuth } from "firebase-admin/auth";
+import { getStorage } from "firebase-admin/storage";
 
 import { authedCall, db } from "../callable";
 import { B2C_EMAIL_SECRETS, sendHtmlMail } from "../email";
@@ -6,8 +7,23 @@ import { sendDossierRecapCore, type DossierEmailDeps } from "./core";
 import type { RecapDossier } from "./render";
 import { dossierRecapSchema } from "./schemas";
 
+/**
+ * The default bucket's name, as it appears in a download URL. `null` rather
+ * than a throw when the app carries no bucket in its options: an unknown bucket
+ * only widens the recap's photo check back to host + path, while throwing here
+ * would fail the whole send.
+ */
+function defaultBucketName(): string | null {
+  try {
+    return getStorage().bucket().name;
+  } catch {
+    return null;
+  }
+}
+
 function dossierEmailDeps(): DossierEmailDeps {
   return {
+    storageBucket: defaultBucketName(),
     // The document is read whole and handed to the renderer as-is: the recap
     // prints every field, so there is nothing to project away.
     getDossier: async (id) => {

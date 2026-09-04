@@ -72,6 +72,8 @@ export function toDossierPayload(
       telephone: session.telephone,
     },
     vehicle: {
+      stock: toOuiNon(values.stock),
+      immatriculation: values.immatriculation.trim(),
       electrique: toOuiNon(values.electrique) ?? "non",
       materiel: values.materiel,
       marque: values.marque.trim(),
@@ -88,8 +90,8 @@ export function toDossierPayload(
       cleNoire: toNumber(values.cleNoire),
       cleMarron: toNumber(values.cleMarron),
       cleRouge: toNumber(values.cleRouge),
-      aTelecommande: toOuiNon(values.aTelecommande),
-      telecommande: toNumber(values.telecommande),
+      aKeyless: toOuiNon(values.aKeyless),
+      keyless: values.keyless,
     },
     condition: {
       etat: (values.etat as EtatVehicule | null) ?? null,

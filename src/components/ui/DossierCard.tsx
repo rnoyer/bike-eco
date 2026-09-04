@@ -6,6 +6,9 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 interface Props {
   thumbnailUrl: string | null;
   title: string;
+  /** The plate, when the dossier has one. Sits between the title and the
+   *  subtitle — it is the fastest way to recognise a bike. */
+  licensePlateSubtitle?: string;
   subtitle?: string;
   onPress: () => void;
 }
@@ -13,6 +16,7 @@ interface Props {
 export default function DossierCard({
   thumbnailUrl,
   title,
+  licensePlateSubtitle,
   subtitle,
   onPress,
 }: Props) {
@@ -28,6 +32,11 @@ export default function DossierCard({
         <Text style={styles.title} numberOfLines={1}>
           {title}
         </Text>
+        {licensePlateSubtitle ? (
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {licensePlateSubtitle}
+          </Text>
+        ) : null}
         {subtitle ? (
           <Text style={styles.subtitle} numberOfLines={1}>
             {subtitle}

@@ -89,7 +89,6 @@ A user carries **no location** — `departement`/`ville`/`region` live on the co
 | `companyId` | string \| null | the inviter's company; **null** for a back-office invitation |
 | `invitedBy` | uid            |                                                              |
 | `tokenHash` | string         | store a hash, never the raw token                            |
-| `status`    | string         | `pending` \| `accepted` \| `expired`                         |
 | `expiresAt` | timestamp      | one-time, time-limited                                       |
 | `createdAt` | timestamp      |                                                              |
 
@@ -116,25 +115,27 @@ B2B only. Form sections are grouped into nested maps for readability.
 
 **`vehicle`**
 
-| field         | type               | notes                                            |
-| ------------- | ------------------ | ------------------------------------------------ |
-| `electrique`  | `"oui"` \| `"non"` |                                                  |
-| `materiel`    | string[]           | e.g. "J'ai la batterie", "J'ai le chargeur"      |
-| `marque`      | string             |                                                  |
-| `modele`      | string             | B2B merges "Modèle et Cylindrée" into this field |
-| `cylindree`   | number \| null     |                                                  |
-| `annee`       | number \| null     |                                                  |
-| `kilometrage` | number \| null     |                                                  |
-| `accessoires` | string             |                                                  |
+| field             | type                       | notes                                               |
+| ----------------- | -------------------------- | --------------------------------------------------- |
+| `stock`           | `"oui"` \| `"non"` \| null | "Ce véhicule est-il déjà dans votre stock ?"        |
+| `immatriculation` | string                     | plate, free text (max 15 chars), "" when unanswered |
+| `electrique`      | `"oui"` \| `"non"`         |                                                     |
+| `materiel`        | string[]                   | checked labels, e.g. "J'ai la batterie" — empty unless `electrique` is `"oui"` |
+| `marque`          | string                     |                                                     |
+| `modele`          | string                     | B2B merges "Modèle et Cylindrée" into this field    |
+| `cylindree`       | number \| null             |                                                     |
+| `annee`           | number \| null             |                                                     |
+| `kilometrage`     | number \| null             |                                                     |
+| `accessoires`     | string                     |                                                     |
 
 **`keys`**
 
-| field                               | type                       |
-| ----------------------------------- | -------------------------- |
-| `aClesContact`                      | `"oui"` \| `"non"` \| null |
-| `cleNoire`, `cleMarron`, `cleRouge` | number \| null             |
-| `aTelecommande`                     | `"oui"` \| `"non"` \| null |
-| `telecommande`                      | number \| null             |
+| field                               | type                                                     |
+| ----------------------------------- | -------------------------------------------------------- |
+| `aClesContact`                      | `"oui"` \| `"non"` \| null                               |
+| `cleNoire`, `cleMarron`, `cleRouge` | number \| null                                           |
+| `aKeyless`                          | `"oui"` \| `"non"` \| null                               |
+| `keyless`                           | string[] — checked labels ("Code", "Clé de secours"); empty unless `aKeyless` is `"oui"` |
 
 **`condition`**
 

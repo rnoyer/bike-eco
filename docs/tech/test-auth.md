@@ -1,12 +1,20 @@
 > **Live project note:** invitations are deleted (not marked `expired`) once
-> their `expiresAt` passes, via a Firestore **TTL policy** on
-> `invitations.expiresAt` — configure it once per environment:
+> their `expiresAt` passes. Acceptance and a submitted-but-expired code delete
+> the document inline (`functions/src/registration/core.ts`); an invitation that
+> is simply never used is swept by a Firestore **TTL policy** on
+> `invitations.expiresAt`.
+>
+> That policy is declared in `firestore.indexes.json` (`fieldOverrides`, `"ttl":
+> true`) and ships with the indexes — it is **not** a manual console step:
 >
 > ```bash
-> gcloud firestore fields ttls update expiresAt --collection-group=invitations --enable-ttl --database=bike-eco-db
+> npx -y firebase-tools@latest deploy --only firestore:indexes --project bike-eco-43a84
 > ```
 >
-> (Console equivalent: Firestore → the `bike-eco-db` database → TTL policies.)
+> `firebase.json` pins `"database": "bike-eco-db"`, so this targets the named
+> database. `expiresAt` is deliberately left unindexed (`"indexes": []`) —
+> nothing filters or orders by it, and an indexed TTL field causes index churn.
+> Verify with `gcloud firestore fields ttls list --database=bike-eco-db`.
 > The emulator does not enforce TTL, so this has no effect on local testing.
 
 ## Launch the Firebase emulators

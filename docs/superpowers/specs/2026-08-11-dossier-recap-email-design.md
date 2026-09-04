@@ -128,15 +128,17 @@ collapsibles flattened into plain rows:
 | Prix souhaité | `pricing.prix` € |
 | Marque | `vehicle.marque` |
 | Modèle et Cylindrée | `vehicle.modele` |
+| Immatriculation | `vehicle.immatriculation` |
 | Année | `vehicle.annee` |
 | Kilométrage | `vehicle.kilometrage` km |
+| Déjà en stock | `vehicle.stock` |
 | Électrique | `vehicle.electrique` |
 | Batterie présente | only when électrique = oui, from `vehicle.materiel` |
 | Chargeur présent | only when électrique = oui, from `vehicle.materiel` |
 | État | `condition.etat` |
 | Nature de la panne | only when `condition.etat === "En Panne"` |
 | Carte grise | `papers.carteGrise` |
-| À votre nom | only when carte grise = oui |
+| Au nom du garage | only when carte grise = oui |
 | Contrôle technique | `papers.controleTechnique` |
 | Moins de 6 mois | only when CT = oui |
 | Résultat obtenu | only when CT = oui |
@@ -145,8 +147,8 @@ collapsibles flattened into plain rows:
 | Facture d'entretien | `papers.factureEntretien` |
 | Clés de contact | `keys.aClesContact` |
 | Clé noire / marron / rouge | only when clés = oui |
-| Télécommande ou Bip | `keys.aTelecommande` |
-| Nombre | only when télécommande = oui |
+| Clé main libre (keyless) | `keys.aKeyless` |
+| Code / Clé de secours | only when keyless = oui, from `keys.keyless` |
 | Commentaires véhicule | `vehicle.accessoires` |
 | Commentaires complémentaires | `pricing.commentaires` |
 
@@ -170,7 +172,26 @@ the Firestore document and the rendered HTML were complete throughout.
 `recapHtml(dossier, now)` takes the clock as a parameter and stays a pure
 function of its inputs; `core.ts` passes `new Date()`.
 
-No photos and no photo links. The recap is text.
+**Photos du véhicule** — one link per entry of `dossiers/{id}.photos`, in
+upload order, labelled `Photo <marque> <modèle> n°1`, `… n°2`, … and pointing at
+the stored Storage download URL (which carries its own token, so the reader
+needs no session). Linked, never attached: a dossier can carry a dozen photos
+that no mailbox wants as attachments. The section disappears entirely when the
+dossier has no photo.
+
+`photos` is written by the dealer's own client and the create rule does not
+constrain it, so `core.ts` links an entry only once `isDossierPhotoUrl`
+(`functions/src/storageUrl.ts`) ties it to this dossier: a Storage download URL,
+on one of our hosts, **in our own bucket**, under
+`dossiers/<companyId>/<dossierId>/photos/`. The host alone would not do — anyone
+can create a Firebase project, so an attacker's own bucket serves download URLs
+from `firebasestorage.googleapis.com` too. Anything else is dropped silently,
+and the numbering runs over what survives.
+
+The bucket comes from `getStorage().bucket().name` at call time; when the
+runtime exposes none the check falls back to host + path rather than blanking
+every recap's photos over a configuration detail. `render.ts` links what it is
+given and stays a pure renderer.
 
 ## Client
 
@@ -246,6 +267,6 @@ Gated by the standard `tsc` + lint + test command in `docs/tech/verification.md`
 
 - B2B users sending themselves a recap.
 - Sending to an address other than the caller's own.
-- Photos, attached or linked.
+- Photos as attachments (they are linked instead, added 2026-09-03).
 - Rate limiting: the callable is back-office-only and can only ever mail the
   caller's own mailbox.

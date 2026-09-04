@@ -64,6 +64,12 @@ subtitle : "Quelle est votre moto?"
 
 ---
 
+label : "Numéro d'immatriculation"
+placeholder : "AA-123-AA"
+default value : null
+type : Input text short, up to 15 characters
+mandatory : no
+
 label : "S'agit-il d'un véhicule électrique?"
 Placeholder : none
 default value : non
@@ -133,7 +139,7 @@ mandatory : no
 Form : step 4
 slider : 30%
 title : "Informations vehicule"
-subtitle : "Quelles clés et télécommandes avez-vous?"
+subtitle : "Quelles clés avez-vous?"
 
 ---
 
@@ -185,7 +191,7 @@ type : dropdown
 - 4
   mandatory : no
 
-label : "Avez-vous une télécommande ou un Bip de démarrage?"
+label : "Avez-vous une clé main libre (keyless) ?"
 Placeholder : none
 default value : null
 type : dropdown
@@ -194,17 +200,13 @@ type : dropdown
 - "non"
   mandatory : no
 
-condition : If "Avez-vous une télécommande ou un Bip de démarrage?" === "oui"
-label : "Télécommande / Bip de démarrage"
-Placeholder : none
-default value : null
-type : dropdown
+condition : If "Avez-vous une clé main libre (keyless) ?" === "oui"
+label : "Clé main libre (keyless)"
+default value : unchecked
+type : checkboxes
 
-- 0
-- 1
-- 2
-- 3
-- 4
+- "Code"
+- "Clé de secours"
   mandatory : no
 
 ---
@@ -407,3 +409,28 @@ title : "Demande envoyé !"
 subtitle : "Un email récapitulatif va vous parvenir." "Vous serez recontacté très prochainement par notre équipe."
 
 ---
+
+---
+
+## Règles communes
+
+**Longueurs maximales** — appliquées trois fois pour la même valeur : `maxLength` sur
+l'input, `.max()` dans le schéma Zod du funnel, et — pour le funnel B2C, dont l'endpoint
+est public et non authentifié — dans `functions/src/payload.ts`. Les constantes vivent
+dans `src/constants/vehicle.ts` (`SHORT_TEXT_MAX`, `FREE_TEXT_MAX`, `NUMBER_TEXT_MAX`,
+`IMMATRICULATION_MAX`) et sont recopiées côté functions, qui compile isolément.
+
+| Type de champ | Max |
+|---|---|
+| Input text (marque, modèle, ville, nom, nature de la panne…) | 120 caractères |
+| Input text long (accessoires, commentaires) | 2000 caractères |
+| Input number (kilométrage, prix, cylindrée) | 9 chiffres |
+| Année | 4 chiffres |
+| Numéro d'immatriculation | 15 caractères |
+
+**Cases à cocher conditionnelles** — les groupes de cases révélés par une réponse "oui"
+(le matériel électrique, la clé main libre) **gardent** ce qui a été coché si l'utilisateur
+repasse la question parente à "non" : un basculement accidentel ne doit pas effacer sa
+saisie, et revenir à "oui" la restitue. En revanche le contenu est vidé **au parsing**
+(`clearUnaskedCheckboxes`), donc rien de coché ne peut sortir du formulaire sous une
+réponse "non" — ni vers Firestore, ni vers les emails.

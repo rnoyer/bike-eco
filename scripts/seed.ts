@@ -83,22 +83,28 @@ async function main() {
     status: "pending", createdAt: now, updatedAt: now,
   });
 
-  for (const [id, region, marque, modele, status] of [
-    ["dos_1", "NORTH", "Yamaha", "MT-07", "a_traiter"],
-    ["dos_2", "SOUTH", "Kawasaki", "Z650", "en_cours"],
-  ] as const) {
-    await db.doc(`dossiers/${id}`).set({
-      status, region, companyId: "comp_nord", submittedBy: "user_b2b_nord",
-      validatedPrice: null,
-      submitter: {
-        nom: "Durand", prenom: "Camille", companyName: "Garage du Nord",
-        email: "b2b@garage-nord.fr", telephone: "0601020304",
-      },
+  // Deliberately unalike, so every conditional part of the "Informations
+  // véhicule" card (page-dossier.md) has something to reveal in at least one
+  // seeded dossier: dos_1 is a thermique with a keyless system and a complete
+  // set of papers, dos_2 an électrique en panne with its matériel and no carte
+  // grise. `cylindree` is null on both — the B2B funnel is the only source of
+  // dossiers and it merges displacement into `modele`.
+  const nordDossiers = [
+    {
+      id: "dos_1",
+      region: "NORTH",
+      status: "a_traiter",
       vehicle: {
-        electrique: "non", materiel: [], marque, modele,
-        cylindree: 689, annee: 2019, kilometrage: 18450, accessoires: "",
+        stock: "oui", immatriculation: "AB-123-CD",
+        electrique: "non", materiel: [],
+        marque: "Yamaha", modele: "MT-07 689",
+        cylindree: null, annee: 2019, kilometrage: 18450,
+        accessoires: "Sacoches et top-case d'origine.",
       },
-      keys: { aClesContact: "oui", cleNoire: 2, cleMarron: 0, cleRouge: 0, aTelecommande: "non", telecommande: null },
+      keys: {
+        aClesContact: "oui", cleNoire: 2, cleMarron: 0, cleRouge: 0,
+        aKeyless: "oui", keyless: ["Code", "Clé de secours"],
+      },
       condition: { etat: "Bon état", naturePanne: "" },
       papers: {
         carteGrise: "oui", carteGriseAVotreNom: "oui", controleTechnique: "oui",
@@ -106,6 +112,46 @@ async function main() {
         carnetEntretien: "oui", factureEntretien: "non",
       },
       pricing: { prix: 5000, commentaires: "" },
+    },
+    {
+      id: "dos_2",
+      region: "SOUTH",
+      status: "en_cours",
+      vehicle: {
+        stock: "non", immatriculation: "",
+        electrique: "oui", materiel: ["J'ai la batterie"],
+        marque: "Kawasaki", modele: "Z650",
+        cylindree: null, annee: 2022, kilometrage: 4300,
+        accessoires: "",
+      },
+      keys: {
+        aClesContact: "oui", cleNoire: 1, cleMarron: 0, cleRouge: 0,
+        aKeyless: "non", keyless: [],
+      },
+      condition: { etat: "En Panne", naturePanne: "Batterie de traction HS." },
+      papers: {
+        carteGrise: "non", carteGriseAVotreNom: null, controleTechnique: "non",
+        ctMoins6Mois: null, resultatCT: null, certificatNonGage: "non",
+        carnetEntretien: "non", factureEntretien: "non",
+      },
+      pricing: { prix: 6200, commentaires: "Reprise rapide souhaitée." },
+    },
+  ];
+
+  for (const d of nordDossiers) {
+    await db.doc(`dossiers/${d.id}`).set({
+      status: d.status, region: d.region, companyId: "comp_nord",
+      submittedBy: "user_b2b_nord", updatedBy: "user_b2b_nord",
+      validatedPrice: null,
+      submitter: {
+        nom: "Durand", prenom: "Camille", companyName: "Garage du Nord",
+        email: "b2b@garage-nord.fr", telephone: "0601020304",
+      },
+      vehicle: d.vehicle,
+      keys: d.keys,
+      condition: d.condition,
+      papers: d.papers,
+      pricing: d.pricing,
       photos: [], thumbnailUrl: null,
       createdAt: now, updatedAt: now,
     });
@@ -138,16 +184,21 @@ async function main() {
   });
   await db.doc(`dossiers/dos_sud`).set({
     status: "a_traiter", region: "SOUTH", companyId: "comp_sud",
-    submittedBy: "user_b2b_sud", validatedPrice: null,
+    submittedBy: "user_b2b_sud", updatedBy: "user_b2b_sud", validatedPrice: null,
     submitter: {
       nom: "Blanc", prenom: "Dominique", companyName: "Garage du Sud",
       email: "b2b@garage-sud.fr", telephone: "0621222324",
     },
     vehicle: {
-      electrique: "non", materiel: [], marque: "Ducati", modele: "Monster",
-      cylindree: 937, annee: 2021, kilometrage: 9200, accessoires: "",
+      stock: "non", immatriculation: "EF-456-GH",
+      electrique: "non", materiel: [],
+      marque: "Ducati", modele: "Monster 937",
+      cylindree: null, annee: 2021, kilometrage: 9200, accessoires: "",
     },
-    keys: { aClesContact: "oui", cleNoire: 1, cleMarron: 0, cleRouge: 0, aTelecommande: "non", telecommande: null },
+    keys: {
+      aClesContact: "oui", cleNoire: 1, cleMarron: 0, cleRouge: 0,
+      aKeyless: "oui", keyless: ["Code"],
+    },
     condition: { etat: "Bon état", naturePanne: "" },
     papers: {
       carteGrise: "oui", carteGriseAVotreNom: "oui", controleTechnique: "oui",

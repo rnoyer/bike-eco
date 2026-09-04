@@ -1,7 +1,8 @@
-import { section, shell, type Row } from "../emailHtml";
+import { linkSection, section, shell, type Link, type Row } from "../emailHtml";
 import {
   euros,
   generatedAt,
+  hasKeyless,
   hasMateriel,
   kilometres,
   ouiNon,
@@ -14,8 +15,8 @@ import {
 } from "../labels";
 
 /**
- * The subset of a `dossiers/{id}` document the recap prints — which is all of
- * it bar the photos and the routing fields.
+ * The subset of a `dossiers/{id}` document the recap needs — which is all of
+ * it bar the thumbnail and the audit fields.
  *
  * `createdAt` is typed structurally rather than as a `Timestamp` so this module
  * needs no Firebase import and stays testable with a plain object.
@@ -33,6 +34,8 @@ export interface RecapDossier {
     telephone: string;
   };
   vehicle: {
+    stock: OuiNon | null;
+    immatriculation: string;
     electrique: OuiNon;
     materiel: string[];
     marque: string;
@@ -46,8 +49,8 @@ export interface RecapDossier {
     cleNoire: number | null;
     cleMarron: number | null;
     cleRouge: number | null;
-    aTelecommande: OuiNon | null;
-    telecommande: number | null;
+    aKeyless: OuiNon | null;
+    keyless: string[];
   };
   condition: { etat: string | null; naturePanne: string };
   papers: {
@@ -61,6 +64,12 @@ export interface RecapDossier {
     factureEntretien: OuiNon | null;
   };
   pricing: { prix: number | null; commentaires: string };
+  /** Not printed: it scopes the photo URLs `core.ts` accepts. */
+  companyId: string;
+  /** Storage download URLs, in upload order: the first is "n°1". Optional
+   *  because it is read straight off the document, and a dossier filed with no
+   *  photo carries no array at all. */
+  photos?: string[];
 }
 
 /** The dossier screen's collapsibles, flattened: sub-rows only exist when
@@ -105,11 +114,13 @@ function vehicleSection(d: RecapDossier): string {
     ["Prix souhaité", pricing.prix === null ? null : euros(pricing.prix)],
     ["Marque", vehicle.marque],
     ["Modèle et Cylindrée", vehicle.modele],
+    ["Immatriculation", vehicle.immatriculation],
     ["Année", num(vehicle.annee)],
     [
       "Kilométrage",
       vehicle.kilometrage === null ? null : kilometres(vehicle.kilometrage),
     ],
+    ["Déjà en stock", ouiNon(vehicle.stock)],
     ["Électrique", ouiNon(vehicle.electrique)],
     ...when(vehicle.electrique, [
       ["Batterie présente", hasMateriel(vehicle.materiel, "batterie") ? "Oui" : "Non"],
@@ -123,7 +134,12 @@ function vehicleSection(d: RecapDossier): string {
     // compile the way it does on the app's dossier screen.
     ["Nature de la panne", condition.etat === "En Panne" ? condition.naturePanne : null],
     ["Carte grise", ouiNon(papers.carteGrise)],
-    ...when(papers.carteGrise, [["À votre nom", ouiNon(papers.carteGriseAVotreNom)]]),
+    // Dossiers only ever come from the B2B funnel, which asks a dealer whether
+    // the déclaration d'achat was filed under the garage's name rather than
+    // whether the carte grise is in their own. Same label as the dossier screen.
+    ...when(papers.carteGrise, [
+      ["Au nom du garage", ouiNon(papers.carteGriseAVotreNom)],
+    ]),
     ["Contrôle technique", ouiNon(papers.controleTechnique)],
     ...when(papers.controleTechnique, [
       ["Moins de 6 mois", ouiNon(papers.ctMoins6Mois)],
@@ -138,8 +154,11 @@ function vehicleSection(d: RecapDossier): string {
       ["Clé marron", num(keys.cleMarron)],
       ["Clé rouge", num(keys.cleRouge)],
     ]),
-    ["Télécommande ou Bip", ouiNon(keys.aTelecommande)],
-    ...when(keys.aTelecommande, [["Nombre", num(keys.telecommande)]]),
+    ["Clé main libre (keyless)", ouiNon(keys.aKeyless)],
+    ...when(keys.aKeyless, [
+      ["Code", hasKeyless(keys.keyless, "code") ? "Oui" : "Non"],
+      ["Clé de secours", hasKeyless(keys.keyless, "secours") ? "Oui" : "Non"],
+    ]),
     ["Commentaires véhicule", vehicle.accessoires],
     ["Commentaires complémentaires", pricing.commentaires],
   ]);
@@ -178,12 +197,35 @@ function dossierSection(d: RecapDossier, now: Date): string {
   ]);
 }
 
+/**
+ * One link per photo, in upload order, labelled "Photo <marque modèle> n°1".
+ *
+ * Linked, not attached: the recap is a text email, and a dossier can carry a
+ * dozen photos that no mailbox wants as attachments. The URLs are the ones
+ * `getDownloadURL()` returned at upload — they carry their own token, so the
+ * reader needs no session to open one.
+ *
+ * Every URL handed here is linked as-is. `photos` is client-written, so it is
+ * `core.ts` — which knows the dossier's company and our own bucket — that
+ * decides which entries are ours; this stays a renderer.
+ */
+function photosSection(d: RecapDossier): string {
+  const label = vehicleLabel(d);
+  const links = (d.photos ?? []).map(
+    (url, i): Link => [
+      ["Photo", label, `n°${i + 1}`].filter(Boolean).join(" "),
+      url,
+    ],
+  );
+  return linkSection("Photos du véhicule", links);
+}
+
 /** `now` is a parameter, not a `new Date()` inside: this module renders a
  *  document as a function of its inputs, and the caller owns the clock. */
 export function recapHtml(d: RecapDossier, now: Date): string {
   return shell(
     recapSubject(d),
     intro(d),
-    vehicleSection(d) + sellerSection(d) + dossierSection(d, now),
+    vehicleSection(d) + sellerSection(d) + dossierSection(d, now) + photosSection(d),
   );
 }

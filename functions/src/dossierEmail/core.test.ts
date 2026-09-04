@@ -22,7 +22,14 @@ const pendingBackoffice: CallerClaims = {
   companyId: null,
 };
 
+const BUCKET = "bike-eco-43a84.firebasestorage.app";
+/** A dossier photo as it is stored: a Storage download URL with its token. */
+const PHOTO_URL = (index: number, bucket = BUCKET) =>
+  `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/` +
+  `dossiers%2Fcomp_1%2Fdos_1%2Fphotos%2F${index}.jpg?alt=media&token=t${index}`;
+
 const DOSSIER: RecapDossier = {
+  companyId: "comp_1",
   status: "en_cours",
   region: "SOUTH",
   validatedPrice: null,
@@ -35,6 +42,8 @@ const DOSSIER: RecapDossier = {
     telephone: "0601020304",
   },
   vehicle: {
+    stock: "oui",
+    immatriculation: "AB-123-CD",
     electrique: "non",
     materiel: [],
     marque: "Yamaha",
@@ -48,8 +57,8 @@ const DOSSIER: RecapDossier = {
     cleNoire: 2,
     cleMarron: null,
     cleRouge: null,
-    aTelecommande: "non",
-    telecommande: null,
+    aKeyless: "non",
+    keyless: [],
   },
   condition: { etat: "Bon état", naturePanne: "" },
   papers: {
@@ -63,6 +72,7 @@ const DOSSIER: RecapDossier = {
     factureEntretien: "non",
   },
   pricing: { prix: 3500, commentaires: "" },
+  photos: [PHOTO_URL(0)],
 };
 
 interface Sent {
@@ -78,6 +88,7 @@ function fakeDeps(over: Partial<DossierEmailDeps> = {}): DossierEmailDeps & {
   const sent: Sent[] = [];
   let getDossierCalls = 0;
   const merged: DossierEmailDeps = {
+    storageBucket: BUCKET,
     getDossier: async () => DOSSIER,
     getUserEmail: async () => "agent@bike-eco.fr",
     sendMail: async (mail) => {
@@ -87,6 +98,7 @@ function fakeDeps(over: Partial<DossierEmailDeps> = {}): DossierEmailDeps & {
   };
   return {
     sent,
+    storageBucket: merged.storageBucket,
     getDossierCalls: () => getDossierCalls,
     getDossier: async (id) => {
       // Counted so a regression that checks dossier existence before the
@@ -186,5 +198,58 @@ describe("sendDossierRecapCore", () => {
       sendDossierRecapCore({ dossierId: "dos_1" }, backoffice, d),
     ).rejects.toMatchObject({ code: "failed-precondition" });
     expect(d.sent).toHaveLength(0);
+  });
+});
+
+// `dossiers/{id}.photos` is written by the dealer's own client and the create
+// rule does not constrain it, so the recap only links what it can tie to this
+// dossier — otherwise a dealer could plant a link in a back-office mailbox.
+describe("photo links", () => {
+  const photosOf = (html: string) => html.match(/href="([^"]+)"/g) ?? [];
+
+  const withPhotos = (photos: string[], bucket: string | null = BUCKET) =>
+    fakeDeps({
+      storageBucket: bucket,
+      getDossier: async () => ({ ...DOSSIER, photos }),
+    });
+
+  test("links a photo of this dossier in our own bucket", async () => {
+    const d = withPhotos([PHOTO_URL(0)]);
+    await sendDossierRecapCore({ dossierId: "dos_1" }, backoffice, d);
+    expect(d.sent[0].html).toContain("Photos du véhicule");
+    expect(photosOf(d.sent[0].html)).toHaveLength(1);
+    expect(d.sent[0].html).toContain("Photo Yamaha MT-07 689 n°1");
+  });
+
+  test("drops an external link and one in someone else's bucket", async () => {
+    const d = withPhotos([
+      "https://evil.example/phish.html",
+      PHOTO_URL(0, "attacker-project.firebasestorage.app"),
+    ]);
+    await sendDossierRecapCore({ dossierId: "dos_1" }, backoffice, d);
+    expect(d.sent[0].html).not.toContain("evil.example");
+    expect(d.sent[0].html).not.toContain("attacker-project");
+    expect(d.sent[0].html).not.toContain("Photos du véhicule");
+  });
+
+  test("drops a photo belonging to another dossier", async () => {
+    const other = PHOTO_URL(0).replace("dos_1", "dos_9");
+    const d = withPhotos([other]);
+    await sendDossierRecapCore({ dossierId: "dos_1" }, backoffice, d);
+    expect(d.sent[0].html).not.toContain("dos_9");
+  });
+
+  test("numbers the links that survive, from 1", async () => {
+    const d = withPhotos(["https://evil.example/x.jpg", PHOTO_URL(1), PHOTO_URL(2)]);
+    await sendDossierRecapCore({ dossierId: "dos_1" }, backoffice, d);
+    expect(d.sent[0].html).toContain("Photo Yamaha MT-07 689 n°1");
+    expect(d.sent[0].html).toContain("Photo Yamaha MT-07 689 n°2");
+    expect(d.sent[0].html).not.toContain("n°3");
+  });
+
+  test("still links this dossier's photos when the bucket is unknown", async () => {
+    const d = withPhotos([PHOTO_URL(0)], null);
+    await sendDossierRecapCore({ dossierId: "dos_1" }, backoffice, d);
+    expect(photosOf(d.sent[0].html)).toHaveLength(1);
   });
 });

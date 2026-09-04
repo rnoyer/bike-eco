@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { esc, rowsHtml, section, shell } from "./emailHtml";
+import { esc, escAttr, linkSection, rowsHtml, section, shell } from "./emailHtml";
 
 describe("esc", () => {
   test("escapes the three characters that would break out of the markup", () => {
@@ -29,6 +29,36 @@ describe("rowsHtml", () => {
 
   test("escapes both label and value", () => {
     expect(rowsHtml([["A & B", "<script>"]])).toContain("&lt;script&gt;");
+  });
+});
+
+describe("escAttr", () => {
+  test("also escapes the quote that would close an attribute", () => {
+    expect(escAttr("a\" onclick=\"x")).toBe("a&quot; onclick=&quot;x");
+  });
+});
+
+describe("linkSection", () => {
+  test("renders its title above one anchor per link", () => {
+    const html = linkSection("Photos du véhicule", [
+      ["Photo Yamaha MT-07 n°1", "https://example.com/1.jpg?alt=media&token=abc"],
+      ["Photo Yamaha MT-07 n°2", "https://example.com/2.jpg"],
+    ]);
+    expect(html).toContain("Photos du véhicule");
+    // `&` becomes `&amp;` inside an href — the escaped form is the correct one.
+    expect(html).toContain("href=\"https://example.com/1.jpg?alt=media&amp;token=abc\"");
+    expect(html).toContain("Photo Yamaha MT-07 n°1");
+    expect(html.match(/<a /g)).toHaveLength(2);
+  });
+
+  test("renders nothing at all when there is no link", () => {
+    expect(linkSection("Photos du véhicule", [])).toBe("");
+  });
+
+  test("escapes the text and the href", () => {
+    const html = linkSection("T", [["<script>", "https://x/\"><script>"]]);
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).not.toContain("<script>");
   });
 });
 

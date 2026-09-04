@@ -121,7 +121,7 @@ export async function sendInviteCore(
   const id = deps.newDocumentId();
   await deps.writeInvitation(id, {
     email: input.email, role, companyId, invitedBy: caller.uid,
-    tokenHash: hashInviteCode(code), status: "pending", expiresAt: deps.now() + INVITE_TTL_MS,
+    tokenHash: hashInviteCode(code), expiresAt: deps.now() + INVITE_TTL_MS,
   });
   await deps.sendInviteEmail(input.email, code, organisationName);
 }

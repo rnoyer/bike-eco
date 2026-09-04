@@ -1,16 +1,28 @@
 import type { ReactNode } from "react";
 import { useWatch } from "react-hook-form";
-import { Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
 import { DEPARTMENTS, isNord, isSud } from "@/constants/departments";
+import {
+  FREE_TEXT_MAX,
+  NUMBER_TEXT_MAX,
+  SHORT_TEXT_MAX,
+} from "@/constants/vehicle";
 import {
   AnneeKilometrageFields,
   CertificatNonGageField,
   ClesFields,
   ElectriqueFields,
   EtatFields,
+  ImmatriculationField,
   MarqueField,
   PapiersFields,
   PhotosFields,
@@ -40,6 +52,7 @@ function CoordonneesFields() {
         placeholder="Votre nom"
         autoCapitalize="words"
         autoComplete="family-name"
+        maxLength={SHORT_TEXT_MAX}
         returnKeyType="next"
       />
       <ControlledField
@@ -48,6 +61,7 @@ function CoordonneesFields() {
         placeholder="Votre prénom"
         autoCapitalize="words"
         autoComplete="given-name"
+        maxLength={SHORT_TEXT_MAX}
         returnKeyType="next"
       />
       <ControlledField
@@ -79,6 +93,7 @@ function CoordonneesFields() {
         label="Ville"
         placeholder="Ville"
         autoCapitalize="words"
+        maxLength={SHORT_TEXT_MAX}
         returnKeyType="done"
       />
     </>
@@ -96,6 +111,7 @@ function MotoFields() {
         label="Modèle"
         placeholder="Modèle du véhicule"
         autoCapitalize="words"
+        maxLength={SHORT_TEXT_MAX}
         returnKeyType="next"
       />
       <ControlledField
@@ -104,7 +120,8 @@ function MotoFields() {
         placeholder="Cylindrée du véhicule en CC"
         keyboardType="numeric"
         suffix="cc"
-        transform={digitsOnly()}
+        maxLength={NUMBER_TEXT_MAX}
+        transform={digitsOnly(NUMBER_TEXT_MAX)}
         returnKeyType="next"
       />
       <AnneeKilometrageFields />
@@ -113,6 +130,7 @@ function MotoFields() {
         label="Accessoires"
         placeholder="Listez ici les éventuels accessoires"
         multiline
+        maxLength={FREE_TEXT_MAX}
         returnKeyType="done"
       />
     </>
@@ -169,7 +187,12 @@ export const B2C_SUBMISSION_STEPS: B2cStep[] = [
     title: "Informations véhicule",
     subtitle: "Quelle est votre moto?",
     fields: [...VEHICLE_STEP_FIELDS.electrique],
-    render: () => <ElectriqueFields />,
+    render: () => (
+      <>
+        <ImmatriculationField />
+        <ElectriqueFields />
+      </>
+    ),
   },
   {
     progress: 20,
@@ -188,7 +211,7 @@ export const B2C_SUBMISSION_STEPS: B2cStep[] = [
   {
     progress: 30,
     title: "Informations véhicule",
-    subtitle: "Quelles clés et télécommandes avez-vous?",
+    subtitle: "Quelles clés avez-vous?",
     fields: [...VEHICLE_STEP_FIELDS.cles],
     render: () => <ClesFields />,
   },

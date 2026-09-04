@@ -30,12 +30,6 @@ export type CompanyStatus = (typeof COMPANY_STATUSES)[number];
 export const USER_STATUSES = ["pending", "active"] as const;
 export type UserStatus = (typeof USER_STATUSES)[number];
 
-// An invitation only ever exists in `pending` state: acceptance and expiry
-// both delete the document (see functions/src/registration) rather than
-// transitioning its status.
-export const INVITATION_STATUSES = ["pending"] as const;
-export type InvitationStatus = (typeof INVITATION_STATUSES)[number];
-
 /** `a_traiter` = new, `en_cours` = ongoing, `cloture` = closed. */
 export const DOSSIER_STATUSES = ["a_traiter", "en_cours", "cloture"] as const;
 export type DossierStatus = (typeof DOSSIER_STATUSES)[number];
@@ -117,7 +111,6 @@ export interface Invitation {
   companyId: string | null;
   invitedBy: string; // uid
   tokenHash: string; // store a hash, never the raw token
-  status: InvitationStatus;
   expiresAt: Timestamp; // one-time, time-limited
   createdAt: Timestamp;
 }
@@ -137,6 +130,10 @@ export interface DossierSubmitter {
 }
 
 export interface DossierVehicle {
+  /** Whether the dealer already holds the bike. B2B-only question, and dossiers
+   *  are B2B-only, so it is always asked — `null` means left unanswered. */
+  stock: OuiNon | null;
+  immatriculation: string; // plate, free text, "" when unanswered
   electrique: OuiNon;
   materiel: string[]; // e.g. "J'ai la batterie", "J'ai le chargeur"
   marque: string;
@@ -152,8 +149,18 @@ export interface DossierKeys {
   cleNoire: number | null;
   cleMarron: number | null;
   cleRouge: number | null;
-  aTelecommande: OuiNon | null;
-  telecommande: number | null;
+  aKeyless: OuiNon | null;
+  /**
+   * The checked "clé main libre (keyless)" labels — e.g. "Code",
+   * "Clé de secours". Empty unless `aKeyless` is "oui": the funnel keeps a
+   * user's ticks in form state when they flip the parent back to "non", but
+   * `clearUnaskedCheckboxes` drops them on parse, before the dossier is
+   * written (`src/features/vehicle-submission/normalize.ts`).
+   *
+   * Consumers still gate on `aKeyless` — dossiers written before that
+   * normalisation existed are not bound by it. Same for `vehicle.materiel`.
+   */
+  keyless: string[];
 }
 
 export interface DossierCondition {

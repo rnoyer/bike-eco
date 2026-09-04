@@ -1,8 +1,14 @@
 import { describe, expect, test } from "@jest/globals";
 import { recapHtml, recapSubject, type RecapDossier } from "./render";
 
+/** A dossier photo as it is stored: a Storage download URL with its token. */
+const PHOTO_URL = (index: number) =>
+  "https://firebasestorage.googleapis.com/v0/b/bkt/o/" +
+  `dossiers%2Fcomp_1%2Fdos_1%2Fphotos%2F${index}.jpg?alt=media&token=t${index}`;
+
 /** A fully answered dossier. Tests narrow it with `dossier({ ... })`. */
 const FULL: RecapDossier = {
+  companyId: "comp_1",
   status: "en_cours",
   region: "SOUTH",
   validatedPrice: 3200,
@@ -15,6 +21,8 @@ const FULL: RecapDossier = {
     telephone: "0601020304",
   },
   vehicle: {
+    stock: "oui",
+    immatriculation: "AB-123-CD",
     electrique: "oui",
     materiel: ["J'ai la batterie"],
     marque: "Yamaha",
@@ -28,8 +36,8 @@ const FULL: RecapDossier = {
     cleNoire: 2,
     cleMarron: 0,
     cleRouge: null,
-    aTelecommande: "oui",
-    telecommande: 1,
+    aKeyless: "oui",
+    keyless: ["Code"],
   },
   condition: { etat: "En Panne", naturePanne: "Démarreur HS" },
   papers: {
@@ -43,6 +51,7 @@ const FULL: RecapDossier = {
     factureEntretien: "oui",
   },
   pricing: { prix: 3500, commentaires: "Vente rapide souhaitée" },
+  photos: [PHOTO_URL(0), PHOTO_URL(1)],
 };
 
 /** Fixed clock, so a rendered recap is a function of its inputs alone. */
@@ -72,14 +81,16 @@ describe("recapHtml", () => {
     );
   });
 
-  test("carries the three sections, in reading order", () => {
+  test("carries the four sections, in reading order", () => {
     const html = recapHtml(FULL, NOW);
     const vehicule = html.indexOf("Informations véhicule");
     const vendeur = html.indexOf("Informations vendeur");
     const dossierSection = html.indexOf("Informations Dossier");
+    const photos = html.indexOf("Photos du véhicule");
     expect(vehicule).toBeGreaterThan(-1);
     expect(vendeur).toBeGreaterThan(vehicule);
     expect(dossierSection).toBeGreaterThan(vendeur);
+    expect(photos).toBeGreaterThan(dossierSection);
   });
 
   test("renders the vehicle's own values with their units", () => {
@@ -121,9 +132,29 @@ describe("recapHtml", () => {
     expect(recapHtml(dossier({ status: "a_traiter" }), NOW)).toContain("À traiter");
   });
 
+  /**
+   * The value `rowsHtml` rendered for one label, or `null` when the row was
+   * dropped. Asserting on this rather than on `toContain(label)` is what makes
+   * the derived Oui/Non rows testable at all: a sub-row's *label* is emitted
+   * whenever its parent answer is "oui", whatever the value works out to, so a
+   * `toContain` assertion passes even when every answer is wrong.
+   *
+   * That matters here specifically. `MATERIEL_*` / `KEYLESS_*` and the
+   * `hasMateriel` / `hasKeyless` helpers are duplicated in `../labels` because
+   * this package cannot import app sources — if that copy drifts from
+   * `src/constants/vehicle.ts`, or the two labels of a pair get swapped, every
+   * recap silently prints "Non" for equipment the dossier actually has.
+   */
+  const rowValue = (html: string, label: string): string | null => {
+    const m = html.match(new RegExp(`>${label}</td><td[^>]*>([^<]*)</td>`));
+    return m ? m[1] : null;
+  };
+
   test("reveals the électrique sub-answers only when électrique is oui", () => {
-    expect(recapHtml(FULL, NOW)).toContain("Batterie présente");
-    expect(recapHtml(FULL, NOW)).toContain("Chargeur présent");
+    const html = recapHtml(FULL, NOW);
+    // FULL has the batterie and not the chargeur.
+    expect(rowValue(html, "Batterie présente")).toBe("Oui");
+    expect(rowValue(html, "Chargeur présent")).toBe("Non");
     const thermique = dossier({
       vehicle: { ...FULL.vehicle, electrique: "non", materiel: [] },
     });
@@ -141,7 +172,7 @@ describe("recapHtml", () => {
 
   test("reveals the papers sub-answers only when their parent is oui", () => {
     const html = recapHtml(FULL, NOW);
-    expect(html).toContain("À votre nom");
+    expect(html).toContain("Au nom du garage");
     expect(html).toContain("Résultat obtenu");
     const sansPapiers = dossier({
       papers: {
@@ -154,7 +185,7 @@ describe("recapHtml", () => {
       },
     });
     const html2 = recapHtml(sansPapiers, NOW);
-    expect(html2).not.toContain("À votre nom");
+    expect(html2).not.toContain("Au nom du garage");
     expect(html2).not.toContain("Résultat obtenu");
   });
 
@@ -164,6 +195,30 @@ describe("recapHtml", () => {
       keys: { ...FULL.keys, aClesContact: "non", cleNoire: null },
     });
     expect(recapHtml(sansCles, NOW)).not.toContain("Clé noire");
+  });
+
+  test("reveals the keyless sub-answers only when there is a keyless system", () => {
+    const html = recapHtml(FULL, NOW);
+    // FULL ticked "Code" and not "Clé de secours".
+    expect(rowValue(html, "Code")).toBe("Oui");
+    expect(rowValue(html, "Clé de secours")).toBe("Non");
+    const sansKeyless = dossier({
+      keys: { ...FULL.keys, aKeyless: "non", keyless: [] },
+    });
+    expect(recapHtml(sansKeyless, NOW)).not.toContain("Clé de secours");
+  });
+
+  test("prints the plate and the stock answer", () => {
+    const html = recapHtml(FULL, NOW);
+    expect(html).toContain("AB-123-CD");
+    expect(html).toContain("Déjà en stock");
+    // Unanswered rows are dropped rather than dashed.
+    const sansStock = dossier({
+      vehicle: { ...FULL.vehicle, stock: null, immatriculation: "" },
+    });
+    const html2 = recapHtml(sansStock, NOW);
+    expect(html2).not.toContain("Déjà en stock");
+    expect(html2).not.toContain("Immatriculation");
   });
 
   test("keeps a zero count but drops an unanswered one", () => {
@@ -215,5 +270,22 @@ describe("generation timestamp", () => {
     const a = recapHtml(FULL, new Date("2026-08-11T07:06:21Z"));
     const b = recapHtml(FULL, new Date("2026-08-11T07:06:22Z"));
     expect(a).not.toBe(b);
+  });
+});
+
+describe("photos", () => {
+  test("links every photo, numbered from 1 and named after the vehicle", () => {
+    const html = recapHtml(FULL, NOW);
+    expect(html).toContain(`href="${PHOTO_URL(0).replace(/&/g, "&amp;")}"`);
+    expect(html).toContain("Photo Yamaha MT-07 689 n°1");
+    expect(html).toContain(`href="${PHOTO_URL(1).replace(/&/g, "&amp;")}"`);
+    expect(html).toContain("Photo Yamaha MT-07 689 n°2");
+  });
+
+  test("omits the whole section when the dossier carries no photo", () => {
+    expect(recapHtml(dossier({ photos: [] }), NOW)).not.toContain("Photos du véhicule");
+    expect(recapHtml(dossier({ photos: undefined }), NOW)).not.toContain(
+      "Photos du véhicule",
+    );
   });
 });
