@@ -29,7 +29,7 @@ change with `docs/tech/verification.md`.
 | `src/lib/auth/authErrors.ts` | `mapAuthError(code)` — the only place auth copy lives |
 | `src/lib/auth/googleSignIn.ts` / `.web.ts` | Google provider sign-in, platform-split |
 | `src/lib/auth/appleSignIn.ios.ts` / `.web.ts` / `.ts` | Apple provider sign-in, three-way platform split (`.ts` is Android, and reports unavailable) |
-| `src/lib/auth/appleSignInContract.ts` | Shared `ProviderSignInOptions` / `ProviderSignInResult` types the three Apple variants implement |
+| `src/lib/auth/providerSignInContract.ts` | Shared `ProviderSignInOptions` / `ProviderSignInResult` types every third-party provider's sign-in implements |
 | `src/lib/auth/providerEmail.ts` | `emailsMatch` + `ProviderEmailMismatchError` + `AuthProviderId` |
 | `src/lib/auth/thirdPartySignIn.ts` | `signInExistingAccount` — the sign-in-is-not-registration rule |
 | `src/lib/data/registration.ts` | Client wrappers over the registration callables |
@@ -150,7 +150,7 @@ type error to warn you. `AppleAuthButton.tsx` mirrors the same three-way split f
 same reason.
 
 The three Apple variants are held in step by the shared types in
-`appleSignInContract.ts` (`ProviderSignInOptions`, `ProviderSignInResult`), which every
+`providerSignInContract.ts` (`ProviderSignInOptions`, `ProviderSignInResult`), which every
 variant's function signature references — Metro picks exactly one file, and `tsc`
 checks each in isolation, so nothing else would cross-check them. That catches a drift
 in the option or result **shape** as a compile error, but not everything: a variant
