@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "googleServicesFile": "./GoogleService-Info.plist",
+      "usesAppleSignIn": true,
       "icon": {
         "dark": "./assets/images/ios-icon-dark.png",
         "light": "./assets/images/ios-icon-default.png",
@@ -46,6 +47,7 @@
       ],
       "expo-sqlite",
       "@react-native-google-signin/google-signin",
+      "expo-apple-authentication",
       [
         "expo-build-properties",
         {

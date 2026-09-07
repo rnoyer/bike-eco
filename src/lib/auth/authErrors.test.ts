@@ -78,3 +78,24 @@ test("frenchAuthMessage falls back for non-Error throws", () => {
     "La connexion a échoué. Veuillez réessayer.",
   );
 });
+
+test("frenchAuthMessage keeps a provider cancellation message verbatim", () => {
+  // Both provider modules rethrow a cancellation as a bare French Error with no
+  // `code`, which is the only reason this copy survives instead of being
+  // flattened to the generic fallback.
+  expect(frenchAuthMessage(new Error("Connexion Apple annulée."))).toBe(
+    "Connexion Apple annulée.",
+  );
+});
+
+test("frenchAuthMessage would flatten a cancellation that kept Apple's code", () => {
+  // Documents why the rethrow above is necessary: ERR_REQUEST_CANCELED is a
+  // code, but not an `auth/*` code, so it takes the generic branch.
+  expect(
+    frenchAuthMessage(
+      Object.assign(new Error("The user canceled the authorization attempt."), {
+        code: "ERR_REQUEST_CANCELED",
+      }),
+    ),
+  ).toBe("La connexion a échoué. Veuillez réessayer.");
+});

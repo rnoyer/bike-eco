@@ -19,7 +19,7 @@ export function mapAuthError(code: string): string {
  * Three kinds of failure reach these call sites and they need different
  * treatment, which is why every screen used to hand-roll the same ternary
  * ladder: Firebase's own `auth/*` codes (English message, map the code), the
- * errors this app raises itself (`GoogleEmailMismatchError`, "Connexion Google
+ * errors this app raises itself (`ProviderEmailMismatchError`, "Connexion Google
  * annulée." — already French, keep the message), and everything else, including
  * Firebase's *non*-auth codes, whose messages are English and must not leak.
  */
