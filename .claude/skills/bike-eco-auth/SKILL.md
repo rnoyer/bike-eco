@@ -27,8 +27,11 @@ change with `docs/tech/verification.md`.
 | `src/lib/auth/session.ts` | `parseClaims` (raw token bag → typed) + `buildSessionUser` (claims + profile → `SessionUser`) |
 | `src/lib/auth/routeGuard.ts` | Pure `resolveAuthRoute` + `redirectFor`. The whole redirect policy |
 | `src/lib/auth/authErrors.ts` | `mapAuthError(code)` — the only place auth copy lives |
-| `src/lib/auth/googleSignIn.ts` / `.web.ts` | Provider sign-in, platform-split |
-| `src/lib/auth/googleEmail.ts` | `emailsMatch` + `GoogleEmailMismatchError` |
+| `src/lib/auth/googleSignIn.ts` / `.web.ts` | Google provider sign-in, platform-split |
+| `src/lib/auth/appleSignIn.ios.ts` / `.web.ts` / `.ts` | Apple provider sign-in, three-way platform split (`.ts` is Android, and reports unavailable) |
+| `src/lib/auth/appleSignInContract.ts` | Shared `ProviderSignInOptions` / `ProviderSignInResult` types the three Apple variants implement |
+| `src/lib/auth/providerEmail.ts` | `emailsMatch` + `ProviderEmailMismatchError` + `AuthProviderId` |
+| `src/lib/auth/thirdPartySignIn.ts` | `signInExistingAccount` — the sign-in-is-not-registration rule |
 | `src/lib/data/registration.ts` | Client wrappers over the registration callables |
 | `src/features/registration/fields.tsx` | `AccountFields`, `CoordonneesFields` — shared form groups |
 
@@ -121,8 +124,9 @@ confirmation either way.
 
 ## Adding a third-party provider
 
-`googleSignIn.ts` is the template Apple and Facebook clone. Four things it does that a
-naive implementation misses:
+`googleSignIn.ts` is still the template — Apple (`appleSignIn.ios.ts` / `.web.ts` /
+`.ts`) follows the same four rules, plus the platform- and Apple-specific ones below
+that Facebook will hit too whenever it is enabled.
 
 1. **`signOut()` the provider SDK first.** Android silently reuses the last account
    otherwise, and the user never sees the chooser.
@@ -134,9 +138,57 @@ naive implementation misses:
    rejects the identity can delete the record it just created.
 4. **Read client ids from `process.env.EXPO_PUBLIC_*`**, never hardcoded.
 
-**Platform split:** native-only SDKs get a `.web.ts` sibling (`googleSignIn.ts` /
-`googleSignIn.web.ts`, also `region-store.ts` / `.web.ts`). Metro picks the web file on
-web. Both files must export the same signature or the web build breaks silently.
+**The platform split is per-provider, not universal.** Google's native module runs on
+both iOS and Android, so a `.ts` / `.web.ts` pair is right (`googleSignIn.ts` /
+`googleSignIn.web.ts`, also `region-store.ts` / `.web.ts`). `expo-apple-authentication`
+is iOS-only, so Apple needs a third file: `appleSignIn.ios.ts`, `appleSignIn.web.ts`,
+and a plain `appleSignIn.ts` for Android that throws "unavailable" rather than
+importing anything native. Metro resolves the platform suffix; get the split wrong —
+say, put the native module in the plain `.ts` — and the Android build breaks with no
+type error to warn you. `AppleAuthButton.tsx` mirrors the same three-way split for the
+same reason.
+
+The three Apple variants are held in step by the shared types in
+`appleSignInContract.ts` (`ProviderSignInOptions`, `ProviderSignInResult`), which every
+variant's function signature references — Metro picks exactly one file, and `tsc`
+checks each in isolation, so nothing else would cross-check them. That catches a drift
+in the option or result **shape** as a compile error, but not everything: a variant
+that simply omits an export still compiles. That gap only surfaces at import time, when
+whichever platform resolved to that file fails to find `signInWithApple`.
+
+**Nonce direction (iOS only).** Apple's `signInAsync` gets the SHA-256 **hex digest** of
+a random nonce; Firebase's credential gets the **raw** nonce, so it can hash it itself
+and confirm the identity token answers this specific request. Backwards in either
+direction fails as `auth/missing-or-invalid-nonce` on every attempt. Web needs no manual
+nonce at all — `signInWithPopup` owns the whole round-trip itself.
+
+**Apple discloses the name and email only on the first authorization for a given Apple
+ID.** Every later sign-in returns them empty, so the invited funnel's "compare before
+`signInWithCredential`" rule (point 2 above) cannot always be honoured up front: tier 1
+compares whatever the credential or the unverified identity token discloses, before any
+credential reaches Firebase; tier 2, when neither discloses an address, signs in first
+and compares `auth.currentUser.email` afterwards, undoing the sign-in on a mismatch —
+`deleteUser` when the sign-in just created the record (`isNewUser`), `signOut`
+otherwise. Never leave a refused identity signed in either way.
+
+**Cancellation must be rethrown without its `code`.** Apple's cancellation carries
+`code: "ERR_REQUEST_CANCELED"`, which is not an `auth/*` code, so `frenchAuthMessage`
+would fall through to the generic `"La connexion a échoué."` for what is just a tap on
+Annuler. Rethrow a bare `new Error("Connexion Apple annulée.")` — the already-French
+contract `authErrors.ts` documents, which `googleSignIn.ts` also honours for its own
+cancellation.
+
+The identity-token email decoder (`appleIdToken.ts`) is **unverified on purpose** — its
+signature is never checked. It exists only to decide whether to abandon a sign-in
+early; treat its result as a hint, never as authorization. Firebase still verifies the
+credential itself, and the server (`acceptInviteCore`) still re-checks the address.
+
+**Native projects are regenerated, not committed.** `expo-apple-authentication` and
+`expo-crypto` are native modules, and `ios/` / `android/` are gitignored (CNG) — the
+Apple entitlement they need only exists after `npx expo prebuild --clean` or a fresh EAS
+build. A dev client built before either was added fails at **runtime** with an
+entitlement error, not at build time, which reads like a bug in this code rather than a
+stale native project.
 
 ## Deep-linked token routes
 
@@ -157,3 +209,7 @@ validates it server-side, and the screen renders only after it resolves. Tokens 
 | Inline French copy in a screen | Bypasses `mapAuthError`; copy drifts between flows |
 | `updatePassword` without handling `auth/requires-recent-login` | Fails for any session older than a few minutes |
 | Adding a native SDK without a `.web.ts` sibling | Web build breaks |
+| Giving Apple the raw nonce and Firebase the digest | `auth/missing-or-invalid-nonce` on every attempt |
+| Expecting Apple's name/email on a repeat sign-in | Empty prefill treated as a bug; a mismatch check that silently never runs |
+| Letting `ERR_REQUEST_CANCELED` keep its code | A plain "Annuler" shows "La connexion a échoué" |
+| Putting Apple's native module in the plain `.ts` file | Android build breaks; no type error warns you |

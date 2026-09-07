@@ -97,13 +97,20 @@ validation : doit être strictement identique à "Mot de passe" ; sinon le messa
 "Les mots de passe ne correspondent pas" s'affiche sous ce champ et "Suivant"
 ne passe pas au step suivant.
 
-Button : Google authentication
+Button : Google / Apple authentication
 
 Note : chaque champ "Input password" porte à droite une icône œil qui affiche /
 masque la saisie. Le mot de passe est masqué par défaut.
 
-Note : via le bouton Google, l'identité est fournie par Auth — les deux champs
-mot de passe ne sont pas saisis et ne bloquent pas le passage au step suivant.
+Note : via le bouton Google ou Apple, l'identité est fournie par Auth — les deux
+champs mot de passe ne sont pas saisis et ne bloquent pas le passage au step
+suivant.
+
+Note : une adresse `@privaterelay.appleid.com` (issue de l'option Apple "Masquer
+mon adresse email") est acceptée comme n'importe quelle autre adresse. Un email
+transactionnel envoyé à une telle adresse ne sera cependant pas distribué tant
+que le domaine d'envoi SMTP n'est pas enregistré auprès du service de relais
+d'email privé d'Apple.
 
 Texte d'information : "\* Champs obligatoires"
 
@@ -114,10 +121,13 @@ slider : 75%
 title : "Vos coordonnées"
 subtitle : "Informations relative à votre compte utilisateur"
 
-Note : si l'utilisateur s'est authentifié via le bouton Google de l'étape 2,
-"Nom" et "Prénom" sont prérempli avec les valeurs du profil Google (l'email
-n'est pas concerné, ces champs n'apparaissent pas ici) ; les deux champs
-restent modifiables.
+Note : si l'utilisateur s'est authentifié via le bouton Google ou Apple de
+l'étape 2, "Nom" et "Prénom" sont préremplis avec les valeurs fournies par le
+fournisseur (l'email n'est pas concerné, ces champs n'apparaissent pas ici) ;
+les deux champs restent modifiables. Apple ne transmet le nom (et l'email) qu'à
+la toute première autorisation pour cet identifiant Apple : lors d'une connexion
+Apple ultérieure ces deux champs restent vides et l'utilisateur les saisit
+lui-même ici, exactement comme dans le parcours mot de passe.
 
 ---
 
