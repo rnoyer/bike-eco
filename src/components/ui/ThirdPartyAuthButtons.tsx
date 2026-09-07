@@ -1,11 +1,11 @@
+import AppleAuthButton from "@/components/ui/AppleAuthButton";
+import type { AuthProviderId } from "@/lib/auth/providerEmail";
 import { tokens } from "@/theme/tokens";
 import { Image, type ImageProps } from "expo-image";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-type Provider = "google" | "apple" | "facebook";
-
 const PROVIDERS: {
-  id: Provider;
+  id: AuthProviderId;
   label: string;
   /** Brand mark rendered just before the label. */
   icon: ImageProps["source"];
@@ -18,12 +18,6 @@ const PROVIDERS: {
     enabled: true,
   },
   // {
-  //   id: "apple",
-  //   label: "Apple",
-  //   icon: require("@/assets/images/icons/appleIcon.svg"),
-  //   enabled: false,
-  // },
-  // {
   //   id: "facebook",
   //   label: "Facebook",
   //   icon: require("@/assets/images/icons/facebookIcon.svg"),
@@ -35,7 +29,7 @@ export default function ThirdPartyAuthButtons({
   onPress,
   disabled = false,
 }: {
-  onPress: (provider: Provider) => void;
+  onPress: (provider: AuthProviderId) => void;
   /** Locks every provider while a sign-in round-trip is in flight. */
   disabled?: boolean;
 }) {
@@ -58,6 +52,10 @@ export default function ThirdPartyAuthButtons({
           <Text style={styles.btnText}>{p.label}</Text>
         </TouchableOpacity>
       ))}
+      {/* Apple is not a row entry: iOS must use Apple's own button component,
+          and Android shows none at all, so it is a platform-split component
+          rather than another `PROVIDERS` row. */}
+      <AppleAuthButton onPress={() => onPress("apple")} disabled={disabled} />
     </View>
   );
 }

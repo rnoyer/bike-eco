@@ -6,23 +6,12 @@ import {
   frenchAuthMessage,
   mapPasswordResetError,
 } from "@/lib/auth/authErrors";
-import { signInWithGoogle } from "@/lib/auth/googleSignIn";
-import { mapDataError } from "@/lib/data/dataErrors";
-import { userDoc } from "@/lib/firestore/collections";
-import {
-  WRITE_TIMEOUT_MS,
-  writeWithTimeout,
-} from "@/lib/firestore/writeWithTimeout";
+import type { AuthProviderId } from "@/lib/auth/providerEmail";
+import { signInExistingAccount } from "@/lib/auth/thirdPartySignIn";
 import { useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { tokens } from "@/theme/tokens";
 import { useRouter } from "expo-router";
-import {
-  deleteUser,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signOut,
-} from "firebase/auth";
-import { getDoc } from "firebase/firestore";
+import { sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -54,56 +43,15 @@ export default function SignInScreen() {
     { mapError: frenchAuthMessage, onError: setError },
   );
 
-  const googleSigningIn = useAsyncAction(
-    async () => {
+  const providerSigningIn = useAsyncAction(
+    async (provider: AuthProviderId) => {
       clearMessages();
-      const { isNewUser } = await signInWithGoogle();
-      const user = auth.currentUser;
-      if (!user) {
-        setError("La connexion a échoué. Veuillez réessayer.");
-        return;
-      }
-      // Sign-in is not registration: a Google identity with no users/{uid}
-      // profile has never been through the funnel, and would otherwise sit
-      // authenticated-but-sessionless on this screen (see AuthProvider).
-      let registered: boolean;
-      try {
-        // Firestore buffers a read it cannot reach the server with instead of
-        // rejecting, which would leave this button disabled with no feedback,
-        // so the read is raced against the shared fail-fast timeout.
-        registered = (
-          await writeWithTimeout(
-            () => getDoc(userDoc(user.uid)),
-            () => {},
-            WRITE_TIMEOUT_MS,
-          )
-        ).exists();
-      } catch (e) {
-        // Firestore codes (`unavailable`, `permission-denied`) are not auth
-        // codes: the outer catch would fall through to the SDK's own English
-        // message, so map them here through the data-error counterpart.
-        await signOut(auth);
-        setError(mapDataError((e as { code?: string }).code ?? ""));
-        return;
-      }
-      if (!registered) {
-        // Signing in just to be refused would otherwise leave the Auth record
-        // this very call created behind: no profile, no claims, no password.
-        // Delete it rather than accumulate dormant accounts for everyone who
-        // taps Google without an account. A record that already existed is only
-        // signed out — it may belong to someone mid-registration.
-        if (isNewUser) await deleteUser(user).catch(() => signOut(auth));
-        else await signOut(auth);
-        setError(
-          "Aucun compte Bike-eco n’est associé à ce compte Google. Créez un compte pour continuer.",
-        );
-        return;
-      }
+      await signInExistingAccount(provider);
       // The root AuthGate redirects on the resulting auth-state change.
     },
-    // `signInWithGoogle` throws either a Firebase `auth/*` error or one of our
-    // own already-French errors ("Connexion Google annulée.", an email
-    // mismatch); `frenchAuthMessage` is what tells the two apart.
+    // `signInExistingAccount` throws either a Firebase `auth/*` error or one of
+    // our own already-French errors ("Connexion Apple annulée.", an email
+    // mismatch, an unregistered identity); `frenchAuthMessage` tells them apart.
     { mapError: frenchAuthMessage, onError: setError },
   );
 
@@ -151,10 +99,8 @@ export default function SignInScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {notice ? <Text style={styles.notice}>{notice}</Text> : null}
           <ThirdPartyAuthButtons
-            onPress={(provider) => {
-              if (provider === "google") void googleSigningIn.run();
-            }}
-            disabled={googleSigningIn.pending}
+            onPress={(provider) => void providerSigningIn.run(provider)}
+            disabled={providerSigningIn.pending}
           />
           <View style={styles.dividerRow}>
             <View style={styles.line} />
