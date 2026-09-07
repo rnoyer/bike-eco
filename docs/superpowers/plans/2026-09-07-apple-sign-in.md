@@ -1215,6 +1215,7 @@ The button components, plus extracting the sign-in screen's refuse-an-unregister
 Create `src/components/ui/AppleAuthButton.ios.tsx`:
 
 ```tsx
+import { isAppleSignInAvailable } from "@/lib/auth/appleSignIn";
 import { tokens } from "@/theme/tokens";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useEffect, useState } from "react";
@@ -1245,7 +1246,9 @@ export default function AppleAuthButton({
 
   useEffect(() => {
     let active = true;
-    void AppleAuthentication.isAvailableAsync().then((ok) => {
+    // Through the provider module rather than `expo-apple-authentication`
+    // directly, so the native module has exactly one importer.
+    void isAppleSignInAvailable().then((ok) => {
       if (active) setAvailable(ok);
     });
     return () => {
@@ -1258,21 +1261,18 @@ export default function AppleAuthButton({
   if (!available) return null;
 
   return (
-    <View pointerEvents={disabled ? "none" : "auto"} style={disabled && styles.disabled}>
-      <AppleAuthenticationButtonRow onPress={onPress} />
+    <View
+      pointerEvents={disabled ? "none" : "auto"}
+      style={disabled ? styles.disabled : undefined}
+    >
+      <AppleAuthentication.AppleAuthenticationButton
+        buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+        buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
+        cornerRadius={tokens.radius.md}
+        style={styles.button}
+        onPress={onPress}
+      />
     </View>
-  );
-}
-
-function AppleAuthenticationButtonRow({ onPress }: { onPress: () => void }) {
-  return (
-    <AppleAuthentication.AppleAuthenticationButton
-      buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
-      cornerRadius={tokens.radius.md}
-      style={styles.button}
-      onPress={onPress}
-    />
   );
 }
 
@@ -1578,18 +1578,22 @@ import { signInWithGoogle } from "@/lib/auth/googleSignIn";
 import type { AuthProviderId } from "@/lib/auth/providerEmail";
 ```
 
-Replace the whole `googleSigningIn` action with a provider-parameterised one:
+Add the provider map at **module scope**, directly under the imports and outside `AccountFields` — it closes over nothing, so rebuilding it every render would be pointless churn:
 
 ```ts
-  const SIGN_IN: Record<
-    AuthProviderId,
-    (opts?: { expectedEmail?: string }) => Promise<{
-      prenom: string | null;
-      nom: string | null;
-      email: string | null;
-    }>
-  > = { google: signInWithGoogle, apple: signInWithApple };
+const SIGN_IN: Record<
+  AuthProviderId,
+  (opts?: { expectedEmail?: string }) => Promise<{
+    prenom: string | null;
+    nom: string | null;
+    email: string | null;
+  }>
+> = { google: signInWithGoogle, apple: signInWithApple };
+```
 
+Then replace the whole `googleSigningIn` action inside `AccountFields` with a provider-parameterised one:
+
+```ts
   // Third-party sign-in plus a step advance — the same round-trip `signin.tsx`
   // guards, which this screen used to fire with no feedback and no guard at all.
   const providerSigningIn = useAsyncAction(
@@ -1620,8 +1624,6 @@ Replace the whole `googleSigningIn` action with a provider-parameterised one:
 ```
 
 Note the dialog title changes from `"Connexion Google"` to `"Connexion"`: the row now offers two providers and the message itself already names the one that failed.
-
-Move the `SIGN_IN` map above the component (module scope) rather than rebuilding it on every render — place it just under the imports, outside `AccountFields`.
 
 - [ ] **Step 2: Point the button row at it**
 
