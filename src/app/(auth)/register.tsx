@@ -63,7 +63,7 @@ export default function RegisterScreen() {
       },
     });
 
-  // Signing out is a network round-trip in the Google path, and it is what
+  // Signing out is a network round-trip in the provider path, and it is what
   // "Retour à l'accueil" waits on before navigating.
   const goingHome = useAsyncAction(
     async () => {

@@ -6,8 +6,14 @@ import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
 import type { B2bCompanyRegistrationForm } from "@/features/b2b-registration/schema";
+import { signInWithApple } from "@/lib/auth/appleSignIn";
+import type {
+  ProviderSignInOptions,
+  ProviderSignInResult,
+} from "@/lib/auth/appleSignInContract";
 import { frenchAuthMessage } from "@/lib/auth/authErrors";
 import { signInWithGoogle } from "@/lib/auth/googleSignIn";
+import type { AuthProviderId } from "@/lib/auth/providerEmail";
 import { digitsOnly } from "@/lib/forms/transforms";
 import { REGION_OPTIONS } from "@/lib/navigation/regionOptions";
 import { alertDialog } from "@/lib/ui/dialog";
@@ -18,7 +24,12 @@ import {
   useProviderAuthReporter,
 } from "./providerAuth";
 
-/** Step "Votre compte": email + password + Google. `emailDisabled`
+const SIGN_IN: Record<
+  AuthProviderId,
+  (opts?: ProviderSignInOptions) => Promise<ProviderSignInResult>
+> = { google: signInWithGoogle, apple: signInWithApple };
+
+/** Step "Votre compte": email + password + Google/Apple. `emailDisabled`
  *  prefills+locks the email for the invited-registration flow. */
 export function AccountFields({
   emailDisabled = false,
@@ -28,14 +39,14 @@ export function AccountFields({
   const form = useFormContext<B2bCompanyRegistrationForm>();
   const { onProviderProfile } = useProviderAuthReporter();
 
-  // Google sign-in plus a step advance — the same round-trip `signin.tsx`
+  // Third-party sign-in plus a step advance — the same round-trip `signin.tsx`
   // guards, which this screen used to fire with no feedback and no guard at all.
-  const googleSigningIn = useAsyncAction(
-    async () => {
+  const providerSigningIn = useAsyncAction(
+    async (provider: AuthProviderId) => {
       // Invited flow only (`emailDisabled` locks the email to the invitation):
       // a mismatch throws, so `onProviderProfile` below is never reached and the
       // funnel stays on this step instead of failing at the final submit.
-      const profile = await signInWithGoogle({
+      const profile = await SIGN_IN[provider]({
         expectedEmail: emailDisabled ? form.getValues("email") : undefined,
       });
       form.setValue("prenom", profile.prenom ?? "");
@@ -43,16 +54,16 @@ export function AccountFields({
       if (!emailDisabled) form.setValue("email", profile.email ?? "");
       // Provider flows use the authenticated identity from Auth, so the account
       // step should not block on a manual password. Seed a non-empty placeholder
-      // value so the shared step-validator can advance to the coordinates step.
-      // Both fields get the same value — the schema's equality check runs on
-      // this step, so seeding only `password` would block the Google path.
+      // so the shared step-validator can advance to the coordinates step. Both
+      // fields get the same value — the schema's equality check runs on this
+      // step, so seeding only `password` would block the provider path.
       form.setValue("password", PROVIDER_PASSWORD_PLACEHOLDER);
       form.setValue("confirmPassword", PROVIDER_PASSWORD_PLACEHOLDER);
-      await onProviderProfile(profile, "google");
+      await onProviderProfile(profile, provider);
     },
     {
       mapError: frenchAuthMessage,
-      onError: (message) => alertDialog("Connexion Google", message),
+      onError: (message) => alertDialog("Connexion", message),
     },
   );
 
@@ -85,10 +96,8 @@ export function AccountFields({
         returnKeyType="done"
       />
       <ThirdPartyAuthButtons
-        onPress={(provider) => {
-          if (provider === "google") void googleSigningIn.run();
-        }}
-        disabled={googleSigningIn.pending}
+        onPress={(provider) => void providerSigningIn.run(provider)}
+        disabled={providerSigningIn.pending}
       />
       <Text style={styles.note}>* Champs obligatoires</Text>
     </>

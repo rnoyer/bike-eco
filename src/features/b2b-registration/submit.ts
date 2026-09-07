@@ -7,10 +7,10 @@ import type { B2bCompanyRegistrationForm } from "./schema";
  * (status "pending", role/companyId set as server claims). The client is
  * intentionally NOT signed in afterwards — the applicant is pending and has
  * nothing to do until validated, so the confirmation screen is the endpoint
- * of this flow, not an active session. The Google path is handled directly
- * in `register.tsx` (the user is already signed in by the time step 2
- * completes, so `registerCompany` is called with `method: "google"` and no
- * password).
+ * of this flow, not an active session. The provider path (Google or Apple) is
+ * handled directly in `register.tsx` (the user is already signed in by the
+ * time step 2 completes, so `registerCompany` is called with the provider's
+ * `method` — `"google"` or `"apple"` — and no password).
  */
 export async function submitCompanyRegistration(
   values: B2bCompanyRegistrationForm
