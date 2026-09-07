@@ -8,7 +8,7 @@ import {
   signInWithCredential,
 } from "firebase/auth";
 import { auth } from "../../../firebaseConfig";
-import { emailsMatch, GoogleEmailMismatchError } from "./googleEmail";
+import { emailsMatch, ProviderEmailMismatchError } from "./providerEmail";
 
 // webClientId comes from the Firebase console (owner setup); read from env so it
 // is not hardcoded. iosClientId is only needed on iOS.
@@ -43,7 +43,7 @@ export async function signInWithGoogle(opts?: {
   if (opts?.expectedEmail && !emailsMatch(user.email, opts.expectedEmail)) {
     // Drop the Google session too, so the next attempt re-opens the chooser.
     await GoogleSignin.signOut();
-    throw new GoogleEmailMismatchError(user.email, opts.expectedEmail);
+    throw new ProviderEmailMismatchError("google", user.email, opts.expectedEmail);
   }
   const cred = await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
   return {

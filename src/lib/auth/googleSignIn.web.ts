@@ -6,7 +6,7 @@ import {
   signOut,
 } from "firebase/auth";
 import { auth } from "../../../firebaseConfig";
-import { emailsMatch, GoogleEmailMismatchError } from "./googleEmail";
+import { emailsMatch, ProviderEmailMismatchError } from "./providerEmail";
 
 export async function signInWithGoogle(opts?: {
   /** Invited registration: the account picked must be the invitation's address. */
@@ -28,7 +28,11 @@ export async function signInWithGoogle(opts?: {
   if (opts?.expectedEmail && !emailsMatch(result.user.email, opts.expectedEmail)) {
     if (isNewUser) await deleteUser(result.user);
     else await signOut(auth);
-    throw new GoogleEmailMismatchError(result.user.email, opts.expectedEmail);
+    throw new ProviderEmailMismatchError(
+      "google",
+      result.user.email,
+      opts.expectedEmail,
+    );
   }
   // Web only gives a single displayName; split best-effort into prénom / nom.
   const parts = (result.user.displayName ?? "").trim().split(/\s+/);
