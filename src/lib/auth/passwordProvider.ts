@@ -6,8 +6,9 @@ interface WithProviders {
 
 /** True when the account actually has a password credential.
  *
- *  A Google-only account has none: sending it a reset link is meaningless, so
- *  the "Changer mon mot de passe" action is hidden for those users. */
+ *  An account signed up with Google or Apple only has none: sending it a
+ *  reset link is meaningless, so the "Changer mon mot de passe" action is
+ *  hidden for those users. */
 export function hasPasswordProvider(user: WithProviders | null): boolean {
   return user?.providerData.some((p) => p.providerId === "password") ?? false;
 }

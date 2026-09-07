@@ -5,12 +5,15 @@ import { auth } from "../../../firebaseConfig";
 import { mapDataError } from "../data/dataErrors";
 import { userDoc } from "../firestore/collections";
 import { WRITE_TIMEOUT_MS, writeWithTimeout } from "../firestore/writeWithTimeout";
-import type { ProviderSignInOptions, ProviderSignInResult } from "./appleSignInContract";
+import type { ProviderSignInOptions, ProviderSignInResult } from "./providerSignInContract";
 import { signInWithApple } from "./appleSignIn";
 import { signInWithGoogle } from "./googleSignIn";
 import { PROVIDER_LABELS, type AuthProviderId } from "./providerEmail";
 
-const SIGN_IN: Record<
+/** Dispatch table from provider id to its sign-in function. Shared with
+ *  `fields.tsx`, which drives the same round-trip from the registration
+ *  funnel's account step. */
+export const PROVIDER_SIGN_IN: Record<
   AuthProviderId,
   (opts?: ProviderSignInOptions) => Promise<ProviderSignInResult>
 > = {
@@ -35,7 +38,7 @@ const SIGN_IN: Record<
 export async function signInExistingAccount(
   provider: AuthProviderId,
 ): Promise<void> {
-  const { isNewUser } = await SIGN_IN[provider]();
+  const { isNewUser } = await PROVIDER_SIGN_IN[provider]();
   const user = auth.currentUser;
   if (!user) throw new Error("La connexion a échoué. Veuillez réessayer.");
 
@@ -55,7 +58,12 @@ export async function signInExistingAccount(
     // Firestore codes (`unavailable`, `permission-denied`) are not auth codes:
     // `frenchAuthMessage` would fall through to the SDK's English message, so
     // they are mapped here through the data-error counterpart.
-    await signOut(auth);
+    //
+    // A read failure must not strand the record this very call created: same
+    // rule as the not-registered branch below. Only an account this call created
+    // may be deleted — a pre-existing one belongs to a real user.
+    if (isNewUser) await deleteUser(user).catch(() => signOut(auth));
+    else await signOut(auth);
     throw new Error(mapDataError((e as { code?: string }).code ?? ""));
   }
 

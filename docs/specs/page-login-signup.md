@@ -49,8 +49,11 @@ masque la saisie. Le mot de passe est masqué par défaut.
   fournisseur choisi. Le compte Firebase Authentication que cette tentative vient
   de créer est supprimé (aucun compte parasite ne subsiste) ; un compte
   préexistant est seulement déconnecté. Un abandon de la fenêtre Apple affiche
-  "Connexion Apple annulée." Les boutons sont désactivés ensemble pendant
-  l'aller-retour, quel que soit celui qui l'a déclenché.
+  "Connexion Apple annulée." sur iOS ; sur web la fermeture du popup lève
+  `auth/popup-closed-by-user`, un code que `authErrors.ts` ne mappe pas, donc le
+  message générique "La connexion a échoué. Veuillez réessayer." s'affiche à la
+  place. Les boutons sont désactivés ensemble pendant l'aller-retour, quel que
+  soit celui qui l'a déclenché.
 
   La connexion Apple suppose en plus que le fournisseur Apple soit activé dans la
   console Firebase et, pour le popup web spécifiquement, qu'un Apple Services ID

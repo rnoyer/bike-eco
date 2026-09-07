@@ -12,7 +12,7 @@ import { appleIdTokenEmail } from "./appleIdToken";
 import type {
   ProviderSignInOptions,
   ProviderSignInResult,
-} from "./appleSignInContract";
+} from "./providerSignInContract";
 import { emailsMatch, ProviderEmailMismatchError } from "./providerEmail";
 
 /** iOS 13+ on a device signed in to iCloud with 2FA. False everywhere else. */

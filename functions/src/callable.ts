@@ -102,9 +102,9 @@ export function authedCall<I, R>(
 
 /**
  * A callable reachable while signed out — the registration and invitation flows,
- * which run before the user has an account (or, for a Google sign-up, with a
- * half-built one). `run` gets whatever identity the request happened to carry;
- * both fields are null for a fully anonymous caller.
+ * which run before the user has an account (or, for a Google or Apple sign-up,
+ * with a half-built one). `run` gets whatever identity the request happened to
+ * carry; both fields are null for a fully anonymous caller.
  */
 export function publicCall<I, R>(
   schema: ZodType<I>,

@@ -38,8 +38,8 @@ interface AuthState {
   /**
    * Re-reads the (force-refreshed) token + profile and rebuilds the session.
    * Needed after flows where claims are set server-side *after* sign-in
-   * (e.g. Google registration), since `onAuthStateChanged` does not re-fire
-   * when custom claims change.
+   * (e.g. Google or Apple registration), since `onAuthStateChanged` does not
+   * re-fire when custom claims change.
    */
   refreshSession: () => Promise<void>;
 }
@@ -59,7 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Force-refreshes the token, re-parses claims, reloads the users/{uid}
   // profile doc, and rebuilds the session. Called from the auth-state
   // listener on every sign-in, and manually via refreshSession() after flows
-  // (e.g. Google registration) where server-set claims land after sign-in.
+  // (e.g. Google or Apple registration) where server-set claims land after
+  // sign-in.
   async function loadSession(user: User) {
     const gen = ++generationRef.current;
     setFirebaseUser(user);
@@ -74,9 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const claims = parseClaims(token.claims as Record<string, unknown>);
       const profile = (snap.data() as AppUser | undefined) ?? null;
       // No users/{uid} profile doc yet (e.g. mid-registration) → session stays null,
-      // which currently routes to sign-in via resolveAuthRoute. The Google/registration
-      // slice should instead route a claimless/profileless authenticated user to the
-      // pending gate; deferred to that slice, not changed here.
+      // which currently routes to sign-in via resolveAuthRoute. The third-party
+      // registration slice (Google or Apple) should instead route a claimless/
+      // profileless authenticated user to the pending gate; deferred to that
+      // slice, not changed here.
       setSession(profile ? buildSessionUser(user.uid, claims, profile) : null);
     } catch (err) {
       // Without this the rejection escapes into the async onAuthStateChanged
@@ -140,9 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   //
   // Keyed on the session's uid, not on `firebaseUser`, and so armed only once a
   // profile has actually been read: an authenticated user with *no* profile doc
-  // is the normal mid-registration state (Google sign-in happens before the
-  // callable creates `users/{uid}`), and signing that user out would break
-  // registration instead of fixing anything.
+  // is the normal mid-registration state (Google or Apple sign-in happens
+  // before the callable creates `users/{uid}`), and signing that user out
+  // would break registration instead of fixing anything.
   const uid = session?.id;
   // Read inside the snapshot callback rather than closed over, so the listener
   // is not torn down and re-armed every time the session changes.

@@ -13,7 +13,7 @@
 import type {
   ProviderSignInOptions,
   ProviderSignInResult,
-} from "./appleSignInContract";
+} from "./providerSignInContract";
 
 export async function isAppleSignInAvailable(): Promise<boolean> {
   return false;

@@ -26,7 +26,7 @@ From top to bottom
 - Section "Actions sur mon compte" :
   - "Se déconnecter" (primary).
   - "Changer mon mot de passe" (outlined) — **hidden** for an account with no password credential
-    (signed up with Google only), which has no password to reset. Tapping it asks to confirm
+    (signed up with Google or Apple only), which has no password to reset. Tapping it asks to confirm
     ("Un lien de réinitialisation va être envoyé à [email]. Continuer ?" — Annuler / Envoyer), then
     triggers Firebase's password-reset workflow (`sendPasswordResetEmail` on the account's email).
     The emailed link opens Firebase's hosted "new password" page; the app has no reset screen.

@@ -1,11 +1,13 @@
 /**
- * The contract the three `appleSignIn.*` platform variants share.
+ * The shared contract every third-party sign-in path implements —
+ * `signInWithGoogle` and the three `appleSignIn.*` platform variants alike.
  *
- * Metro picks exactly one of `appleSignIn.ios.ts`, `.web.ts` or `.ts` at build
- * time, and `tsc` checks each in isolation — nothing cross-checks them against
- * each other, and a consumer importing `@/lib/auth/appleSignIn` type-resolves to
- * the plain (Android) variant. Referencing these aliases from all three makes a
- * drift in the option or result SHAPE a compile error.
+ * Apple is the case that motivated it: Metro picks exactly one of
+ * `appleSignIn.ios.ts`, `.web.ts` or `.ts` at build time, and `tsc` checks each
+ * in isolation — nothing cross-checks them against each other, and a consumer
+ * importing `@/lib/auth/appleSignIn` type-resolves to the plain (Android)
+ * variant. Referencing these aliases from all three makes a drift in the
+ * option or result SHAPE a compile error.
  *
  * The residual gap this does NOT close: a variant that omits an export
  * altogether still compiles. That case is covered by the filename/export check

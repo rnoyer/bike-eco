@@ -160,7 +160,7 @@ export default function AccountScreen() {
             loading={signingOut.pending}
             onPress={() => void signingOut.run()}
           />
-          {/* Hidden for Google-only accounts: they have no password to reset. */}
+          {/* Hidden for accounts signed up with Google or Apple only: they have no password to reset. */}
           {email && hasPasswordProvider(firebaseUser) ? (
             <Button
               variant="outlined"

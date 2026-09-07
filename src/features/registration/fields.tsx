@@ -6,14 +6,9 @@ import ControlledDropdown from "@/components/form/ControlledDropdown";
 import ControlledField from "@/components/form/ControlledField";
 import ThirdPartyAuthButtons from "@/components/ui/ThirdPartyAuthButtons";
 import type { B2bCompanyRegistrationForm } from "@/features/b2b-registration/schema";
-import { signInWithApple } from "@/lib/auth/appleSignIn";
-import type {
-  ProviderSignInOptions,
-  ProviderSignInResult,
-} from "@/lib/auth/appleSignInContract";
 import { frenchAuthMessage } from "@/lib/auth/authErrors";
-import { signInWithGoogle } from "@/lib/auth/googleSignIn";
 import type { AuthProviderId } from "@/lib/auth/providerEmail";
+import { PROVIDER_SIGN_IN } from "@/lib/auth/thirdPartySignIn";
 import { digitsOnly } from "@/lib/forms/transforms";
 import { REGION_OPTIONS } from "@/lib/navigation/regionOptions";
 import { alertDialog } from "@/lib/ui/dialog";
@@ -23,11 +18,6 @@ import {
   PROVIDER_PASSWORD_PLACEHOLDER,
   useProviderAuthReporter,
 } from "./providerAuth";
-
-const SIGN_IN: Record<
-  AuthProviderId,
-  (opts?: ProviderSignInOptions) => Promise<ProviderSignInResult>
-> = { google: signInWithGoogle, apple: signInWithApple };
 
 /** Step "Votre compte": email + password + Google/Apple. `emailDisabled`
  *  prefills+locks the email for the invited-registration flow. */
@@ -46,7 +36,7 @@ export function AccountFields({
       // Invited flow only (`emailDisabled` locks the email to the invitation):
       // a mismatch throws, so `onProviderProfile` below is never reached and the
       // funnel stays on this step instead of failing at the final submit.
-      const profile = await SIGN_IN[provider]({
+      const profile = await PROVIDER_SIGN_IN[provider]({
         expectedEmail: emailDisabled ? form.getValues("email") : undefined,
       });
       form.setValue("prenom", profile.prenom ?? "");

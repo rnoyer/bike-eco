@@ -17,6 +17,8 @@ const PROVIDERS: {
     icon: require("@/assets/images/icons/googleIcon.svg"),
     enabled: true,
   },
+  // Re-enabling Facebook also needs "facebook" added to `AuthProviderId` in
+  // `@/lib/auth/providerEmail` — this `id` does not typecheck on its own.
   // {
   //   id: "facebook",
   //   label: "Facebook",

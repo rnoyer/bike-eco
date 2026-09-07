@@ -9,7 +9,7 @@ import { auth } from "../../../firebaseConfig";
 import type {
   ProviderSignInOptions,
   ProviderSignInResult,
-} from "./appleSignInContract";
+} from "./providerSignInContract";
 import { emailsMatch, ProviderEmailMismatchError } from "./providerEmail";
 
 /** The popup flow works in any browser; there is no device capability to probe. */
