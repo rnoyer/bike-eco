@@ -6,16 +6,20 @@ const profile = {
   telephone: z.string().regex(/^\d{10}$/),
 };
 
-// Company signup: password mode carries the new account's email + password.
+// Company signup: password mode carries the new account's email + password. A
+// third-party mode carries neither — the identity already exists in Auth and the
+// callable reads it off the request's authentication.
 const registerCredential = z.discriminatedUnion("method", [
   z.object({ method: z.literal("password"), email: z.email(), password: z.string().min(8) }),
   z.object({ method: z.literal("google") }),
+  z.object({ method: z.literal("apple") }),
 ]);
 
 // Invited signup: the email comes from the invitation, so password mode needs only a password.
 const acceptCredential = z.discriminatedUnion("method", [
   z.object({ method: z.literal("password"), password: z.string().min(8) }),
   z.object({ method: z.literal("google") }),
+  z.object({ method: z.literal("apple") }),
 ]);
 
 export const registerCompanySchema = z

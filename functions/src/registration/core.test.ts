@@ -269,3 +269,44 @@ test("acceptInvite on a back-office invitation creates an active, non-admin team
   });
   expect(d.calls.invitations["inv2"]).toBe("deleted");
 });
+
+test("registerCompany (apple) uses the authed uid + email, no createUser", async () => {
+  const { email: _email, password: _password, ...rest } = companyInput;
+  const d = fakeDeps({ createUser: async () => { throw new Error("must not be called"); } });
+  await registerCompanyCore({ ...rest, method: "apple" }, "uid_a", "a@x.fr", d);
+  expect(d.calls.users["uid_a"]).toMatchObject({ role: "b2b", status: "pending", email: "a@x.fr" });
+});
+
+test("apple mode with no auth names Apple, not Google, in the error", async () => {
+  const { email: _email, password: _password, ...rest } = companyInput;
+  await expect(
+    registerCompanyCore({ ...rest, method: "apple" }, null, null, fakeDeps()),
+  ).rejects.toMatchObject({
+    code: "unauthenticated",
+    message: "Connexion Apple requise.",
+  });
+});
+
+test("acceptInvite (apple) names Apple in the mismatch error", async () => {
+  const inv = { id: "inv1", email: "new@x.fr", role: "b2b" as const, companyId: "comp_1", companyName: "G", tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000 };
+  const d = fakeDeps({ findInvitationByHash: async () => inv });
+  await expect(
+    acceptInviteCore(
+      { method: "apple", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000" },
+      "uid_a",
+      "other@x.fr",
+      d,
+    ),
+  ).rejects.toMatchObject({
+    code: "permission-denied",
+    message: "Ce compte Apple ne correspond pas à l'invitation.",
+  });
+});
+
+test("acceptInvite (apple) with a matching email creates an active user", async () => {
+  const inv = { id: "inv1", email: "New@x.fr", role: "b2b" as const, companyId: "comp_1", companyName: "G", tokenHash: hashInviteCode("A1B2C3"), expiresAt: 2_000_000 };
+  const d = fakeDeps({ findInvitationByHash: async () => inv, createUser: async () => { throw new Error("must not be called"); } });
+  await acceptInviteCore({ method: "apple", code: "A1B2C3", nom: "N", prenom: "P", telephone: "0600000000" }, "uid_a", "new@x.fr", d);
+  expect(d.calls.users["uid_a"]).toMatchObject({ role: "b2b", companyId: "comp_1", status: "active" });
+  expect(d.calls.invitations["inv1"]).toBe("deleted");
+});

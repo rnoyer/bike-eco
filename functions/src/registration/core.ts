@@ -59,6 +59,12 @@ function profileDoc(
   };
 }
 
+/** The provider's name in user-facing copy. Only reached in third-party mode:
+ *  `input.method` has already been narrowed away from "password". */
+function providerLabel(method: "google" | "apple"): string {
+  return method === "apple" ? "Apple" : "Google";
+}
+
 export async function registerCompanyCore(
   input: RegisterCompanyInput,
   authUid: string | null,
@@ -74,7 +80,9 @@ export async function registerCompanyCore(
     uid = await deps.createUser(input.email, input.password);
     email = input.email;
   } else {
-    if (!authUid || !authEmail) throw new RegError("unauthenticated", "Connexion Google requise.");
+    if (!authUid || !authEmail) {
+      throw new RegError("unauthenticated", `Connexion ${providerLabel(input.method)} requise.`);
+    }
     uid = authUid;
     email = authEmail;
   }
@@ -159,9 +167,12 @@ export async function acceptInviteCore(
   if (input.method === "password") {
     uid = await deps.createUser(inv.email, input.password!);
   } else {
-    if (!authUid || !authEmail) throw new RegError("unauthenticated", "Connexion Google requise.");
+    const label = providerLabel(input.method);
+    if (!authUid || !authEmail) {
+      throw new RegError("unauthenticated", `Connexion ${label} requise.`);
+    }
     if (authEmail.toLowerCase() !== inv.email.toLowerCase()) {
-      throw new RegError("permission-denied", "Ce compte Google ne correspond pas à l'invitation.");
+      throw new RegError("permission-denied", `Ce compte ${label} ne correspond pas à l'invitation.`);
     }
     uid = authUid;
   }

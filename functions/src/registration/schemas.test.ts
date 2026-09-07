@@ -91,3 +91,30 @@ test("resolveInvite needs a non-empty code", () => {
   expect(resolveInviteSchema.safeParse({ code: "A1B2C3" }).success).toBe(true);
   expect(resolveInviteSchema.safeParse({ code: "" }).success).toBe(false);
 });
+
+test("apple company registration does not require email/password", () => {
+  const { email: _email, password: _password, ...rest } = base;
+  expect(registerCompanySchema.safeParse({ ...rest, method: "apple" }).success).toBe(true);
+});
+
+test("a stray password is stripped in provider mode, never forwarded to the core", () => {
+  // Not rejected — Zod strips unknown keys — but stripped is what protects the
+  // core: `registerCompanyCore` reads `input.password` only in the password
+  // branch, and after parsing there is no such field to read.
+  const { email: _email, ...rest } = base;
+  for (const method of ["google", "apple"] as const) {
+    const parsed = registerCompanySchema.safeParse({ ...rest, method });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect("password" in parsed.data).toBe(false);
+  }
+});
+
+test("apple invited registration does not require a password", () => {
+  const { password: _password, ...rest } = acceptBase;
+  expect(acceptInviteSchema.safeParse({ ...rest, method: "apple" }).success).toBe(true);
+});
+
+test("an unknown method is rejected", () => {
+  const { email: _email, password: _password, ...rest } = base;
+  expect(registerCompanySchema.safeParse({ ...rest, method: "facebook" }).success).toBe(false);
+});
