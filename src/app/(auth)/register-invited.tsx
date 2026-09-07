@@ -13,8 +13,9 @@ import {
 } from "@/features/b2b-invited-registration/schema";
 import { invitedRegistrationSteps } from "@/features/b2b-invited-registration/steps";
 import { submitInvitedRegistration } from "@/features/b2b-invited-registration/submit";
-import { GoogleAuthProvider } from "@/features/registration/googleAuth";
+import { ProviderAuthProvider } from "@/features/registration/providerAuth";
 import { frenchAuthMessage } from "@/lib/auth/authErrors";
+import type { AuthProviderId } from "@/lib/auth/providerEmail";
 import { useSession } from "@/lib/data/useSession";
 import { useStepForm } from "@/lib/forms/useStepForm";
 import { alertDialog } from "@/lib/ui/dialog";
@@ -22,7 +23,7 @@ import { frenchMessage, useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { auth } from "../../../firebaseConfig";
 
 type CompletedInvite = {
-  method: "password" | "google";
+  method: "password" | "google" | "apple";
   email: string;
   password: string;
 };
@@ -36,7 +37,8 @@ export default function RegisterInvitedScreen() {
     organisationName?: string;
   }>();
   const [submitted, setSubmitted] = useState(false);
-  const usedGoogle = useRef(false);
+  // Which third-party provider signed the invitee in on step 1, if any.
+  const usedProvider = useRef<AuthProviderId | null>(null);
   const completed = useRef<CompletedInvite | null>(null);
   const { refreshSession } = useSession();
 
@@ -73,12 +75,12 @@ export default function RegisterInvitedScreen() {
           return;
         }
         try {
-          if (usedGoogle.current) {
-            // Google mode: already signed in during step 1 (AccountFields); the
+          if (usedProvider.current) {
+            // Provider mode: already signed in during step 1 (AccountFields); the
             // callable validates the invite + sets claims from that identity.
-            await submitInvitedRegistration({ ...values, code }, "google");
+            await submitInvitedRegistration({ ...values, code }, usedProvider.current);
             completed.current = {
-              method: "google",
+              method: usedProvider.current,
               email: values.email,
               password: values.password,
             };
@@ -100,7 +102,7 @@ export default function RegisterInvitedScreen() {
     });
 
   // "Aller à l'accueil" is not a navigation: it signs the user in (password
-  // mode) or force-refreshes the token and re-reads the profile (Google mode)
+  // mode) or force-refreshes the token and re-reads the profile (provider mode)
   // before it routes. Both are round-trips the button has to show.
   const goingToDashboard = useAsyncAction(
     async () => {
@@ -148,10 +150,10 @@ export default function RegisterInvitedScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <GoogleAuthProvider
+      <ProviderAuthProvider
         value={{
-          onGoogleProfile: async () => {
-            usedGoogle.current = true;
+          onProviderProfile: async (_profile, provider) => {
+            usedProvider.current = provider;
             await next();
           },
         }}
@@ -174,7 +176,7 @@ export default function RegisterInvitedScreen() {
             {steps[step].render()}
           </FormLayout>
         </FormProvider>
-      </GoogleAuthProvider>
+      </ProviderAuthProvider>
     </>
   );
 }

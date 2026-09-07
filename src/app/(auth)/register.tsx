@@ -13,8 +13,9 @@ import {
 } from "@/features/b2b-registration/schema";
 import { B2B_COMPANY_REGISTRATION_STEPS } from "@/features/b2b-registration/steps";
 import { submitCompanyRegistration } from "@/features/b2b-registration/submit";
-import { GoogleAuthProvider } from "@/features/registration/googleAuth";
+import { ProviderAuthProvider } from "@/features/registration/providerAuth";
 import { frenchAuthMessage } from "@/lib/auth/authErrors";
+import type { AuthProviderId } from "@/lib/auth/providerEmail";
 import { callRegisterCompany } from "@/lib/data/registration";
 import { useStepForm } from "@/lib/forms/useStepForm";
 import { alertDialog } from "@/lib/ui/dialog";
@@ -24,7 +25,9 @@ import { auth } from "../../../firebaseConfig";
 export default function RegisterScreen() {
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
-  const usedGoogle = useRef(false);
+  // Which third-party provider signed the applicant in on step 2, if any. The
+  // screen decides the submission's mode from this, never from ambient auth.
+  const usedProvider = useRef<AuthProviderId | null>(null);
 
   const { form, step, isFirst, isLast, meta, next, prev, submitting } =
     useStepForm<B2bCompanyRegistrationForm>({
@@ -33,12 +36,12 @@ export default function RegisterScreen() {
       defaultValues: B2B_COMPANY_REGISTRATION_DEFAULTS,
       onSubmit: async (values) => {
         try {
-          if (usedGoogle.current) {
-            // Google mode: already signed in during step 2 (AccountFields);
+          if (usedProvider.current) {
+            // Provider mode: already signed in during step 2 (AccountFields);
             // the callable sets claims + writes the company/user docs from
             // the existing Firebase Auth identity.
             await callRegisterCompany({
-              method: "google",
+              method: usedProvider.current,
               siret: values.siret,
               tva: values.tva || undefined,
               companyName: values.companyName,
@@ -100,10 +103,10 @@ export default function RegisterScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <GoogleAuthProvider
+      <ProviderAuthProvider
         value={{
-          onGoogleProfile: async () => {
-            usedGoogle.current = true;
+          onProviderProfile: async (_profile, provider) => {
+            usedProvider.current = provider;
             await next();
           },
         }}
@@ -124,7 +127,7 @@ export default function RegisterScreen() {
             {B2B_COMPANY_REGISTRATION_STEPS[step].render()}
           </FormLayout>
         </FormProvider>
-      </GoogleAuthProvider>
+      </ProviderAuthProvider>
     </>
   );
 }

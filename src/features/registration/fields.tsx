@@ -13,7 +13,10 @@ import { REGION_OPTIONS } from "@/lib/navigation/regionOptions";
 import { alertDialog } from "@/lib/ui/dialog";
 import { useAsyncAction } from "@/lib/ui/useAsyncAction";
 import { tokens } from "@/theme/tokens";
-import { useGoogleAuthReporter } from "./googleAuth";
+import {
+  PROVIDER_PASSWORD_PLACEHOLDER,
+  useProviderAuthReporter,
+} from "./providerAuth";
 
 /** Step "Votre compte": email + password + Google. `emailDisabled`
  *  prefills+locks the email for the invited-registration flow. */
@@ -23,14 +26,14 @@ export function AccountFields({
   emailDisabled?: boolean;
 }) {
   const form = useFormContext<B2bCompanyRegistrationForm>();
-  const { onGoogleProfile } = useGoogleAuthReporter();
+  const { onProviderProfile } = useProviderAuthReporter();
 
   // Google sign-in plus a step advance — the same round-trip `signin.tsx`
   // guards, which this screen used to fire with no feedback and no guard at all.
   const googleSigningIn = useAsyncAction(
     async () => {
       // Invited flow only (`emailDisabled` locks the email to the invitation):
-      // a mismatch throws, so `onGoogleProfile` below is never reached and the
+      // a mismatch throws, so `onProviderProfile` below is never reached and the
       // funnel stays on this step instead of failing at the final submit.
       const profile = await signInWithGoogle({
         expectedEmail: emailDisabled ? form.getValues("email") : undefined,
@@ -38,14 +41,14 @@ export function AccountFields({
       form.setValue("prenom", profile.prenom ?? "");
       form.setValue("nom", profile.nom ?? "");
       if (!emailDisabled) form.setValue("email", profile.email ?? "");
-      // Google flow uses the authenticated identity from Auth, so the account
+      // Provider flows use the authenticated identity from Auth, so the account
       // step should not block on a manual password. Seed a non-empty placeholder
       // value so the shared step-validator can advance to the coordinates step.
       // Both fields get the same value — the schema's equality check runs on
       // this step, so seeding only `password` would block the Google path.
-      form.setValue("password", "google-auth-placeholder");
-      form.setValue("confirmPassword", "google-auth-placeholder");
-      await onGoogleProfile(profile);
+      form.setValue("password", PROVIDER_PASSWORD_PLACEHOLDER);
+      form.setValue("confirmPassword", PROVIDER_PASSWORD_PLACEHOLDER);
+      await onProviderProfile(profile, "google");
     },
     {
       mapError: frenchAuthMessage,

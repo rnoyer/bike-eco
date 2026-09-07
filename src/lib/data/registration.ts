@@ -2,7 +2,7 @@ import { call } from "./callable";
 import type { Region, UserRole } from "@/lib/firestore/schema";
 
 export interface RegisterCompanyPayload {
-  method: "password" | "google";
+  method: "password" | "google" | "apple";
   siret: string;
   tva?: string; // optional VAT number — "FR" + key + the SIRET's SIREN
   companyName: string;
@@ -15,7 +15,7 @@ export interface RegisterCompanyPayload {
   password?: string;
 }
 export interface AcceptInvitePayload {
-  method: "password" | "google";
+  method: "password" | "google" | "apple";
   code: string;
   nom: string;
   prenom: string;
