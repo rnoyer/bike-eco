@@ -43,7 +43,7 @@ masque la saisie. Le mot de passe est masqué par défaut.
 
   La connexion, quel que soit le fournisseur, est réservée aux comptes déjà
   inscrits : si l'identité (Google ou Apple) n'a pas de document `users/{uid}`,
-  elle n'a jamais suivi le funnel — le message "Aucun compte Bike-eco n'est
+  elle n'a jamais suivi le funnel — le message "Aucun compte Bike-eco n’est
   associé à ce compte Google. Créez un compte pour continuer." ou "… à ce compte
   Apple. Créez un compte pour continuer." s'affiche sous le formulaire, selon le
   fournisseur choisi. Le compte Firebase Authentication que cette tentative vient

@@ -67,9 +67,10 @@ only ever affects how fast the UI catches up, never authorization.
 ## Claims set after sign-in need `refreshSession()`
 
 `onAuthStateChanged` does **not** re-fire when custom claims change. Any flow where the
-server sets claims *after* the user is already signed in (Google registration today;
-back-office team-member creation next) must call `refreshSession()` from `useAuth()`, or
-the session keeps the pre-claims role and the guard routes to the wrong place.
+server sets claims *after* the user is already signed in (third-party registration —
+Google or Apple — today; back-office team-member creation next) must call
+`refreshSession()` from `useAuth()`, or the session keeps the pre-claims role and the
+guard routes to the wrong place.
 
 `AuthProvider` guards session loads with a `generationRef` counter: a later load
 invalidates an in-flight earlier one so a slow read never clobbers a fresher result. Any
@@ -173,10 +174,10 @@ otherwise. Never leave a refused identity signed in either way.
 
 **Cancellation must be rethrown without its `code`.** Apple's cancellation carries
 `code: "ERR_REQUEST_CANCELED"`, which is not an `auth/*` code, so `frenchAuthMessage`
-would fall through to the generic `"La connexion a échoué."` for what is just a tap on
-Annuler. Rethrow a bare `new Error("Connexion Apple annulée.")` — the already-French
-contract `authErrors.ts` documents, which `googleSignIn.ts` also honours for its own
-cancellation.
+would fall through to the generic `"La connexion a échoué. Veuillez réessayer."` for
+what is just a tap on Annuler. Rethrow a bare `new Error("Connexion Apple annulée.")` —
+the already-French contract `authErrors.ts` documents, which `googleSignIn.ts` also
+honours for its own cancellation.
 
 The identity-token email decoder (`appleIdToken.ts`) is **unverified on purpose** — its
 signature is never checked. It exists only to decide whether to abandon a sign-in
