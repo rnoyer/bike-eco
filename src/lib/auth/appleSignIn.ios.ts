@@ -9,6 +9,10 @@ import {
 } from "firebase/auth";
 import { auth } from "../../../firebaseConfig";
 import { appleIdTokenEmail } from "./appleIdToken";
+import type {
+  ProviderSignInOptions,
+  ProviderSignInResult,
+} from "./appleSignInContract";
 import { emailsMatch, ProviderEmailMismatchError } from "./providerEmail";
 
 /** iOS 13+ on a device signed in to iCloud with 2FA. False everywhere else. */
@@ -36,17 +40,9 @@ async function makeNonce(): Promise<{ raw: string; hashed: string }> {
   return { raw, hashed };
 }
 
-export async function signInWithApple(opts?: {
-  /** Invited registration: the Apple account used must be the invitation's address. */
-  expectedEmail?: string;
-}): Promise<{
-  prenom: string | null;
-  nom: string | null;
-  email: string | null;
-  /** True when this sign-in created the Firebase Auth record, so a caller that
-   *  rejects the identity can delete it instead of leaving a dormant account. */
-  isNewUser: boolean;
-}> {
+export async function signInWithApple(
+  opts?: ProviderSignInOptions,
+): Promise<ProviderSignInResult> {
   const { raw, hashed } = await makeNonce();
   let credential: AppleAuthentication.AppleAuthenticationCredential;
   try {

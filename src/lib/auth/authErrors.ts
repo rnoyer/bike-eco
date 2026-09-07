@@ -20,8 +20,9 @@ export function mapAuthError(code: string): string {
  * treatment, which is why every screen used to hand-roll the same ternary
  * ladder: Firebase's own `auth/*` codes (English message, map the code), the
  * errors this app raises itself (`ProviderEmailMismatchError`, "Connexion Google
- * annulée." — already French, keep the message), and everything else, including
- * Firebase's *non*-auth codes, whose messages are English and must not leak.
+ * annulée." / "Connexion Apple annulée." — already French, keep the message),
+ * and everything else, including Firebase's *non*-auth codes, whose messages
+ * are English and must not leak.
  */
 export function frenchAuthMessage(error: unknown): string {
   const code = (error as { code?: string })?.code ?? "";

@@ -6,6 +6,10 @@ import {
   signOut,
 } from "firebase/auth";
 import { auth } from "../../../firebaseConfig";
+import type {
+  ProviderSignInOptions,
+  ProviderSignInResult,
+} from "./appleSignInContract";
 import { emailsMatch, ProviderEmailMismatchError } from "./providerEmail";
 
 /** The popup flow works in any browser; there is no device capability to probe. */
@@ -13,17 +17,9 @@ export async function isAppleSignInAvailable(): Promise<boolean> {
   return true;
 }
 
-export async function signInWithApple(opts?: {
-  /** Invited registration: the Apple account used must be the invitation's address. */
-  expectedEmail?: string;
-}): Promise<{
-  prenom: string | null;
-  nom: string | null;
-  email: string | null;
-  /** True when this sign-in created the Firebase Auth record, so a caller that
-   *  rejects the identity can delete it instead of leaving a dormant account. */
-  isNewUser: boolean;
-}> {
+export async function signInWithApple(
+  opts?: ProviderSignInOptions,
+): Promise<ProviderSignInResult> {
   // No manual nonce here: unlike the native flow, `signInWithPopup` runs the
   // whole OAuth round-trip itself and manages its own nonce.
   const provider = new OAuthProvider("apple.com");
@@ -36,6 +32,8 @@ export async function signInWithApple(opts?: {
   // account this popup just created may be deleted — a mismatched but
   // pre-existing account belongs to a real user and is merely signed back out.
   if (opts?.expectedEmail && !emailsMatch(result.user.email, opts.expectedEmail)) {
+    // No `.catch(signOut)` fallback here, unlike the iOS variant: this mirrors
+    // `googleSignIn.web.ts` so both web providers fail the same way.
     if (isNewUser) await deleteUser(result.user);
     else await signOut(auth);
     throw new ProviderEmailMismatchError(

@@ -10,17 +10,17 @@
  * rather than failing silently if that ever stops being true.
  */
 
+import type {
+  ProviderSignInOptions,
+  ProviderSignInResult,
+} from "./appleSignInContract";
+
 export async function isAppleSignInAvailable(): Promise<boolean> {
   return false;
 }
 
-export async function signInWithApple(_opts?: {
-  expectedEmail?: string;
-}): Promise<{
-  prenom: string | null;
-  nom: string | null;
-  email: string | null;
-  isNewUser: boolean;
-}> {
+export async function signInWithApple(
+  _opts?: ProviderSignInOptions,
+): Promise<ProviderSignInResult> {
   throw new Error("La connexion Apple n’est pas disponible sur cet appareil.");
 }
