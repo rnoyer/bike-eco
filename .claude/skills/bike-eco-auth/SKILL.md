@@ -172,6 +172,14 @@ and compares `auth.currentUser.email` afterwards, undoing the sign-in on a misma
 `deleteUser` when the sign-in just created the record (`isNewUser`), `signOut`
 otherwise. Never leave a refused identity signed in either way.
 
+**The undo is best-effort; the refusal is not.** Both undos can reject (a network blip,
+a token Firebase wants re-authenticated), and an unguarded one skips the
+`ProviderEmailMismatchError` that follows it — so the caller shows the generic
+"la connexion a échoué" *and* the refused identity stays signed in, which is failing
+open on identity. Wrap the undo and throw regardless: `appleSignIn.ios.ts` guards its
+delete with `.catch(() => signOut(auth))`, `appleSignIn.web.ts` guards both undos.
+`googleSignIn.web.ts` still has the unguarded shape and shares the bug.
+
 **Cancellation must be rethrown without its `code`.** Apple's cancellation carries
 `code: "ERR_REQUEST_CANCELED"`, which is not an `auth/*` code, so `frenchAuthMessage`
 would fall through to the generic `"La connexion a échoué. Veuillez réessayer."` for
@@ -213,4 +221,5 @@ validates it server-side, and the screen renders only after it resolves. Tokens 
 | Giving Apple the raw nonce and Firebase the digest | `auth/missing-or-invalid-nonce` on every attempt |
 | Expecting Apple's name/email on a repeat sign-in | Empty prefill treated as a bug; a mismatch check that silently never runs |
 | Letting `ERR_REQUEST_CANCELED` keep its code | A plain "Annuler" shows "La connexion a échoué" |
+| An unguarded `deleteUser`/`signOut` in a mismatch branch | Its rejection swallows the refusal; the wrong identity stays signed in |
 | Putting Apple's native module in the plain `.ts` file | Android build breaks; no type error warns you |

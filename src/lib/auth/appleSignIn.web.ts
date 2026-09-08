@@ -32,10 +32,20 @@ export async function signInWithApple(
   // account this popup just created may be deleted — a mismatched but
   // pre-existing account belongs to a real user and is merely signed back out.
   if (opts?.expectedEmail && !emailsMatch(result.user.email, opts.expectedEmail)) {
-    // No `.catch(signOut)` fallback here, unlike the iOS variant: this mirrors
-    // `googleSignIn.web.ts` so both web providers fail the same way.
-    if (isNewUser) await deleteUser(result.user);
-    else await signOut(auth);
+    // The undo is best-effort; the refusal is not. Letting `deleteUser` (or
+    // `signOut`) reject would skip the throw below, so the caller would report
+    // the generic "la connexion a échoué" *and* leave the refused Apple identity
+    // signed in — failing open on identity, the one thing this branch exists to
+    // prevent. Falling back to `signOut` mirrors the iOS variant; where that one
+    // guards only the delete, this also guards the sign-out, since neither undo
+    // is worth a swallowed refusal. `googleSignIn.web.ts` still has the
+    // unguarded shape this replaced.
+    try {
+      if (isNewUser) await deleteUser(result.user);
+      else await signOut(auth);
+    } catch {
+      await signOut(auth).catch(() => {});
+    }
     throw new ProviderEmailMismatchError(
       "apple",
       result.user.email,
