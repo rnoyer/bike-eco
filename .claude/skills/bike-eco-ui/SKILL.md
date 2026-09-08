@@ -223,6 +223,22 @@ Feed it to `FormLayout`'s `busy`.
 Where several buttons share a screen, give each its own `useAsyncAction` and lock the rest
 with a combined `busy` — then the button that is actually working is the one that spins.
 
+## Content pinned to the bottom of a tab screen
+
+`NativeTabs` turns on automatic content-inset adjustment for the first `ScrollView` of an
+iOS tab screen, which is enough for a list — it scrolls clear of the bar. It is **not**
+enough for anything pinned with `marginTop: "auto"`: the inset never reaches layout, Yoga
+still measures the content container against the full scroll-view frame, and iOS 26 draws
+the tab bar as translucent glass over it. "Supprimer mon compte" and its admin note shipped
+once under that glass.
+
+**`useTabBarInset()`** (`src/lib/ui/useTabBarInset.ts`) is the space to reserve — add it as
+`paddingBottom` on the scroll view's `contentContainerStyle`. It is iOS-only by design:
+`NativeTabs` wraps each iOS tab screen in its own `SafeAreaProvider`, so `insets.bottom`
+read from inside one is the bar *plus* the home indicator; Android's bar is opaque and
+already wrapped in a `SafeAreaView`, and web lays its bar out in normal flow. `AccountScreen`
+is the worked example.
+
 ## Keyboard avoidance
 
 Two rules, both learned from the chat composer being buried under the keyboard:
@@ -318,3 +334,4 @@ never invent its own.
 | New modal without its own `GestureHandlerRootView`                                                        | Gestures silently dead inside the modal                                                    |
 | A `Host` wrapped around a universal `@expo/ui` component that already renders one                         | On iOS the 0×0 host collapses the measured content — the auto-sized `BottomSheet` came out too short to show its buttons |
 | `KeyboardAvoidingView` with no `behavior` on Android, or no `keyboardVerticalOffset` under a Stack header | Keyboard covers the input                                                                  |
+| `marginTop: "auto"` in a tab screen's `ScrollView` without `useTabBarInset()` padding      | The pinned content is laid out behind the iOS glass tab bar                                |
