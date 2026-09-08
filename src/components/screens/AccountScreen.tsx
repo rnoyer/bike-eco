@@ -20,6 +20,7 @@ import { useIsAdmin } from "@/lib/data/useIsAdmin";
 import { callDeleteMyAccount } from "@/lib/data/users";
 import { alertDialog, confirmDialog } from "@/lib/ui/dialog";
 import { useAsyncAction } from "@/lib/ui/useAsyncAction";
+import { useTabBarInset } from "@/lib/ui/useTabBarInset";
 import { tokens } from "@/theme/tokens";
 import {
   PROFILE_FIELDS,
@@ -45,6 +46,10 @@ export default function AccountScreen() {
   const { firebaseUser } = useAuth();
 
   const isAdmin = useIsAdmin();
+
+  // "Supprimer mon compte" is pinned to the bottom of the viewport, which on
+  // iOS is behind the translucent tab bar unless the space is reserved here.
+  const tabBarInset = useTabBarInset();
 
   const email = firebaseUser?.email ?? null;
 
@@ -102,7 +107,12 @@ export default function AccountScreen() {
   if (loading) return <ScreenLoader />;
   if (!data) return <ScreenMessage message="Compte introuvable." />;
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
+    <ScrollView
+      contentContainerStyle={[
+        styles.scrollContent,
+        { paddingBottom: tabBarInset },
+      ]}
+    >
       <SectionWrapper style={styles.fill}>
         <InfoCard title="Mes informations personnelles">
           {/* One part per row, not one `InfoRows` of four: the card draws the
@@ -211,7 +221,9 @@ const styles = StyleSheet.create({
   // The three together pin the button to the bottom: the content container
   // stretches to at least the viewport, SectionWrapper takes that height, and
   // the auto margin eats the leftover space. Content taller than the viewport
-  // simply scrolls, with the button last.
+  // simply scrolls, with the button last. The viewport here is the whole
+  // screen, tab bar included, so the container also pads itself by
+  // `useTabBarInset()` — otherwise the button and its admin note land under it.
   scrollContent: { flexGrow: 1 },
   fill: { flexGrow: 1 },
   toBottom: { marginTop: "auto", gap: tokens.space.sm },
