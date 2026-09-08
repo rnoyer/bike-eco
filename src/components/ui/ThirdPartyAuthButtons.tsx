@@ -13,7 +13,7 @@ const PROVIDERS: {
 }[] = [
   {
     id: "google",
-    label: "Google",
+    label: "Continuer avec Google",
     icon: require("@/assets/images/icons/googleIcon.svg"),
     enabled: true,
   },
