@@ -22,6 +22,11 @@ export interface StoredInvitation {
   companyName: string | null; // null for a back-office invitation
   tokenHash: string;
   expiresAt: number; // epoch ms
+  /** Whether redeeming makes the invitee an admin. Absent on every invitation
+   *  the app sends — `sendInviteCore` never writes it, and an invitee promotes
+   *  from "Mes collaborateurs" afterwards. Only `scripts/invite-backoffice.js`
+   *  sets it, to hand out an admin back-office account in one step. */
+  isAdmin?: boolean;
 }
 
 export interface Deps {
@@ -166,7 +171,10 @@ export async function acceptInviteCore(
     uid = authUid;
   }
   await deps.writeUser(uid, {
-    ...profileDoc(input, inv.email, inv.role, inv.companyId, "active", false),
+    // The invitation decides adminship, never the payload: the invitee could
+    // otherwise promote themselves by editing the request. Absent means false,
+    // which is every invitation sent from the app.
+    ...profileDoc(input, inv.email, inv.role, inv.companyId, "active", inv.isAdmin === true),
     // Back-office only, and gated on the invitation's role rather than the
     // payload: a b2b member has no région to manage, so a client sending one
     // must not create the field on their profile. Absent/null = "Toute la

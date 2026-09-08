@@ -49,6 +49,9 @@ function realDeps(): Deps {
           ? ((await db().collection("companies").doc(companyId).get()).data()?.name as string) ?? ""
           : null,
         expiresAt: d.expiresAt.toMillis(),
+        // Normalized here so a truthy-but-not-true value (or a missing field,
+        // which is every app-sent invitation) can only ever mean "not admin".
+        isAdmin: d.isAdmin === true,
       } satisfies StoredInvitation;
     },
     writeInvitation: async (id, data) =>

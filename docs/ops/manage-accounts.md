@@ -17,7 +17,9 @@ un compte back-office n'a ni entreprise ni dossier (le funnel de dépôt est ré
 là où un compte b2b traîne des dossiers, des fichiers Storage et des invitations. Chaque
 script **refuse** les comptes de l'autre et renvoie vers le bon.
 
-Pour créer un compte back-office : `grant-backoffice.js`, voir `first-backoffice-account.md`.
+Pour créer un compte back-office : `grant-backoffice.js` (compte immédiat) ou
+`invite-backoffice.js` (invitation + email, comme depuis l'application), voir
+`first-backoffice-account.md`.
 
 Ces scripts écrivent en admin : ils contournent les règles de sécurité et ne demandent
 aucune validation back-office. À réserver aux cas que le produit ne couvre pas.

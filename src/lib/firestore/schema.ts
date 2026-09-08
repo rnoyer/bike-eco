@@ -109,7 +109,12 @@ export interface Invitation {
   /** The role the invitee will be given. A back-office invitation has no company. */
   role: UserRole;
   companyId: string | null;
-  invitedBy: string; // uid
+  /** The admin who sent it, or the literal `"admin-script"` when it came from
+   *  `scripts/invite-backoffice.js` (which has no session to attribute it to). */
+  invitedBy: string;
+  /** Set only by `scripts/invite-backoffice.js --isAdmin`. Absent on every
+   *  invitation the app sends, and read as false. */
+  isAdmin?: boolean;
   tokenHash: string; // store a hash, never the raw token
   expiresAt: Timestamp; // one-time, time-limited
   createdAt: Timestamp;
