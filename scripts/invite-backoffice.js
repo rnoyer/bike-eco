@@ -1,54 +1,53 @@
 /**
- * Invites a back-office team member on the LIVE project, out of band.
+ * Invites a back-office team member on the LIVE project, out of band: it writes
+ * one invitation holding the hash of a one-time 6-character code valid 1 hour,
+ * then emails the code. The ops equivalent of Paramètres → "Inviter un membre de
+ * l'équipe Bike-eco", for when no admin can reach the app (nobody signed in, the
+ * app is down, an invitation to re-send in a hurry).
  *
- * This is the ops equivalent of Paramètres → "Inviter un membre de l'équipe
- * Bike-eco": it does exactly what the `sendInvite` callable does for a
- * back-office caller — one `invitations/{id}` document holding the **hash** of
- * a one-time 6-character code valid 1 hour, then the invitation email carrying
- * the code. The invitee then follows the normal invited-registration funnel
- * ("J'ai un code d'invitation"), picks their own password and région gérée, and
- * lands an **active** back-office account — non-admin like the app's, unless
- * `--isAdmin`.
+ * Options
+ *   --email <email>   required — the invitee's address
+ *   --isAdmin         the invitee lands an admin account; the default, like the
+ *                     app's invitation, is a non-admin member
+ *   --dry-run         prints the invitation document and the email it would
+ *                     produce, and writes and sends nothing
+ *   --show-code       also prints the code — the fallback when the email does
+ *                     not arrive; transmit it only through a safe channel
  *
- * Prefer the app. Use this only when no admin can reach it (nobody signed in,
- * the app is down, an invitation to re-send in a hurry). Unlike
- * `grant-backoffice.js`, this creates **no** account: nothing exists until the
- * invitee redeems the code, and the invitation self-expires after an hour.
- *
- * It mirrors — deliberately, one file, no repo checkout — three pieces of
- * `functions/src/registration/`: `sendInviteCore` (the document it writes),
- * `inviteCode.ts` (the alphabet, the length, the sha256, the 1h TTL) and
- * `emails.ts` (`sendInviteEmail`'s subject and body). Keep them in step: a code
- * this script writes is redeemed by the deployed `resolveInvite`/`acceptInvite`,
- * so a drift in the hash or the document shape shows up as "Code d'invitation
- * invalide ou expiré" for the invitee, with nothing to see on this side.
- *
- * `invitedBy` is the literal `"admin-script"`: there is no session to attribute
- * the invitation to, and a real admin's uid would claim they sent it. The cost
- * is that `delete-backoffice.js`, which clears an admin's invitations by
- * `invitedBy == uid`, never matches these — they are cleaned up by being
- * redeemed, and are dead an hour after they are sent either way.
- *
- * `--isAdmin` hands out an **admin** account in one step, instead of the
- * non-admin one the app's invitation creates. The flag rides on the invitation
- * document, not on the invitee's registration payload, so nobody can promote
- * themselves by editing the request; `acceptInviteCore` reads it back.
- *
- * Run it from Cloud Shell — see docs/ops/first-backoffice-account.md. The
- * Firebase credentials come from Application Default Credentials (your own
- * Google login); the SMTP credentials are read from the very secrets the
- * functions use, through the `gcloud` already installed there. Never commit or
- * download a service-account key for this.
+ * Run it from Cloud Shell — see docs/ops/first-backoffice-account.md. Firebase
+ * credentials come from Application Default Credentials (your own Google login
+ * there); the SMTP credentials are read from the same Secret Manager secrets the
+ * deployed functions use (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS) through
+ * the `gcloud` already installed there, and environment variables of those names
+ * win over the secrets. Never commit or download a service-account key for this.
  *
  *   npm i firebase-admin nodemailer
- *
  *   node invite-backoffice.js --email nouveau@bike-eco.fr
  *   node invite-backoffice.js --email nouveau@bike-eco.fr --isAdmin
  *   node invite-backoffice.js --email nouveau@bike-eco.fr --dry-run
  *
- * Not idempotent, on purpose: each run mints a new code and sends a new email.
- * Re-running is how you re-send; older codes for that address stay valid until
- * they expire.
+ * What it does
+ *   · warns when the address already has an Auth account (the invited funnel
+ *     creates one, so the code would fail on "Cette adresse email est déjà
+ *     utilisée") or when a still-valid invitation exists for it
+ *   · reads the SMTP secrets before writing anything, so a missing secret cannot
+ *     leave behind an invitation with no email to carry its code
+ *   · writes `invitations/{id}` — email, role "backoffice", companyId null,
+ *     invitedBy "admin-script", isAdmin, the code's sha256, expiresAt +1h — and
+ *     sends the invitation email
+ *   · deletes that invitation again if the email fails to leave
+ *   · re-running is how you re-send: each run mints a new code, and the codes
+ *     already sent to that address stay valid until they expire
+ *
+ * What it does not do
+ *   · creates no account: nothing exists until the invitee redeems the code in
+ *     the app ("J'ai un code d'invitation"), where they pick their own password
+ *     and their région gérée; an unredeemed invitation simply expires
+ *   · does not revoke or replace earlier invitations
+ *   · does not keep the code — only its hash is stored, so it is unrecoverable
+ *     after the run; to hand it out again, run the script again
+ *   · `invitedBy: "admin-script"` is not a uid, so these invitations are not
+ *     among those delete-backoffice.js clears with an admin's account
  */
 const { initializeApp } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");

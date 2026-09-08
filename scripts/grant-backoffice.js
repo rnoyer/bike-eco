@@ -1,27 +1,49 @@
 /**
- * Creates (or repairs) the FIRST back-office account on the LIVE project.
+ * Creates (or repairs) a back-office account on the LIVE project — the bootstrap
+ * for the very first one, since no product path can mint a back-office identity
+ * without an active back-office admin already signed in.
  *
- * `sendInvite` can mint a `backoffice` identity too, but only an active admin
- * caller may invoke it — so nothing in the app can mint the very first one.
- * This script is that bootstrap. Every back-office account after it is
- * invited from the app by an existing admin (Paramètres → "Inviter un membre
- * de l'équipe Bike-eco"); re-run this script only to repair drift on an
- * existing account, not to add more. It performs the three server-side
- * writes a working session needs: the Auth user, the custom claims (source
- * of truth for access, see src/lib/auth/session.ts + firestore.rules), and
- * the `users/{uid}` profile doc in the named `bike-eco-db` database (without
- * it AuthProvider leaves the session null and the guard bounces the user
- * back to sign-in).
+ * Options
+ *   --email <email>          required — the account's address; an existing Auth
+ *                            user with this address is reused, not duplicated
+ *   --prenom <prénom>        required — profile first name
+ *   --nom <nom>              required — profile last name
+ *   --tel <téléphone>        required — profile phone number
+ *   --password <mot de passe>  sets the password (also on an existing account);
+ *                            omitted → a random one is generated, and printed
+ *                            only when the Auth user is created by this run
+ *   --no-admin true          create a plain member; the default is admin
+ *   --region north|south|all "région gérée" (NORTH / SOUTH / null = Toute la
+ *                            France) — filters the back-office dashboard and
+ *                            scopes push fan-out; omitted leaves the field as it
+ *                            is (never resets a choice made in Paramètres)
  *
- * Self-contained on purpose: single file, one dependency, no repo checkout
- * needed. Run it from Cloud Shell — see docs/ops/first-backoffice-account.md.
- * Idempotent: re-running repairs whatever drifted.
+ * Run it from Cloud Shell — see docs/ops/first-backoffice-account.md. Firebase
+ * credentials come from Application Default Credentials (your own Google login
+ * there); never commit or download a service-account key for this.
  *
  *   npm i firebase-admin
- *   node grant-backoffice.js --email a@b.fr --prenom Alex --nom Martin --tel 0605060708
+ *   node grant-backoffice.js --email romain.noyer@gmail.com --prenom Romain --nom Noyer --tel 0698052569
+ *   node grant-backoffice.js --email a@b.fr --prenom Alex --nom Martin --tel 0605060708 \
+ *     --no-admin true --region south
  *
- * Credentials come from Application Default Credentials (your own Google login
- * in Cloud Shell). Never commit or download a service-account key for this.
+ * What it does
+ *   · creates the Auth user, or reuses the existing one for that address
+ *   · sets the custom claims { role: "backoffice", companyId: null, status:
+ *     "active" } — the source of truth for access (src/lib/auth/session.ts,
+ *     firestore.rules)
+ *   · writes/merges the `users/{uid}` profile in the named `bike-eco-db`
+ *     database, without which the session stays null and the guard bounces the
+ *     holder back to sign-in
+ *   · idempotent: re-running repairs whatever drifted
+ *
+ * What it does not do
+ *   · sends no email — trigger the password reset from the Firebase console
+ *   · creates no company and no dossier
+ *   · does not refresh a live session: claims only change on a new ID token, so
+ *     an account already signed in must sign out and back in
+ *   · is not the way to add further back-office members — those are invited from
+ *     the app, or with invite-backoffice.js
  */
 const { initializeApp } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");

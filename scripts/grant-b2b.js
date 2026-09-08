@@ -1,38 +1,66 @@
 /**
- * Creates (or repairs) a b2b (vendeur) account on the LIVE project.
+ * Creates (or repairs) a b2b (vendeur) account on the LIVE project, attached to
+ * an existing company or to one this run creates. The out-of-band equivalent of
+ * the `registerCompany` / `acceptInvite` funnels, which always mint a `pending`
+ * account waiting on back-office validation.
  *
- * The product path for this is `registerCompany` / `acceptInvite`, which always
- * mint a `pending` account waiting on back-office validation. This script is the
- * out-of-band equivalent: same three server-side writes as a real registration —
- * the Auth user, the custom claims (source of truth for access, see
- * src/lib/auth/session.ts + firestore.rules), and the `users/{uid}` profile doc
- * in the named `bike-eco-db` database — but it can attach to an existing company
- * and can hand out an `active` account directly.
+ * Options
+ *   --email <email>          required — the account's address; an existing Auth
+ *                            user with this address is reused, not duplicated
+ *   --prenom <prénom>        required — profile first name
+ *   --nom <nom>              required — profile last name
+ *   --tel <téléphone>        required — profile phone number
+ *   --company <companyId>    attach to this existing company; exits if unknown
+ *   --siret <14 chiffres>    attach to the company holding that SIRET, or create
+ *                            it when none does (one of --company / --siret is
+ *                            required)
+ *   --societe <raison sociale>  only used when the company has to be created
+ *   --departement "75 - Paris"  only used when the company has to be created;
+ *                            decides its région (NORTH / SOUTH), i.e. which
+ *                            back-office centre sees its dossiers
+ *   --ville <ville>          only used when the company has to be created
+ *   --status active|pending  default `active`; applied to the claims, the
+ *                            profile, and to a company created by this run.
+ *                            `pending` reproduces the registration gate
+ *   --password <mot de passe>  sets the password (also on an existing account);
+ *                            omitted → a random one is generated, and printed
+ *                            only when the Auth user is created by this run
+ *   --admin true             make the account an admin of a company it joins;
+ *                            creating the company already implies admin
  *
- * Self-contained on purpose: single file, one dependency, no repo checkout
- * needed. Run it from Cloud Shell — see docs/ops/manage-accounts.md.
- * Idempotent: re-running repairs whatever drifted.
+ * Run it from Cloud Shell — see docs/ops/manage-accounts.md. Firebase
+ * credentials come from Application Default Credentials (your own Google login
+ * there); never commit or download a service-account key for this.
  *
  *   npm i firebase-admin
  *
  *   # attach to an existing company (its id, from the back-office URL or console)
- *   node create-b2b.js --email a@b.fr --prenom Alex --nom Martin --tel 0605060708 \
+ *   node grant-b2b.js --email a@b.fr --prenom Alex --nom Martin --tel 0605060708 \
  *     --company aBcD1234
  *
- *   # or find/create the company by SIRET
- *   node create-b2b.js --email a@b.fr --prenom Alex --nom Martin --tel 0605060708 \
+ *   # find the company by SIRET, creating it if it does not exist yet
+ *   node grant-b2b.js --email a@b.fr --prenom Alex --nom Martin --tel 0605060708 \
  *     --siret 12345678900011 --societe "Garage du Nord" \
  *     --departement "75 - Paris" --ville Paris
  *
- * `--status pending` reproduces the real registration gate (account created but
- * blocked until a back-office validation); the default is `active`.
+ * What it does
+ *   · creates the Auth user, or reuses the existing one for that address
+ *   · sets the custom claims { role: "b2b", companyId, status } — the source of
+ *     truth for access (src/lib/auth/session.ts, firestore.rules)
+ *   · writes/merges the `users/{uid}` profile in the named `bike-eco-db` database
+ *   · creates the `companies/{id}` document when --siret matches none
+ *   · idempotent: re-running repairs whatever drifted
  *
- * The account is an admin when this run creates the company (same rule as the
- * registration funnel), or when `--admin true` is passed to admin-ify an
- * account joining an existing company.
- *
- * Credentials come from Application Default Credentials (your own Google login
- * in Cloud Shell). Never commit or download a service-account key for this.
+ * What it does not do
+ *   · sends no email — trigger the password reset from the Firebase console
+ *   · never modifies a company it did not create: an existing one keeps its name,
+ *     status and région
+ *   · does not validate a `pending` account — that stays a back-office action
+ *     (Réglages → Gérer les entreprises); until then sign-in lands on the
+ *     waiting screen
+ *   · creates no dossier
+ *   · does not refresh a live session: claims only change on a new ID token, so
+ *     an account already signed in must sign out and back in
  */
 const { initializeApp } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");
@@ -44,7 +72,7 @@ const DB_ID = "bike-eco-db";
 const REQUIRED = ["email", "prenom", "nom", "tel"];
 
 const USAGE =
-  "Usage: node create-b2b.js --email <email> --prenom <prénom> --nom <nom> " +
+  "Usage: node grant-b2b.js --email <email> --prenom <prénom> --nom <nom> " +
   "--tel <téléphone>\n" +
   "         (--company <companyId> | --siret <14 chiffres>)\n" +
   '         [--societe <raison sociale> --departement "75 - Paris" --ville <ville>]\n' +
