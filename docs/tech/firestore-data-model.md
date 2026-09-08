@@ -87,7 +87,8 @@ A user carries **no location** — `departement`/`ville`/`region` live on the co
 | `email`     | string         | invitee                                                      |
 | `role`      | string         | `b2b` \| `backoffice` — the role the invitee will be given   |
 | `companyId` | string \| null | the inviter's company; **null** for a back-office invitation |
-| `invitedBy` | uid            |                                                              |
+| `invitedBy` | uid            | or the literal `admin-script` (`scripts/invite-backoffice.js`) |
+| `isAdmin`   | bool           | optional; **absent** on every invitation the app sends. Set only by `invite-backoffice.js --isAdmin`, and read as false otherwise |
 | `tokenHash` | string         | store a hash, never the raw token                            |
 | `expiresAt` | timestamp      | one-time, time-limited                                       |
 | `createdAt` | timestamp      |                                                              |
