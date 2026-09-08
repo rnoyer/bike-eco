@@ -1,54 +1,54 @@
 /**
  * Fully deletes a back-office account on the LIVE project — the counterpart to
- * grant-backoffice.js, and the reverse of the three writes it makes.
+ * grant-backoffice.js, and the reverse of the three writes it makes. b2b accounts
+ * go through delete-b2b-user.js instead; this script refuses them.
  *
- * A back-office account owns far less than a b2b one: it has no company, and it
- * cannot submit a dossier (the submission funnel is b2b-only), so there is no
- * dossier Storage prefix hanging off it. It can, though, own invitations — ones
- * it sent as an admin, and a pending one addressed to its own email — and a
- * console-only deletion leaves both those and the `users/{uid}` profile behind.
- * The profile is dead PII no product path can reach again (a new account on the
- * same address gets a new uid); a leftover invitation is worse than dead, since
- * it stays redeemable through `acceptInvite` for up to an hour and mints a
- * fresh back-office member after the admin who invited them is gone.
+ * Options
+ *   --email <email>   target by address — the Auth user, or a leftover profile
+ *                     carrying that email when the Auth user is already gone
+ *   --uid <uid>       target by uid (one of --email / --uid is required)
+ *   --yes             apply; without it the run is a dry run that prints the
+ *                     plan and writes nothing
+ *   --force           allow deleting the LAST active back-office account, which
+ *                     the script otherwise refuses to do
  *
- * Removed:
- *   1. invitations this account sent, and any pending one addressed to it
- *   2. the Auth user
- *   3. the `users/{uid}` document and its `pushTokens` subcollection
- *
- * Two things it refuses to do, because they are silent, hard-to-diagnose damage:
- *
- *   · **Deleting the last active back-office account.** `sendInvite` can mint a
- *     replacement — but only an active admin caller may invoke it, so with none
- *     left, nobody can invite one either. No company can ever be validated
- *     again: every registration piles up `pending` and every new dealer sits on
- *     the waiting screen, with nothing in the app to explain why. `--force`
- *     overrides, and the recovery is grant-backoffice.js, the one path that
- *     never depends on an admin already existing.
- *   · **Deleting an account that owns dossiers.** It should be impossible, but
- *     grant-backoffice.js reuses an existing Auth user, so a b2b account promoted
- *     to back-office keeps the dossiers it submitted as a dealer. Those need the
- *     b2b cascade (Storage + messages), so the script sends you to
- *     delete-b2b-user.js rather than orphan the files.
- *
- * Self-contained on purpose: single file, one dependency, no repo checkout
- * needed. Run it from Cloud Shell — see docs/ops/manage-accounts.md.
+ * Run it from Cloud Shell — see docs/ops/manage-accounts.md. Credentials come
+ * from Application Default Credentials (your own Google login there); never
+ * commit or download a service-account key for this.
  *
  *   npm i firebase-admin
  *   node delete-backoffice.js --email a@b.fr          # dry run: prints the plan
  *   node delete-backoffice.js --email a@b.fr --yes    # actually deletes
  *
- * Dry run is the default; nothing is written without `--yes`. Options:
- *   --uid <uid>   target by uid (clears a profile whose Auth user is gone)
- *   --force       allow deleting the last active back-office account
+ * What it does, in this order
+ *   1. the invitations this account sent, and any pending one addressed to its
+ *      email — a leftover invitation stays redeemable for up to an hour and
+ *      would mint a back-office member after the admin who sent it is gone
+ *   2. the Auth user
+ *   3. the `users/{uid}` document and its `pushTokens` subcollection
  *
- * To only suspend access, don't delete: Firebase console → Authentication →
- * Users → Disable account. Sign-in fails immediately, the claims and profile stay
- * intact, and it is reversible in one click.
+ *   Auth and the profile go last, so the account stays findable and a run cut
+ *   short is always re-runnable.
  *
- * Credentials come from Application Default Credentials (your own Google login
- * in Cloud Shell). Never commit or download a service-account key for this.
+ * It refuses three things, and exits without writing:
+ *   · an account whose role is not `backoffice`
+ *   · an account that submitted dossiers — a b2b account promoted to back-office
+ *     keeps them, and they need the b2b cascade (Storage + messages)
+ *   · the last active back-office account, unless --force: with none left, no
+ *     company can be validated and no replacement can be invited, so every
+ *     registration piles up `pending` with nothing in the app explaining why.
+ *     The recovery is grant-backoffice.js, the one path that needs no admin.
+ *
+ * What it does not do
+ *   · nothing here is recoverable — no undo, and a new account on the same email
+ *     gets a new uid
+ *   · leaves the messages this account posted in dossier chats: they carry a
+ *     denormalized `senderName`, and removing them would gut the conversation
+ *     for the dealer
+ *   · does not merely suspend — for reversible, one-click suspension use the
+ *     Firebase console → Authentication → Users → Disable account, which leaves
+ *     the claims and the profile intact
+ *   · does not touch companies, security rules, indexes or functions
  */
 const { initializeApp } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");

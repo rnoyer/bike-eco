@@ -1,7 +1,40 @@
 /**
- * Idempotently seeds the Auth + Firestore emulators with test identities and
- * data so both roles and the pending-gate are previewable without registration
- * (Slice 4). Run with `npm run seed` while the emulators are running.
+ * Seeds the Auth + Firestore **emulators** with test identities and data, so both
+ * roles and the pending gate are previewable without going through registration.
+ *
+ * Options: none.
+ *
+ * Run it locally, with the emulators already running — not from Cloud Shell, and
+ * not against the live project:
+ *
+ *   npm run seed
+ *
+ * The npm script points the Admin SDK at the emulators (FIRESTORE_EMULATOR_HOST,
+ * FIREBASE_AUTH_EMULATOR_HOST). Running `tsx scripts/seed.ts` without those
+ * variables would write this data to the live project instead.
+ *
+ * What it does
+ *   · upserts three companies: `comp_nord` and `comp_sud` (active, one per
+ *     région, so cross-company isolation is checkable by hand) and
+ *     `comp_pending` (awaiting back-office validation)
+ *   · upserts five accounts, all with password `password123`, each with its
+ *     custom claims and its `users/{uid}` profile: `user_b2b_nord`,
+ *     `user_b2b_sud`, `user_bo` (back-office), `user_pending` (b2b blocked on
+ *     the waiting screen) and `user_pending_owner`
+ *   · writes three dossiers — `dos_1` and `dos_2` deliberately unalike, so every
+ *     conditional part of the "Informations véhicule" card has something to
+ *     reveal in at least one of them, plus `dos_sud` for the other company — and
+ *     one message in `dos_1`
+ *   · writes into the named `bike-eco-db` database, not `(default)`, which is
+ *     what the Emulator UI opens on
+ *   · idempotent: re-running overwrites the same fixed ids
+ *
+ * What it does not do
+ *   · does not clear the emulators first — data created by hand around these
+ *     fixed ids survives
+ *   · uploads no Storage files: every seeded dossier has empty `photos` and no
+ *     thumbnail
+ *   · sends no email and calls no Cloud Function
  */
 import { getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
