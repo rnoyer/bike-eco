@@ -44,6 +44,12 @@ masque la saisie. Le mot de passe est masqué par défaut.
   un compte préexistant est seulement déconnecté. Les boutons sont désactivés
   pendant l'aller-retour.
 
+  **iOS** : le bloc entier (divider "Ou continuez avec" compris) n'est pas
+  affiché. Proposer une connexion tierce sur iOS déclenche la règle 4.8 de
+  l'App Store ("Sign in with Apple" obligatoire à côté) ; Google reste
+  disponible sur Android et sur le web. Sur iOS, seule la connexion
+  email + mot de passe est proposée.
+
 - Link : "Pas encore de compte ? Créer un compte" → form-b2b-company-registration
 - Link : "J'ai un code d'invitation" → écran de saisie du code d'invitation
   (voir form-b2b-invited-registration)
