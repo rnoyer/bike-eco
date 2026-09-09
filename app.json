@@ -45,6 +45,14 @@
         }
       ],
       "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Bike-eco accède à vos photos pour joindre les images de votre moto à votre dossier et à vos messages.",
+          "cameraPermission": "Bike-eco accède à votre appareil photo pour photographier votre moto et l'ajouter à votre dossier.",
+          "microphonePermission": false
+        }
+      ],
       "@react-native-google-signin/google-signin",
       [
         "expo-build-properties",
