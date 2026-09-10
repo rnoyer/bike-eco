@@ -1,6 +1,8 @@
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue } from "firebase-admin/firestore";
 import { authedCall, db, NO_PAYLOAD } from "../callable";
+import { deleteCompanyCascade } from "../companies/cascade";
+import { companyCascadeDeps } from "../companies/deps";
 import {
   chunk, deleteColleagueCore, deleteMyAccountCore, setColleagueAdminCore,
   updateMyProfileCore, type ProfilePatch, type Scope, type UsersDeps,
@@ -36,14 +38,14 @@ function usersDeps(): UsersDeps {
         telephone: (d.telephone as string) ?? "",
       };
     },
-    // Counted in memory rather than with a two-equality-filter query: teams are
-    // small, and this needs no index at all.
-    countAdmins: async (scope: Scope) => {
+    // One equality filter and the admins picked out in memory, rather than a
+    // two-filter query: teams are small, and this needs no index at all.
+    listMembers: async (scope: Scope) => {
       const q = scope.kind === "backoffice"
         ? db().collection("users").where("role", "==", "backoffice")
         : db().collection("users").where("companyId", "==", scope.companyId);
       const snap = await q.get();
-      return snap.docs.filter((doc) => doc.data().isAdmin === true).length;
+      return snap.docs.map((doc) => ({ uid: doc.id, isAdmin: doc.data().isAdmin === true }));
     },
     setAdmin: async (uid, isAdmin) => {
       await db().collection("users").doc(uid).update({
@@ -92,6 +94,8 @@ function usersDeps(): UsersDeps {
     setCompanyCreatedByName: async (companyId, createdByName) => {
       await db().collection("companies").doc(companyId).update({ createdByName });
     },
+    deleteCompanyCascade: (companyId) =>
+      deleteCompanyCascade(companyId, companyCascadeDeps()),
   };
 }
 

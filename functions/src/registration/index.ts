@@ -1,8 +1,8 @@
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import { getStorage } from "firebase-admin/storage";
 
 import { authedCall, db, publicCall } from "../callable";
+import { companyCascadeDeps } from "../companies/deps";
 import { B2C_EMAIL_SECRETS } from "../email";
 import { approveCompanyCore, deleteCompanyCore, type BackofficeDeps } from "./backoffice";
 import { generateCompanyId } from "./companyId";
@@ -97,30 +97,9 @@ function backofficeDeps(): BackofficeDeps {
       });
     },
     sendApprovalEmail,
-    deleteStorage: async (companyId) => {
-      await getStorage().bucket().deleteFiles({ prefix: `dossiers/${companyId}/` });
-    },
-    deleteDossiers: async (companyId) => {
-      const snap = await db().collection("dossiers").where("companyId", "==", companyId).get();
-      await Promise.all(snap.docs.map((doc) => db().recursiveDelete(doc.ref)));
-    },
-    deleteUsers: async (companyId) => {
-      const snap = await db().collection("users").where("companyId", "==", companyId).get();
-      await Promise.all(snap.docs.map(async (doc) => {
-        await getAuth().deleteUser(doc.id).catch((err: unknown) => {
-          // The Auth user may already be gone; anything else is a real failure.
-          if ((err as { code?: string })?.code !== "auth/user-not-found") throw err;
-        });
-        // Recursive, for the `pushTokens` subcollection: a plain delete leaves
-        // the device tokens behind as personal data outliving the account.
-        await db().recursiveDelete(doc.ref);
-      }));
-    },
-    deleteInvitations: async (companyId) => {
-      const snap = await db().collection("invitations").where("companyId", "==", companyId).get();
-      await Promise.all(snap.docs.map((doc) => doc.ref.delete()));
-    },
-    deleteCompany: async (id) => { await db().collection("companies").doc(id).delete(); },
+    // The five deletes behind "Supprimer l'entreprise" — shared with
+    // `deleteMyAccount`'s last-member branch, so the two cannot drift.
+    ...companyCascadeDeps(),
   };
 }
 

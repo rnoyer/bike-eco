@@ -35,10 +35,21 @@ export type ProfilePatch = UpdateMyProfileInput;
 /** The profile fields, in the order `createdByName` and the emails read them. */
 const PROFILE_FIELDS = ["nom", "prenom", "telephone"] as const;
 
+/** Everyone in a scope, as the membership decisions need them. */
+export interface Member {
+  uid: string;
+  isAdmin: boolean;
+}
+
 export interface UsersDeps {
   getUser(uid: string): Promise<TargetUser | null>;
-  /** How many admins the scope currently has. */
-  countAdmins(scope: Scope): Promise<number>;
+  /**
+   * Everyone currently in the scope, the caller included. One read answers both
+   * questions self-deletion asks — "am I the last admin?" and "am I the last
+   * member?" — and the implementation already fetches the documents to count
+   * admins, so this costs nothing extra.
+   */
+  listMembers(scope: Scope): Promise<Member[]>;
   setAdmin(uid: string, isAdmin: boolean): Promise<void>;
   /** Tolerates an already-missing Auth user. */
   deleteAuthUser(uid: string): Promise<void>;
@@ -53,6 +64,12 @@ export interface UsersDeps {
   /** The uid in `companies/{companyId}.createdBy`, or `null` if absent. */
   getCompanyCreator(companyId: string): Promise<string | null>;
   setCompanyCreatedByName(companyId: string, createdByName: string): Promise<void>;
+  /**
+   * Erases a company and everything hanging off it — files, dossiers, members
+   * (the caller included), invitations, the company document. See
+   * `companies/cascade.ts`.
+   */
+  deleteCompanyCascade(companyId: string): Promise<void>;
 }
 
 /** Splits a list into batches — Firestore caps a write batch at 500 operations. */
@@ -80,6 +97,10 @@ function inScope(target: TargetUser, scope: Scope): boolean {
   return scope.kind === "backoffice"
     ? target.role === "backoffice"
     : target.role === "b2b" && target.companyId === scope.companyId;
+}
+
+function countAdmins(members: Member[]): number {
+  return members.filter((m) => m.isAdmin).length;
 }
 
 function lastAdminMessage(scope: Scope): string {
@@ -120,7 +141,7 @@ export async function setColleagueAdminCore(
   const scope = await requireAdminCaller(caller, deps);
   const target = await requireTarget(input.uid, scope, deps);
   if (target.isAdmin === input.isAdmin) return;
-  if (!input.isAdmin && (await deps.countAdmins(scope)) <= 1) {
+  if (!input.isAdmin && countAdmins(await deps.listMembers(scope)) <= 1) {
     throw new RegError("failed-precondition", lastAdminMessage(scope));
   }
   await deps.setAdmin(input.uid, input.isAdmin);
@@ -150,9 +171,67 @@ export async function deleteColleagueCore(
 }
 
 /**
+ * Like {@link scopeOf}, but tolerant. Self-deletion is the one escape hatch an
+ * account always keeps, so an account too broken to have a scope — a b2b user
+ * whose `companyId` is missing — gets `null` and a plain self-delete rather
+ * than a `permission-denied` that would strand them forever.
+ */
+function selfScopeOf(caller: CallerClaims): Scope | null {
+  if (caller.role === "backoffice") return { kind: "backoffice" };
+  if (caller.role === "b2b" && caller.companyId) {
+    return { kind: "company", companyId: caller.companyId };
+  }
+  return null;
+}
+
+/**
+ * The three refusals, verbatim from `page-my-account.md` minus the company
+ * name: the client holds it, and reading it here would be a Firestore read
+ * spent on an error path the client already renders itself.
+ */
+const SOLE_COMPANY_ADMIN =
+  "Vous êtes le dernier administrateur de votre entreprise. Veuillez attribuer le " +
+  "rôle Administrateur à un autre vendeur avant de supprimer votre compte.";
+const SOLE_BACKOFFICE_ADMIN =
+  "Vous êtes le dernier administrateur de Bike-eco. Afin de supprimer votre compte, " +
+  "veuillez d'abord attribuer le rôle Administrateur à un autre membre Bike-eco.";
+const LAST_BACKOFFICE_MEMBER =
+  "Vous êtes le dernier membre de Bike-eco. Afin de supprimer votre compte, veuillez " +
+  "d'abord inviter un nouveau membre d'équipe Bike-eco, et le promouvoir comme " +
+  "administrateur.";
+
+/** Auth first, for the same reason as `deleteColleagueCore`: a stranded profile
+ *  doc is visible and fixable, a stranded Auth user is a live session with no
+ *  profile. */
+async function deleteSelf(uid: string, deps: UsersDeps): Promise<void> {
+  await deps.deleteAuthUser(uid);
+  await deps.deleteUserDoc(uid);
+}
+
+/**
  * Self-deletion. Unlike the other two this does not require an `active`
  * account: a colleague still waiting on the company's validation must be able
- * to cancel. Admins are refused — an admin account cannot be deleted.
+ * to cancel.
+ *
+ * An admin may delete their account, but not while the organisation still needs
+ * them. Two questions, in this order — "last member?" wins over "last admin?",
+ * because it subsumes it and is the only one of the two with somewhere to go:
+ *
+ * - **Last member of a company** — the company has no reason to outlive them,
+ *   so it leaves with them, through the same cascade the back office runs.
+ *   Anything else would strand the dossiers, their chats and their files with
+ *   nobody able to sign in for them.
+ * - **Sole admin of a company that still has vendeurs** — refused. Promoting a
+ *   colleague first is the way out, and the client says so in a modal.
+ * - **Back office, either case** — refused. Bike-eco has no cascade to run: it
+ *   is the app, not a tenant, and the last member leaving would lock everyone
+ *   out for good (`sendInvite` and `setColleagueAdmin` both require an admin
+ *   caller, so nothing in the product could recover it). They are told to
+ *   invite a member and promote them first.
+ *
+ * The three refusal messages are the fallback for the race where the last other
+ * admin is demoted between the screen's read and this call; in the ordinary
+ * case the client has already shown the same thing as a modal.
  */
 export async function deleteMyAccountCore(
   caller: CallerClaims,
@@ -160,14 +239,27 @@ export async function deleteMyAccountCore(
 ): Promise<void> {
   const me = await deps.getUser(caller.uid);
   if (!me) throw new RegError("not-found", "Compte introuvable.");
-  if (me.isAdmin) {
-    throw new RegError(
-      "failed-precondition",
-      "Un administrateur ne peut pas supprimer son compte.",
-    );
+
+  const scope = selfScopeOf(caller);
+  if (!scope) return deleteSelf(caller.uid, deps);
+
+  const members = await deps.listMembers(scope);
+  const lastMember = members.length <= 1;
+  const soleAdmin = me.isAdmin && countAdmins(members) <= 1;
+
+  if (scope.kind === "backoffice") {
+    if (lastMember) throw new RegError("failed-precondition", LAST_BACKOFFICE_MEMBER);
+    if (soleAdmin) throw new RegError("failed-precondition", SOLE_BACKOFFICE_ADMIN);
+    return deleteSelf(caller.uid, deps);
   }
-  await deps.deleteAuthUser(caller.uid);
-  await deps.deleteUserDoc(caller.uid);
+
+  if (lastMember) {
+    // The cascade deletes every member of the company — this caller included —
+    // so there is no separate self-delete to run afterwards.
+    return deps.deleteCompanyCascade(scope.companyId);
+  }
+  if (soleAdmin) throw new RegError("failed-precondition", SOLE_COMPANY_ADMIN);
+  await deleteSelf(caller.uid, deps);
 }
 
 /**

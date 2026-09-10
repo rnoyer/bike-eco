@@ -30,17 +30,22 @@ interface Calls {
   profiles: { uid: string; patch: ProfilePatch }[];
   dossiers: { uid: string; patch: ProfilePatch }[];
   createdByNames: { companyId: string; name: string }[];
+  cascaded: string[];
 }
 
 function fakeDeps(over: Partial<UsersDeps> = {}): UsersDeps & { calls: Calls } {
   const calls: Calls = {
     admins: [], authDeleted: [], docsDeleted: [],
-    profiles: [], dossiers: [], createdByNames: [],
+    profiles: [], dossiers: [], createdByNames: [], cascaded: [],
   };
   return {
     calls,
     getUser: async (uid) => USERS[uid] ?? null,
-    countAdmins: async () => 2,
+    // Two admins and two vendeurs: nobody is the last of anything by default.
+    listMembers: async () => [
+      { uid: "admin1", isAdmin: true }, { uid: "admin2", isAdmin: true },
+      { uid: "mem1", isAdmin: false }, { uid: "mem2", isAdmin: false },
+    ],
     setAdmin: async (uid, isAdmin) => { calls.admins.push({ uid, isAdmin }); },
     deleteAuthUser: async (uid) => { calls.authDeleted.push(uid); },
     deleteUserDoc: async (uid) => { calls.docsDeleted.push(uid); },
@@ -50,6 +55,7 @@ function fakeDeps(over: Partial<UsersDeps> = {}): UsersDeps & { calls: Calls } {
     setCompanyCreatedByName: async (companyId, name) => {
       calls.createdByNames.push({ companyId, name });
     },
+    deleteCompanyCascade: async (companyId) => { calls.cascaded.push(companyId); },
     ...over,
   };
 }
@@ -85,7 +91,11 @@ test("a back-office admin manages back-office users", async () => {
 });
 
 test("demoting the last admin is refused", async () => {
-  const d = fakeDeps({ countAdmins: async () => 1 });
+  const d = fakeDeps({
+    listMembers: async () => [
+      { uid: "admin1", isAdmin: true }, { uid: "mem1", isAdmin: false },
+    ],
+  });
   await expect(setColleagueAdminCore({ uid: "admin1", isAdmin: false }, admin, d))
     .rejects.toMatchObject({ code: "failed-precondition" });
   expect(d.calls.admins).toEqual([]);
@@ -137,11 +147,89 @@ test("a non-admin deletes their own account", async () => {
   expect(d.calls.docsDeleted).toEqual(["mem1"]);
 });
 
-test("an admin cannot delete their own account", async () => {
+test("an admin with another admin left deletes their own account", async () => {
   const d = fakeDeps();
-  await expect(deleteMyAccountCore(admin, d))
-    .rejects.toMatchObject({ code: "failed-precondition" });
+  await deleteMyAccountCore(admin, d);
+  expect(d.calls.authDeleted).toEqual(["admin1"]);
+  expect(d.calls.cascaded).toEqual([]);
+});
+
+test("the sole admin of a company that still has vendeurs is refused", async () => {
+  const d = fakeDeps({
+    listMembers: async () => [
+      { uid: "admin1", isAdmin: true }, { uid: "mem1", isAdmin: false },
+    ],
+  });
+  await expect(deleteMyAccountCore(admin, d)).rejects.toMatchObject({
+    code: "failed-precondition",
+    message: expect.stringContaining("dernier administrateur"),
+  });
   expect(d.calls.authDeleted).toEqual([]);
+  expect(d.calls.cascaded).toEqual([]);
+});
+
+test("the last member of a company takes the company with them", async () => {
+  const d = fakeDeps({ listMembers: async () => [{ uid: "admin1", isAdmin: true }] });
+  await deleteMyAccountCore(admin, d);
+  expect(d.calls.cascaded).toEqual(["comp_1"]);
+  // The cascade deletes every member, so no second self-delete runs.
+  expect(d.calls.authDeleted).toEqual([]);
+  expect(d.calls.docsDeleted).toEqual([]);
+});
+
+test("a lone non-admin also takes the company with them — no orphan is left", async () => {
+  const d = fakeDeps({ listMembers: async () => [{ uid: "mem1", isAdmin: false }] });
+  await deleteMyAccountCore(member, d);
+  expect(d.calls.cascaded).toEqual(["comp_1"]);
+});
+
+const BO_TEAM = [
+  { uid: "bo1", isAdmin: true }, { uid: "bo2", isAdmin: false },
+];
+
+test("a back-office member with an admin left deletes their own account", async () => {
+  const d = fakeDeps({ listMembers: async () => BO_TEAM });
+  await deleteMyAccountCore({ ...boAdmin, uid: "bo2" }, d);
+  expect(d.calls.authDeleted).toEqual(["bo2"]);
+});
+
+test("a back-office admin with another admin left deletes their own account", async () => {
+  const d = fakeDeps({
+    listMembers: async () => [...BO_TEAM, { uid: "bo3", isAdmin: true }],
+  });
+  await deleteMyAccountCore(boAdmin, d);
+  expect(d.calls.authDeleted).toEqual(["bo1"]);
+});
+
+test("the sole Bike-eco admin is refused while other members remain", async () => {
+  const d = fakeDeps({ listMembers: async () => BO_TEAM });
+  await expect(deleteMyAccountCore(boAdmin, d)).rejects.toMatchObject({
+    code: "failed-precondition",
+    message: expect.stringContaining("dernier administrateur de Bike-eco"),
+  });
+  expect(d.calls.authDeleted).toEqual([]);
+});
+
+// Bike-eco is the app, not a tenant: there is no cascade to run, and an empty
+// team locks everyone out for good — `sendInvite` and `setColleagueAdmin` both
+// need an admin caller, so nothing in the product could recover it.
+test("the last Bike-eco member is refused, and nothing is cascaded", async () => {
+  const d = fakeDeps({ listMembers: async () => [{ uid: "bo1", isAdmin: true }] });
+  await expect(deleteMyAccountCore(boAdmin, d)).rejects.toMatchObject({
+    code: "failed-precondition",
+    message: expect.stringContaining("dernier membre de Bike-eco"),
+  });
+  expect(d.calls.authDeleted).toEqual([]);
+  expect(d.calls.cascaded).toEqual([]);
+});
+
+test("a b2b account with no company deletes itself rather than being stranded", async () => {
+  const d = fakeDeps({
+    listMembers: async () => { throw new Error("no scope to query"); },
+  });
+  await deleteMyAccountCore({ ...member, companyId: null }, d);
+  expect(d.calls.authDeleted).toEqual(["mem1"]);
+  expect(d.calls.cascaded).toEqual([]);
 });
 
 test("a pending colleague can still delete their own account", async () => {

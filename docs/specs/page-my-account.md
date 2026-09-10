@@ -36,13 +36,44 @@ From top to bottom
   and pushed down to the bottom edge when the content is shorter than the viewport. That edge
   is the top of the tab bar, not the bottom of the screen: iOS draws the bar as translucent
   glass over the content, so the screen reserves `useTabBarInset()` at its bottom to keep the
-  button and its admin note clear of it. Tapping
-  it opens a confirmation modal — "Supprimer mon compte ?" / "Cette action supprime
-  définitivement votre compte. Vos dossiers et vos conversations sont conservés." /
-  "Annuler" / "Supprimer mon compte" — then deletes the account and signs the user out.
-  **Disabled for an administrator**, with the line "Un administrateur ne peut pas
-  supprimer son compte. Transférez d'abord le rôle administrateur à un collaborateur."
-  below the button.
+  button clear of it.
+
+  Tapping it always opens a modal titled **"Supprimer mon compte ?"**, with "Annuler"
+  (primary) as its first button — which only dismisses, leaving the user on this page. What
+  the second button says and does depends on what the organisation still needs from this
+  account. The decision is `deleteAccountPrompt` (`src/features/profile/`), read from the
+  live "Mes collaborateurs" list, and **"dernier membre" wins over "dernier
+  administrateur"** — the latter has no way out once you are alone.
+
+  **B2B**
+
+  | Situation | Message | Second button |
+  |---|---|---|
+  | Dernier membre de l'entreprise | "En supprimant votre compte, vous supprimez également toutes les données relatives à l'entreprise [nom] et aux dossiers que vous avez soumis.<br>Êtes-vous sur de vouloir supprimer votre compte et l'entreprise ?" | "Supprimer mon compte" (danger) — supprime le compte **et l'entreprise**, puis renvoie à l'écran d'accueil de l'application |
+  | Dernier administrateur, mais il reste des vendeurs | "Vous êtes le dernier administrateur de l'entreprise [nom]. Veuillez attribuer le rôle Administrateur à un autre vendeur avant de supprimer votre compte" | "Gérer mes collaborateurs" (secondaire) — ouvre l'onglet "Paramètres". Rien n'est supprimé |
+  | Sinon | "Cette action supprime définitivement votre compte. Vos dossiers et vos conversations sont conservés." | "Supprimer mon compte" (danger) — supprime le compte et déconnecte |
+
+  The "dernier membre" cascade is the same one as the back office's "Supprimer
+  l'entreprise" (`companies/cascade.ts`): fichiers → dossiers → comptes → invitations →
+  entreprise. No orphan is left. It also covers a lone **vendeur** — an admin-less company
+  of one still leaves nothing behind.
+
+  **Bike-eco back office**
+
+  | Situation | Message | Second button |
+  |---|---|---|
+  | Dernier membre de Bike-eco | "Vous êtes le dernier membre de Bike-eco. Afin de supprimer votre compte, veuillez d'abord inviter un nouveau membre d'équipe Bike-eco, et le promouvoir comme administrateur." | "Inviter un membre" (secondaire) — ouvre l'onglet "Paramètres". Rien n'est supprimé |
+  | Dernier administrateur, mais il reste des membres | "Vous êtes le dernier administrateur de Bike-eco. Afin de supprimer votre compte, veuillez d'abord attribuer le rôle Administrateur à un autre membre Bike-eco" | "Gérer les membres" (secondaire) — ouvre l'onglet "Paramètres". Rien n'est supprimé |
+  | Sinon | "Cette action supprime définitivement votre compte. Vos dossiers et vos conversations sont conservés." | "Supprimer mon compte" (danger) — supprime le compte et déconnecte |
+
+  Bike-eco has **no cascade** — it is the application, not a tenant, so its last member is
+  refused rather than offered a deletion. An empty team would lock everyone out for good:
+  `sendInvite` and `setColleagueAdmin` both require an admin caller, so no product path
+  could recover it (only `scripts/invite-backoffice.js`, see
+  [`first-backoffice-account.md`](../ops/first-backoffice-account.md)).
+
+  The button is never disabled for an administrator, in either role. While the colleague
+  list is still loading it is disabled: which modal to open is not yet known.
 
 ## Loading and error states
 

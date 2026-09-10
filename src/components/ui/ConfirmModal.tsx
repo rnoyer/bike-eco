@@ -6,21 +6,27 @@ interface Props {
   visible: boolean;
   title: string;
   message: string;
-  /** Label of the destructive action, e.g. "Tout supprimer". */
+  /** Label of the action, e.g. "Tout supprimer". */
   confirmLabel: string;
+  /** `danger` for an action that destroys something — the default, because that
+   *  is what these prompts usually confirm. `outlined` for one that only sends
+   *  the user somewhere else, which must not read as destructive. */
+  confirmVariant?: "danger" | "outlined";
   /** Locks both buttons while an action is already in flight. */
   disabled?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }
 
-/** Destructive-confirmation modal. An in-page `Modal`, not `confirmDialog`:
- *  these prompts spell out what is deleted, which a native alert cannot. */
+/** Confirmation modal. An in-page `Modal`, not `confirmDialog`: these prompts
+ *  spell out what is deleted — or why nothing can be — which a native alert
+ *  cannot. */
 export default function ConfirmModal({
   visible,
   title,
   message,
   confirmLabel,
+  confirmVariant = "danger",
   disabled = false,
   onCancel,
   onConfirm,
@@ -38,7 +44,7 @@ export default function ConfirmModal({
           <Text style={styles.body}>{message}</Text>
           <Button label="Annuler" onPress={onCancel} disabled={disabled} />
           <Button
-            variant="danger"
+            variant={confirmVariant}
             label={confirmLabel}
             onPress={onConfirm}
             disabled={disabled}

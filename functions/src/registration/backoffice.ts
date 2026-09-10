@@ -1,16 +1,12 @@
+import { deleteCompanyCascade, type CompanyCascadeDeps } from "../companies/cascade";
 import { assertBackoffice, RegError, type CallerClaims } from "../errors";
 
-export interface BackofficeDeps {
+export interface BackofficeDeps extends CompanyCascadeDeps {
   getCompany(id: string): Promise<{ name: string; status: string } | null>;
   getPendingCompanyUsers(companyId: string): Promise<{ uid: string; email: string }[]>;
   activateUser(uid: string): Promise<void>;
   setCompanyActive(id: string): Promise<void>;
   sendApprovalEmail(to: string, companyName: string): Promise<void>;
-  deleteStorage(companyId: string): Promise<void>;
-  deleteDossiers(companyId: string): Promise<void>;
-  deleteUsers(companyId: string): Promise<void>;
-  deleteInvitations(companyId: string): Promise<void>;
-  deleteCompany(id: string): Promise<void>;
 }
 
 export async function approveCompanyCore(
@@ -36,16 +32,7 @@ export async function deleteCompanyCore(
   deps: BackofficeDeps,
 ): Promise<void> {
   assertBackoffice(caller);
-  // Storage first: even if a later step fails, we never leave orphaned files
-  // that no Firestore doc points at. Storage is company-prefixed
-  // (`dossiers/{companyId}/...`), so one prefixed delete covers every photo,
-  // thumbnail, and message attachment. Invitations are removed before the
-  // company doc so an outstanding invite can never outlive the company it
-  // points at (which would let acceptInvite create a user against a ghost
-  // company).
-  await deps.deleteStorage(companyId);
-  await deps.deleteDossiers(companyId);
-  await deps.deleteUsers(companyId);
-  await deps.deleteInvitations(companyId);
-  await deps.deleteCompany(companyId);
+  // The order, and why it is that order, live in `companies/cascade.ts` — the
+  // same cascade runs when a company's last member deletes their own account.
+  await deleteCompanyCascade(companyId, deps);
 }
