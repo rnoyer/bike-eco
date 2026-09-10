@@ -32,6 +32,12 @@ logic straight in `index.ts`, because nothing there is reachable from a unit tes
 `RegError` and `CallerClaims` now live in the shared `functions/src/errors.ts`, not in
 `registration/core.ts` — import them from there for any new module.
 
+`companies/` is the exception to the three-file shape: it has no callable of its own, only
+the company-erasure cascade two callables share (`cascade.ts`, pure + tested;
+`deps.ts`, the admin-SDK implementation). Both `deleteCompany` (back office) and
+`deleteMyAccount` (a company's last member deleting themselves) go through it, in the same
+order, for the reasons written there. Never re-implement that order at a call site.
+
 The `Deps` pattern: `core.ts` declares an interface (`Deps`, `BackofficeDeps`) of the
 operations it needs (`createUser`, `setClaims`, `writeCompany`, `sendInviteEmail`, `now`),
 and `index.ts` supplies a `realDeps()` built from the admin SDK. Tests pass fakes.

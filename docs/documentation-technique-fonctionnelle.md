@@ -565,7 +565,7 @@ notifications.
 |---|---|---|---|
 | `setColleagueAdmin` | Appelable | Administrateur du périmètre | Promeut ou rétrograde ; refuse de retirer le dernier administrateur |
 | `deleteColleague` | Appelable | Administrateur du périmètre | Supprime Auth puis le document et ses sous-collections ; refuse un administrateur |
-| `deleteMyAccount` | Appelable | Soi-même, non administrateur | Suppression du compte et de ses jetons d'appareil |
+| `deleteMyAccount` | Appelable | Soi-même | Suppression du compte et de ses jetons d'appareil. Refuse le dernier administrateur d'une entreprise qui compte encore des vendeurs ; pour son dernier membre, déclenche la cascade entreprise complète |
 | `updateMyProfile` | Appelable | Soi-même | Nom, prénom, téléphone — et propagation sur les dossiers et l'entreprise |
 
 **Point d'entrée public (1)**

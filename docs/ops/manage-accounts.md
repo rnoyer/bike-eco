@@ -161,10 +161,16 @@ b2b ou back-office) — le callable `deleteColleague`. Ce chemin est plus étroi
 script : il supprime seulement l'utilisateur Auth et le document `users/{uid}`, et
 **conserve** les dossiers, les conversations et les fichiers Storage (ils portent
 l'identité du déposant/expéditeur en dénormalisé). Il refuse aussi de supprimer un
-administrateur et interdit de se supprimer soi-même par ce chemin (« Supprimer mon
-compte » sur page-my-account fait cela, et refuse également un administrateur). Ce
+administrateur et interdit de se supprimer soi-même par ce chemin — c'est
+« Supprimer mon compte » sur page-my-account qui le fait, via `deleteMyAccount`. Ce
 script (`--yes`, sans `--keep-dossiers`) est la voie à utiliser pour un vrai effacement
-RGPD des dossiers du compte ; le produit ne les touche jamais.
+RGPD des dossiers du compte ; ce chemin-là du produit ne les touche jamais.
+
+`deleteMyAccount` a une exception, et c'est la seule voie produit qui efface des
+dossiers : le **dernier membre d'une entreprise** emporte l'entreprise avec lui, par la
+même cascade que « Supprimer l'entreprise » du back-office — équivalent produit de
+`delete-b2b-user.js --with-company`. Il refuse en revanche le dernier administrateur
+d'une entreprise qui compte encore des vendeurs : promouvoir quelqu'un d'abord.
 
 ---
 
