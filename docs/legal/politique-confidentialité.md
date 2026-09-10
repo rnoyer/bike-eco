@@ -110,23 +110,19 @@ Les informations que vous nous transmettez par l'intermédiaire du formulaire de
 
 Vos données sont conservées pendant **toute la durée de notre relation**, puis supprimées. Vous pouvez à tout moment demander la suppression de votre compte depuis l'application ou par les canaux indiqués à l'article 10.
 
-**(iii) Concernant les comptes inactifs :**
-
-Tout compte qui n'aurait fait l'objet d'aucune connexion pendant **deux (2) ans** est considéré comme inactif. Il est supprimé, ainsi que les données personnelles qu'il contient. Une simple connexion à l'application suffit à maintenir votre compte actif.
-
-**(iv) Concernant les dossiers déposés sur l'application :**
+**(iii) Concernant les dossiers déposés sur l'application :**
 
 Les dossiers, les données du véhicule et les photographies associées sont conservés pendant **toute la durée de notre relation avec l'entreprise concernée**, puis supprimés. Les dossiers ne constituent ni une pièce comptable, ni un élément de preuve du contrat, et ne font donc l'objet d'aucun archivage à ce titre.
 
-**(v) Concernant les messages et les pièces jointes :**
+**(iv) Concernant les messages et les pièces jointes :**
 
 Les messages échangés au sein d'un dossier et les pièces jointes qui y figurent sont conservés pendant la même durée que le dossier auquel ils se rattachent, et supprimés avec lui.
 
-**(vi) Concernant les invitations et les données techniques :**
+**(v) Concernant les invitations et les données techniques :**
 
 Les invitations adressées aux membres d'une entreprise sont supprimées dès leur acceptation ou à leur expiration. Les identifiants techniques permettant l'acheminement des notifications sont supprimés dès votre déconnexion de l'application. Les journaux techniques nécessaires à la sécurité et au bon fonctionnement du service sont conservés pour une durée maximale de douze (12) mois.
 
-**(vii) Concernant les demandes d'assistance, les demandes d'exercice de droits et les réclamations :**
+**(vi) Concernant les demandes d'assistance, les demandes d'exercice de droits et les réclamations :**
 
 Lorsque vous nous contactez pour demander notre assistance, signaler un problème ou exercer l'un de vos droits, vos données sont conservées pendant le temps nécessaire au traitement de votre demande, puis pendant une durée maximale d'un (1) an.
 

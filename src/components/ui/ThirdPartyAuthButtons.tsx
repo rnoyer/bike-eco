@@ -1,6 +1,12 @@
 import { tokens } from "@/theme/tokens";
 import { Image, type ImageProps } from "expo-image";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 type Provider = "google" | "apple" | "facebook";
 
@@ -10,12 +16,19 @@ const PROVIDERS: {
   /** Brand mark rendered just before the label. */
   icon: ImageProps["source"];
   enabled: boolean;
+  /** False hides the provider entirely on this platform, rather than greying it
+   *  out like `enabled` does. */
+  available: boolean;
 }[] = [
   {
     id: "google",
-    label: "Google",
+    label: "Continuer avec Google",
     icon: require("@/assets/images/icons/googleIcon.svg"),
     enabled: true,
+    // App Store compliance: offering a third-party login on iOS triggers
+    // Apple's guideline 4.8 ("Sign in with Apple" must be offered alongside).
+    // Google is hidden on iOS instead — Android and web keep it.
+    available: Platform.OS !== "ios",
   },
   // {
   //   id: "apple",
@@ -39,6 +52,11 @@ export default function ThirdPartyAuthButtons({
   /** Locks every provider while a sign-in round-trip is in flight. */
   disabled?: boolean;
 }) {
+  const providers = PROVIDERS.filter((p) => p.available);
+  // Nothing left to offer (iOS today): the "Ou continuez avec" divider would
+  // otherwise announce a list that is not there.
+  if (providers.length === 0) return null;
+
   return (
     <View style={styles.wrap}>
       <View style={styles.dividerRow}>
@@ -46,7 +64,7 @@ export default function ThirdPartyAuthButtons({
         <Text style={styles.or}>Ou continuez avec</Text>
         <View style={styles.line} />
       </View>
-      {PROVIDERS.map((p) => (
+      {providers.map((p) => (
         <TouchableOpacity
           key={p.id}
           style={[styles.btn, (!p.enabled || disabled) && styles.btnDisabled]}

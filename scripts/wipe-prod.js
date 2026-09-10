@@ -1,46 +1,54 @@
 /**
  * Erases **all** application data on the LIVE project: every Storage object,
- * every Firestore document in `bike-eco-db`, and every Auth user. This is the
- * "start again from an empty project" button — a pre-launch reset, not an
- * account-management tool. To remove one person, use `delete-b2b-user.js` or
- * `delete-backoffice.js`, which know what a single account owns.
+ * every Firestore document in `bike-eco-db`, and every Auth user. The "start
+ * again from an empty project" button — a pre-launch reset, not an
+ * account-management tool. To remove one person, use delete-b2b-user.js or
+ * delete-backoffice.js, which know what a single account owns.
  *
- * Nothing here is recoverable. Firestore has no undo, Storage has no version
- * history on this bucket, and deleted Auth users cannot be restored (a new
- * account on the same email gets a new uid, so every `submittedBy`,
- * `invitedBy` and `senderName` in any surviving copy points nowhere).
+ * Options
+ *   --only <list>       any of `storage,firestore,auth`, comma-separated;
+ *                       default: all three
+ *   --keep-backoffice   spare the back-office accounts — their Auth user, their
+ *                       `users/{uid}` document and its `pushTokens`
+ *   --keep <emails>     same, for a comma-separated list of addresses; the run
+ *                       is refused when one of them has no Auth user, since a
+ *                       typo would silently delete the account meant to survive
+ *   --yes               apply; without it the run is a dry run that prints the
+ *                       plan and writes nothing
+ *   --confirm <project> required alongside --yes, and must spell out
+ *                       `bike-eco-43a84`, so a wipe is never one recalled shell
+ *                       command away
  *
- * Deleted, in that order — Storage first, so an interrupted run can never
- * leave files no document points at, and Auth last, so accounts stay findable
- * and the run stays re-runnable:
- *
- *   1. every object in the bucket (all of it is `dossiers/{companyId}/…`)
- *   2. every document of every top-level Firestore collection, with their
- *      subcollections (`messages`, `mutes`, `pushTokens`)
- *   3. every Auth user, in batches
- *
- * Self-contained on purpose: single file, one dependency, no repo checkout
- * needed. Run it from Cloud Shell — see docs/ops/wipe-prod.md.
+ * Run it from Cloud Shell — see docs/ops/wipe-prod.md. Credentials come from
+ * Application Default Credentials (your own Google login there); never commit or
+ * download a service-account key for this.
  *
  *   npm i firebase-admin
  *   node wipe-prod.js                                    # dry run: prints the plan
  *   node wipe-prod.js --yes --confirm bike-eco-43a84     # actually erases everything
  *
- * Dry run is the default, and `--yes` alone is not enough: `--confirm` must
- * spell out the project id, so a wipe can never be a recalled shell command
- * away. Options:
- *   --only <list>       any of `storage,firestore,auth` (default: all three)
- *   --keep-backoffice   keep the back-office accounts — their Auth user, their
- *                       `users/{uid}` document and its `pushTokens`
- *   --keep <emails>     same, for a comma-separated list of addresses
+ * What it does, in this order
+ *   1. every object in the bucket (all of it is `dossiers/{companyId}/…`)
+ *   2. every document of every top-level Firestore collection, with their
+ *      subcollections (`messages`, `mutes`, `pushTokens`)
+ *   3. every Auth user, in batches
  *
- * Keeping nothing leaves a project with no way in: no product path creates a
- * back-office account, so signing in again means running `grant-backoffice.js`
- * (docs/ops/first-backoffice-account.md). `--keep-backoffice` is the usual
- * choice for a data reset that keeps the team's logins.
+ *   Storage goes first so an interrupted run cannot leave files no document
+ *   points at, and Auth last so accounts stay findable and the run stays
+ *   re-runnable. The plan says whether it is pointed at the emulators or at the
+ *   live project, so a rehearsal is never mistaken for the real thing.
  *
- * Credentials come from Application Default Credentials (your own Google login
- * in Cloud Shell). Never commit or download a service-account key for this.
+ * What it does not do
+ *   · nothing here is recoverable: Firestore has no undo, this bucket has no
+ *     version history, and a deleted Auth user cannot be restored — every
+ *     `submittedBy`, `invitedBy` and `senderName` in any surviving copy points
+ *     nowhere afterwards
+ *   · does not touch the security rules, the indexes or the deployed functions —
+ *     it only removes data
+ *   · keeps nobody unless asked: with no --keep-backoffice and no --keep, the
+ *     project is left with no way in, since no product path creates a
+ *     back-office account. Signing in again then means running
+ *     grant-backoffice.js (docs/ops/first-backoffice-account.md)
  */
 const { initializeApp } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");

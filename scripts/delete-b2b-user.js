@@ -1,46 +1,51 @@
 /**
  * Fully deletes a b2b (vendeur) account on the LIVE project — every trace of it,
- * not just the Auth record. Back-office accounts own no company data and go
- * through `delete-backoffice.js` instead; this script refuses them.
+ * not just the Auth record the Firebase console removes. Back-office accounts go
+ * through delete-backoffice.js instead; this script refuses them.
  *
- * Deleting the Auth user alone (what the Firebase console offers) leaves the
- * `users/{uid}` profile, the dossiers they submitted, those dossiers' photos and
- * message attachments in Storage, and any invitation they sent or received. The
- * profile doc is the visible one: a fresh account on the same email gets a new
- * uid, so the old doc is unreachable dead PII.
+ * Options
+ *   --email <email>    target by address — the Auth user, or a leftover profile
+ *                      carrying that email when the Auth user is already gone
+ *   --uid <uid>        target by uid (one of --email / --uid is required)
+ *   --yes              apply; without it the run is a dry run that prints the
+ *                      plan and writes nothing
+ *   --keep-dossiers    leave the user's dossiers and their files to the company;
+ *                      their `submittedBy` then points at a uid that no longer
+ *                      exists, which reads fine (the submitter is denormalized)
+ *   --with-company     also delete the company, its other members and every
+ *                      dossier and file it owns — the same cascade as the
+ *                      back-office "Supprimer l'entreprise" action
  *
- * Removed, in the order deleteCompanyCore uses (Storage first, so a failure
- * mid-run can never orphan files no document points at):
- *
- *   1. Storage under `dossiers/{companyId}/{dossierId}/` for each dossier
- *   2. those dossiers and their `messages` and `mutes` subcollections
- *   3. invitations they sent (`invitedBy`) and any pending invite to their email
- *   4. the Auth user
- *   5. the `users/{uid}` document and its `pushTokens` subcollection
- *
- * Self-contained on purpose: single file, one dependency, no repo checkout
- * needed. Run it from Cloud Shell — see docs/ops/manage-accounts.md.
+ * Run it from Cloud Shell — see docs/ops/manage-accounts.md. Credentials come
+ * from Application Default Credentials (your own Google login there); never
+ * commit or download a service-account key for this.
  *
  *   npm i firebase-admin
  *   node delete-b2b-user.js --email a@b.fr            # dry run: prints the plan
  *   node delete-b2b-user.js --email a@b.fr --yes      # actually deletes
  *
- * Dry run is the default; nothing is written without `--yes`. Options:
- *   --uid <uid>        target by uid (repairs a profile whose Auth user is gone)
- *   --keep-dossiers    leave the dossiers to the company (see below)
- *   --with-company     also delete the company, its other members, and all of
- *                      its dossiers — same cascade as the back-office
- *                      "Supprimer l'entreprise" action
+ * What it does, in this order
+ *   1. Storage under `dossiers/{companyId}/{dossierId}/` for each of the user's
+ *      dossiers — photos, thumbnails and message attachments
+ *   2. those dossiers, with their `messages` and `mutes` subcollections
+ *   3. the invitations they sent, and any pending one addressed to their email
+ *   4. the Auth user
+ *   5. the `users/{uid}` document and its `pushTokens` subcollection
  *
- * Dossiers belong to a company, not to a person, but they carry the submitter's
- * name and their photos are company data. The default deletes the ones this user
- * submitted (that is what "fully delete the account" means for GDPR erasure);
- * `--keep-dossiers` keeps them for the remaining team, at the cost of a
- * `submittedBy` pointing at a uid that no longer exists — harmless for reads,
- * since `submitter` is denormalized on the dossier.
+ *   Storage goes first so an interrupted run cannot orphan files, and the Auth
+ *   user and profile go last so the account stays findable — a run cut short is
+ *   always re-runnable. With --with-company the same cascade covers the whole
+ *   company: its files, all its dossiers, all its members and its invitations.
  *
- * Credentials come from Application Default Credentials (your own Google login
- * in Cloud Shell). Never commit or download a service-account key for this.
+ * What it does not do
+ *   · nothing here is recoverable — no undo, and a new account on the same email
+ *     gets a new uid
+ *   · leaves the messages this user posted in dossier chats: they carry a
+ *     denormalized `senderName`, and removing them would gut the conversation
+ *     for the other party
+ *   · does not delete the company by default — it only warns when this was its
+ *     last member, or when the company keeps a now-dangling `createdBy`
+ *   · does not touch back-office accounts, security rules, indexes or functions
  */
 const { initializeApp } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");

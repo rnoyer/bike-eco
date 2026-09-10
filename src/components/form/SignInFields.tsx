@@ -40,7 +40,7 @@ export default function SignInFields({
       <View style={styles.fields}>
         <ControlledField
           name="email"
-          label="Adresse email *"
+          label="Adresse email"
           placeholder="Votre email"
           keyboardType="email-address"
           autoCapitalize="none"
@@ -48,7 +48,7 @@ export default function SignInFields({
         />
         <ControlledField
           name="password"
-          label="Mot de passe *"
+          label="Mot de passe"
           placeholder="Mot de passe"
           secureTextEntry
           autoCapitalize="none"

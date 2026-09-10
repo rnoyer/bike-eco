@@ -160,3 +160,52 @@ usage unique valable 1 heure, suit le parcours d'inscription invité — où il 
 sa **région gérée** (champ optionnel, "Toute la France" par défaut) —, et obtient un
 compte back-office **actif** et **non administrateur** — à promouvoir ensuite depuis
 la page Collaborateur si besoin.
+
+### Inviter hors application
+
+`scripts/invite-backoffice.js` fait la même chose que cet écran, depuis Cloud Shell :
+il écrit l'unique document `invitations/{id}` — le **hash** d'un code à 6 caractères,
+valable 1 heure — et envoie l'email d'invitation. À réserver aux cas où personne ne
+peut atteindre l'écran (aucun admin connecté, application indisponible, invitation à
+renvoyer dans l'urgence) ; l'écran reste le chemin normal.
+
+```bash
+npm i firebase-admin nodemailer
+
+node invite-backoffice.js --email nouveau@bike-eco.fr
+```
+
+Contrairement à `grant-backoffice.js`, ce script ne crée **aucun** compte : rien
+n'existe tant que l'invité n'a pas saisi son code, et l'invitation expire d'elle-même
+au bout d'une heure. L'invité choisit son mot de passe et sa région gérée, et obtient
+le même compte **actif** et **non administrateur** qu'une invitation faite depuis
+l'application.
+
+`--isAdmin` donne au contraire un compte **administrateur** d'emblée, sans passer
+par la promotion depuis « Mes collaborateurs ». Le drapeau est porté par le document
+d'invitation, pas par le formulaire d'inscription : l'invité ne peut donc pas se
+promouvoir lui-même en modifiant sa requête, c'est `acceptInvite` qui relit le champ.
+Une invitation ainsi marquée transforme le code en code d'**administrateur** —
+à traiter en conséquence.
+
+`invitedBy` vaut la valeur littérale `admin-script` : aucune session n'a envoyé cette
+invitation, et y mettre l'uid d'un administrateur lui en attribuerait l'envoi. En
+contrepartie `delete-backoffice.js`, qui nettoie les invitations d'un administrateur
+supprimé via `invitedBy == uid`, ne les voit pas : elles disparaissent en étant
+utilisées, et sont de toute façon mortes une heure après leur envoi.
+
+Les identifiants SMTP sont lus dans les mêmes secrets que les fonctions
+(`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`), via le `gcloud` déjà installé
+dans Cloud Shell. S'ils sont illisibles le script s'arrête **avant** d'écrire : une
+invitation sans email pour porter son code ne sert à rien.
+
+Deux drapeaux optionnels :
+
+- `--dry-run` affiche ce qui serait écrit et envoyé, sans rien faire.
+- `--show-code` affiche le code en clair, secours si l'email n'arrive pas. Il
+  n'est stocké que haché, donc irrécupérable après coup : sans ce drapeau, un email
+  perdu se règle en relançant le script. Ne le transmettre que par un canal sûr — il
+  crée un compte back-office.
+
+Relancer le script n'est **pas** idempotent : chaque exécution émet un nouveau code et
+un nouvel email. Les codes précédents restent valables jusqu'à leur expiration.

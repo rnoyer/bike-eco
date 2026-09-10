@@ -269,3 +269,16 @@ test("acceptInvite on a back-office invitation creates an active, non-admin team
   });
   expect(d.calls.invitations["inv2"]).toBe("deleted");
 });
+
+test("acceptInvite honours an invitation flagged isAdmin (the ops script's)", async () => {
+  const inv = {
+    id: "inv3", email: "chef@bike-eco.fr", role: "backoffice" as const, companyId: null,
+    companyName: null, tokenHash: hashInviteCode("Z9Y8X7"), expiresAt: 2_000_000, isAdmin: true,
+  };
+  const d = fakeDeps({ findInvitationByHash: async () => inv });
+  await acceptInviteCore(
+    { method: "password", code: "Z9Y8X7", nom: "N", prenom: "P", telephone: "0600000000", password: "password123" },
+    null, null, d,
+  );
+  expect(d.calls.users["uid_new"]).toMatchObject({ role: "backoffice", status: "active", isAdmin: true });
+});

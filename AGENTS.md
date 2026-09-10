@@ -61,7 +61,9 @@ feature. Keep a spec in sync in the same change that alters its feature.
 - **Runbooks** (`docs/ops/`) — operational procedures against the live project:
   - `first-backoffice-account.md` — creating a `backoffice` account on `bike-eco-43a84`
     with `scripts/grant-backoffice.js` (Auth user + custom claims + `users/{uid}` doc).
-    No product path creates one.
+    No product path creates one. Also `scripts/invite-backoffice.js`, the out-of-band
+    equivalent of "Inviter un membre de l'équipe Bike-eco" (invitation document + email,
+    no account until the code is redeemed).
   - `manage-accounts.md` — creating a b2b account (`scripts/create-b2b.js`, optionally
     with its company) and fully erasing one, split by role and dry-run by default:
     `scripts/delete-b2b-user.js` (Auth, profile, dossiers, Storage files, invitations)

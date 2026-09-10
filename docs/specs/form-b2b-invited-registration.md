@@ -68,6 +68,12 @@ masque la saisie. Le mot de passe est masqué par défaut.
 Note : via le bouton Google, l'identité est fournie par Auth — les deux champs
 mot de passe ne sont pas saisis et ne bloquent pas le passage au step suivant.
 
+**iOS** : le bouton Google — et avec lui le divider "Ou continuez avec" — n'est
+pas affiché. Proposer une connexion tierce sur iOS déclenche la règle 4.8 de
+l'App Store ("Sign in with Apple" obligatoire à côté) ; Google reste disponible
+sur Android et sur le web. Sur iOS, seule la connexion email + mot de passe est
+donc proposée.
+
 Le compte Google choisi doit être celui de l'invitation. Si l'utilisateur
 sélectionne un autre compte dans le sélecteur Google, une alerte "Connexion
 Google" nomme les deux adresses (celle choisie et celle de l'invitation), et le
