@@ -74,9 +74,15 @@ From `functions/src/callable.ts`:
   `getFirestore()` bare; that targets `(default)` and silently reads nothing.
 - **`callerFrom(req)`** — `{ uid, role, status, companyId }` from the verified token.
   Claims come from the token, never from `req.data`.
-- **`toHttps(err)`** — the single error funnel: `RegError` → its own code, `ZodError` →
+- **`toHttps(err, uid)`** — the single error funnel: `RegError` → its own code, `ZodError` →
   `invalid-argument`, known `auth/*` codes → French `HttpsError`, anything else → logged
   and rethrown as a generic `internal`. Raw internals never reach the client.
+  The wrappers pass the caller's uid; only the *unexpected* branch logs, via
+  `internalErrorLog` (`errorLog.ts`, unit-tested), which stamps the entry with the
+  function name (`K_SERVICE`, so lowercased), the uid, the error class and the stack.
+  Everything mapped above is an expected user-facing outcome and stays unlogged —
+  that is what keeps `"Callable failed"` meaning "something broke" and makes it safe
+  to alert on.
 - Add `{ secrets: B2C_EMAIL_SECRETS }` to any callable that sends email.
 
 Callables that must reject unauthenticated callers do so explicitly — `onCall` does not.
