@@ -58,12 +58,22 @@ From top to bottom
   entreprise. No orphan is left. It also covers a lone **vendeur** — an admin-less company
   of one still leaves nothing behind.
 
-  While the colleague list is still loading the button is disabled: which modal to open is
-  not yet known.
+  **Bike-eco back office**
 
-  **Bike-eco back office** — unchanged for now: the button is **disabled for an
-  administrator**, with the line "Un administrateur ne peut pas supprimer son compte.
-  Transférez d'abord le rôle administrateur à un collaborateur." below it.
+  | Situation | Message | Second button |
+  |---|---|---|
+  | Dernier membre de Bike-eco | "Vous êtes le dernier membre de Bike-eco. Afin de supprimer votre compte, veuillez d'abord inviter un nouveau membre d'équipe Bike-eco, et le promouvoir comme administrateur." | "Inviter un membre" (secondaire) — ouvre l'onglet "Paramètres". Rien n'est supprimé |
+  | Dernier administrateur, mais il reste des membres | "Vous êtes le dernier administrateur de Bike-eco. Afin de supprimer votre compte, veuillez d'abord attribuer le rôle Administrateur à un autre membre Bike-eco" | "Gérer les membres" (secondaire) — ouvre l'onglet "Paramètres". Rien n'est supprimé |
+  | Sinon | "Cette action supprime définitivement votre compte. Vos dossiers et vos conversations sont conservés." | "Supprimer mon compte" (danger) — supprime le compte et déconnecte |
+
+  Bike-eco has **no cascade** — it is the application, not a tenant, so its last member is
+  refused rather than offered a deletion. An empty team would lock everyone out for good:
+  `sendInvite` and `setColleagueAdmin` both require an admin caller, so no product path
+  could recover it (only `scripts/invite-backoffice.js`, see
+  [`first-backoffice-account.md`](../ops/first-backoffice-account.md)).
+
+  The button is never disabled for an administrator, in either role. While the colleague
+  list is still loading it is disabled: which modal to open is not yet known.
 
 ## Loading and error states
 

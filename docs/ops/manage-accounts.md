@@ -219,6 +219,10 @@ administrateur back-office laisse l'équipe sans personne pour promouvoir ou sup
 collaborateur. Vérifier qu'il en reste un autre avant de supprimer, ou en promouvoir un
 juste après avec `grant-backoffice.js` (compte existant, sans `--no-admin`).
 
+Côté produit, « Supprimer mon compte » refuse ces deux cas de lui-même (`deleteMyAccount` :
+dernier administrateur, et dernier membre de Bike-eco). Ce script reste la voie qui passe
+outre — d'où les vérifications à faire à la main ci-dessus.
+
 Les messages postés dans les conversations sont conservés : ils portent un `senderName`
 dupliqué, et les supprimer amputerait la conversation côté vendeur.
 

@@ -184,6 +184,22 @@ function selfScopeOf(caller: CallerClaims): Scope | null {
   return null;
 }
 
+/**
+ * The three refusals, verbatim from `page-my-account.md` minus the company
+ * name: the client holds it, and reading it here would be a Firestore read
+ * spent on an error path the client already renders itself.
+ */
+const SOLE_COMPANY_ADMIN =
+  "Vous êtes le dernier administrateur de votre entreprise. Veuillez attribuer le " +
+  "rôle Administrateur à un autre vendeur avant de supprimer votre compte.";
+const SOLE_BACKOFFICE_ADMIN =
+  "Vous êtes le dernier administrateur de Bike-eco. Afin de supprimer votre compte, " +
+  "veuillez d'abord attribuer le rôle Administrateur à un autre membre Bike-eco.";
+const LAST_BACKOFFICE_MEMBER =
+  "Vous êtes le dernier membre de Bike-eco. Afin de supprimer votre compte, veuillez " +
+  "d'abord inviter un nouveau membre d'équipe Bike-eco, et le promouvoir comme " +
+  "administrateur.";
+
 /** Auth first, for the same reason as `deleteColleagueCore`: a stranded profile
  *  doc is visible and fixable, a stranded Auth user is a live session with no
  *  profile. */
@@ -206,10 +222,16 @@ async function deleteSelf(uid: string, deps: UsersDeps): Promise<void> {
  *   Anything else would strand the dossiers, their chats and their files with
  *   nobody able to sign in for them.
  * - **Sole admin of a company that still has vendeurs** — refused. Promoting a
- *   colleague first is the way out, and the client says so in a modal; this
- *   message is the fallback for the race where the last other admin is demoted
- *   between the screen's read and the call. It names no company: the client
- *   holds the name, and fetching it here would be a read for an error path.
+ *   colleague first is the way out, and the client says so in a modal.
+ * - **Back office, either case** — refused. Bike-eco has no cascade to run: it
+ *   is the app, not a tenant, and the last member leaving would lock everyone
+ *   out for good (`sendInvite` and `setColleagueAdmin` both require an admin
+ *   caller, so nothing in the product could recover it). They are told to
+ *   invite a member and promote them first.
+ *
+ * The three refusal messages are the fallback for the race where the last other
+ * admin is demoted between the screen's read and this call; in the ordinary
+ * case the client has already shown the same thing as a modal.
  */
 export async function deleteMyAccountCore(
   caller: CallerClaims,
@@ -221,29 +243,22 @@ export async function deleteMyAccountCore(
   const scope = selfScopeOf(caller);
   if (!scope) return deleteSelf(caller.uid, deps);
 
+  const members = await deps.listMembers(scope);
+  const lastMember = members.length <= 1;
+  const soleAdmin = me.isAdmin && countAdmins(members) <= 1;
+
   if (scope.kind === "backoffice") {
-    if (me.isAdmin) {
-      throw new RegError(
-        "failed-precondition",
-        "Un administrateur ne peut pas supprimer son compte.",
-      );
-    }
+    if (lastMember) throw new RegError("failed-precondition", LAST_BACKOFFICE_MEMBER);
+    if (soleAdmin) throw new RegError("failed-precondition", SOLE_BACKOFFICE_ADMIN);
     return deleteSelf(caller.uid, deps);
   }
 
-  const members = await deps.listMembers(scope);
-  if (members.length <= 1) {
+  if (lastMember) {
     // The cascade deletes every member of the company — this caller included —
     // so there is no separate self-delete to run afterwards.
     return deps.deleteCompanyCascade(scope.companyId);
   }
-  if (me.isAdmin && countAdmins(members) <= 1) {
-    throw new RegError(
-      "failed-precondition",
-      "Vous êtes le dernier administrateur de votre entreprise. Veuillez attribuer " +
-        "le rôle Administrateur à un autre vendeur avant de supprimer votre compte.",
-    );
-  }
+  if (soleAdmin) throw new RegError("failed-precondition", SOLE_COMPANY_ADMIN);
   await deleteSelf(caller.uid, deps);
 }
 

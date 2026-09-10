@@ -183,6 +183,46 @@ test("a lone non-admin also takes the company with them — no orphan is left", 
   expect(d.calls.cascaded).toEqual(["comp_1"]);
 });
 
+const BO_TEAM = [
+  { uid: "bo1", isAdmin: true }, { uid: "bo2", isAdmin: false },
+];
+
+test("a back-office member with an admin left deletes their own account", async () => {
+  const d = fakeDeps({ listMembers: async () => BO_TEAM });
+  await deleteMyAccountCore({ ...boAdmin, uid: "bo2" }, d);
+  expect(d.calls.authDeleted).toEqual(["bo2"]);
+});
+
+test("a back-office admin with another admin left deletes their own account", async () => {
+  const d = fakeDeps({
+    listMembers: async () => [...BO_TEAM, { uid: "bo3", isAdmin: true }],
+  });
+  await deleteMyAccountCore(boAdmin, d);
+  expect(d.calls.authDeleted).toEqual(["bo1"]);
+});
+
+test("the sole Bike-eco admin is refused while other members remain", async () => {
+  const d = fakeDeps({ listMembers: async () => BO_TEAM });
+  await expect(deleteMyAccountCore(boAdmin, d)).rejects.toMatchObject({
+    code: "failed-precondition",
+    message: expect.stringContaining("dernier administrateur de Bike-eco"),
+  });
+  expect(d.calls.authDeleted).toEqual([]);
+});
+
+// Bike-eco is the app, not a tenant: there is no cascade to run, and an empty
+// team locks everyone out for good — `sendInvite` and `setColleagueAdmin` both
+// need an admin caller, so nothing in the product could recover it.
+test("the last Bike-eco member is refused, and nothing is cascaded", async () => {
+  const d = fakeDeps({ listMembers: async () => [{ uid: "bo1", isAdmin: true }] });
+  await expect(deleteMyAccountCore(boAdmin, d)).rejects.toMatchObject({
+    code: "failed-precondition",
+    message: expect.stringContaining("dernier membre de Bike-eco"),
+  });
+  expect(d.calls.authDeleted).toEqual([]);
+  expect(d.calls.cascaded).toEqual([]);
+});
+
 test("a b2b account with no company deletes itself rather than being stranded", async () => {
   const d = fakeDeps({
     listMembers: async () => { throw new Error("no scope to query"); },

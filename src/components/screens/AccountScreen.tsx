@@ -31,7 +31,7 @@ import {
 import { sendPasswordResetEmail } from "firebase/auth";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { auth } from "../../../firebaseConfig";
 
 /** Which group's edit route this screen sends the pencil buttons to — the two
@@ -81,6 +81,7 @@ export default function AccountScreen() {
     role: data?.role ?? "b2b",
     isAdmin,
     others: colleagues.data ?? [],
+    companyId: data?.companyId ?? null,
     companyName: company.data?.name ?? null,
   });
 
@@ -227,23 +228,13 @@ export default function AccountScreen() {
             label="Supprimer mon compte"
             onPress={() => setConfirmingDelete(true)}
             loading={deletingAccount.pending}
-            // Which of the three modals opens is decided in
-            // `deleteAccountPrompt`, not here: an admin the organisation still
-            // needs is told why and where to go, rather than left tapping a
-            // dead button with an explanation under it.
-            disabled={
-              (isAdmin && isBackoffice) ||
-              colleagues.loading ||
-              deletingAccount.pending
-            }
+            // Never disabled for an admin any more: which of the modals opens
+            // is decided in `deleteAccountPrompt`, and an admin the
+            // organisation still needs is told why and where to go — rather
+            // than left tapping a dead button with an explanation under it.
+            // Only the colleague read gates it, because that decision needs it.
+            disabled={colleagues.loading || deletingAccount.pending}
           />
-          {isAdmin && isBackoffice ? (
-            <Text style={styles.adminNote}>
-              En tant qu&apos;administrateur, vous ne pouvez pas supprimer votre
-              compte. Transférez d&apos;abord le rôle administrateur à un autre
-              collaborateur.
-            </Text>
-          ) : null}
         </View>
       </SectionWrapper>
       <ConfirmModal
@@ -267,9 +258,8 @@ const styles = StyleSheet.create({
   // the auto margin eats the leftover space. Content taller than the viewport
   // simply scrolls, with the button last. The viewport here is the whole
   // screen, tab bar included, so the container also pads itself by
-  // `useTabBarInset()` — otherwise the button and its admin note land under it.
+  // `useTabBarInset()` — otherwise the delete button lands under it.
   scrollContent: { flexGrow: 1 },
   fill: { flexGrow: 1 },
   toBottom: { marginTop: "auto", gap: tokens.space.sm },
-  adminNote: { fontSize: 13, color: tokens.colors.muted },
 });
