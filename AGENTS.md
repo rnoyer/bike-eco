@@ -78,6 +78,12 @@ feature. Keep a spec in sync in the same change that alters its feature.
     `restore` rewrites the live database — both create a **new** one, so recovery
     is always clone/restore → copy documents back → delete the temporary database.
     Storage files and Auth users are **not** covered.
+  - `monitoring-alertes.md` — the email alerting on server failures, set up by
+    `scripts/setup-alerts.sh` (idempotent, Cloud Shell): one notification channel
+    plus two log-based policies. They match on **severity + function name, never on
+    a log message string**, so a new callable is covered automatically and editing
+    a message cannot silently disable an alert. Also documents the fields on the
+    `Callable failed` entry and what is deliberately *not* alerted on.
 
 # Project skills
 

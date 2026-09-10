@@ -82,7 +82,7 @@ From `functions/src/callable.ts`:
   function name (`K_SERVICE`, so lowercased), the uid, the error class and the stack.
   Everything mapped above is an expected user-facing outcome and stays unlogged —
   that is what keeps `"Callable failed"` meaning "something broke" and makes it safe
-  to alert on.
+  to alert on — which it is: see `docs/ops/monitoring-alertes.md`.
 - Add `{ secrets: B2C_EMAIL_SECRETS }` to any callable that sends email.
 
 Callables that must reject unauthenticated callers do so explicitly — `onCall` does not.
