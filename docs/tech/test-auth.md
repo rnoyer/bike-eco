@@ -5,7 +5,7 @@
 > `invitations.expiresAt`.
 >
 > That policy is declared in `firestore.indexes.json` (`fieldOverrides`, `"ttl":
-> true`) and ships with the indexes — it is **not** a manual console step:
+true`) and ships with the indexes — it is **not** a manual console step:
 >
 > ```bash
 > npx -y firebase-tools@latest deploy --only firestore:indexes --project bike-eco-43a84
@@ -45,7 +45,7 @@ npm run seed
   - b2b@garage-nord.fr / password123 → B2B dashboard;
   - b2b@garage-sud.fr / password123 → B2B dashboard;
   - bo@bike-eco.fr / password123 back-office;
-  - pending@garage-nord.fr → pending gate → Se déconnecter returns to sign-in;
+  - alex@nouveau.fr → pending gate → Se déconnecter returns to sign-in;
 
 wipe the app's data via adb — that clears AsyncStorage, the Firebase Auth persisted session, and everything else in one shot:
 

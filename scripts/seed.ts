@@ -104,18 +104,6 @@ async function main() {
     status: "active", createdAt: now, updatedAt: now,
   });
 
-  await upsertUser("user_pending", "pending@garage-nord.fr", "password123", {
-    role: "b2b",
-    companyId: "comp_nord",
-    status: "pending",
-  });
-  await db.doc(`users/user_pending`).set({
-    role: "b2b", companyId: "comp_nord", isAdmin: false,
-    nom: "Petit", prenom: "Sam", email: "pending@garage-nord.fr",
-    telephone: "0611121314",
-    status: "pending", createdAt: now, updatedAt: now,
-  });
-
   // Deliberately unalike, so every conditional part of the "Informations
   // véhicule" card (page-dossier.md) has something to reveal in at least one
   // seeded dossier: dos_1 is a thermique with a keyless system and a complete
