@@ -33,10 +33,17 @@ export interface DeleteAccountInput {
   companyName: string | null;
 }
 
-const PLAIN: DeleteAccountPrompt = {
+const plainB2B: DeleteAccountPrompt = {
   message:
-    "Cette action supprime définitivement votre compte. Vos dossiers et vos " +
-    "conversations sont conservés.",
+    "Cette action supprime définitivement votre compte. Vos dossiers et toutes " +
+    "les informations associées seront conservés.",
+  actionLabel: "Supprimer mon compte",
+  action: "delete",
+};
+
+const plainBO: DeleteAccountPrompt = {
+  message:
+    "Cette action supprime définitivement votre compte Bike-eco.",
   actionLabel: "Supprimer mon compte",
   action: "delete",
 };
@@ -80,13 +87,13 @@ export function deleteAccountPrompt(input: DeleteAccountInput): DeleteAccountPro
         action: "manage",
       };
     }
-    return PLAIN;
+    return plainBO;
   }
 
   // An orphaned b2b account has no company to erase and no colleagues to
   // count, so `others` being empty must not read as "last member". The server
   // agrees: a caller with no scope is a plain self-delete.
-  if (!companyId) return PLAIN;
+  if (!companyId) return plainB2B;
 
   // "l'entreprise Moto Dupont" while the company read is in flight would name
   // nothing, so fall back to the possessive rather than to an empty gap.
@@ -96,8 +103,8 @@ export function deleteAccountPrompt(input: DeleteAccountInput): DeleteAccountPro
     return {
       message:
         `En supprimant votre compte, vous supprimez également toutes les données ` +
-        `relatives à ${company} et aux dossiers que vous avez soumis.\n` +
-        `Êtes-vous sur de vouloir supprimer votre compte et l'entreprise ?`,
+        `relatives à ${company} et tous les dossiers soumis.\n` +
+        `Êtes-vous sur de vouloir supprimer votre compte, l'entreprise et toutes ses données?`,
       actionLabel: "Supprimer mon compte",
       action: "deleteWithCompany",
     };
@@ -111,5 +118,5 @@ export function deleteAccountPrompt(input: DeleteAccountInput): DeleteAccountPro
       action: "manage",
     };
   }
-  return PLAIN;
+  return plainB2B;
 }
