@@ -19,7 +19,7 @@ describe("b2b", () => {
   test("an admin with another admin left gets the plain confirmation", () => {
     const p = b2b();
     expect(p.action).toBe("delete");
-    expect(p.message).toContain("Vos dossiers et vos conversations sont conservés");
+    expect(p.message).toContain("Vos dossiers et toutes les informations associées seront conservés.");
   });
 
   test("a vendeur gets the plain confirmation", () => {
@@ -60,7 +60,7 @@ describe("b2b", () => {
 
   test("the company name falls back while the company read is in flight", () => {
     const p = b2b({ others: [], companyName: null });
-    expect(p.message).toContain("relatives à votre entreprise et aux dossiers");
+    expect(p.message).toContain("relatives à votre entreprise et tous les dossiers soumis");
     expect(p.message).not.toContain("l'entreprise .");
   });
 });
