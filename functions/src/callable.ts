@@ -9,6 +9,7 @@ import { HttpsError, onCall, type CallableOptions } from "firebase-functions/htt
 import * as logger from "firebase-functions/logger";
 import { z, ZodError, type ZodType } from "zod";
 
+import { internalErrorLog } from "./errorLog";
 import { RegError, type CallerClaims } from "./errors";
 
 // Point the admin SDK at the local emulators in dev. Deployed Gen2 functions
@@ -39,7 +40,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-export function toHttps(err: unknown): never {
+/**
+ * The single error funnel. `uid` is the caller from the verified token, passed
+ * in by the wrappers below: an unexpected failure is logged with the function
+ * it happened in and the account it happened to, which is what makes the
+ * resulting alert actionable. Everything mapped below is an expected, user-facing
+ * outcome and stays unlogged, so the error log keeps meaning "something broke".
+ */
+export function toHttps(err: unknown, uid: string | null = null): never {
   if (err instanceof RegError) throw new HttpsError(err.code, err.message);
   if (err instanceof ZodError) throw new HttpsError("invalid-argument", "Données du formulaire invalides.");
 
@@ -56,8 +64,7 @@ export function toHttps(err: unknown): never {
     }
   }
 
-  const message = err instanceof Error ? err.message : String(err);
-  logger.error("Callable failed", { error: message });
+  logger.error("Callable failed", internalErrorLog(err, uid));
   throw new HttpsError("internal", "Une erreur est survenue. Veuillez réessayer.");
 }
 
@@ -95,7 +102,7 @@ export function authedCall<I, R>(
     try {
       return await respond(await run(schema.parse(req.data), callerFrom(req)));
     } catch (e) {
-      toHttps(e);
+      toHttps(e, req.auth?.uid ?? null);
     }
   });
 }
@@ -122,7 +129,7 @@ export function publicCall<I, R>(
       };
       return await respond(await run(schema.parse(req.data), identity));
     } catch (e) {
-      toHttps(e);
+      toHttps(e, req.auth?.uid ?? null);
     }
   });
 }

@@ -72,6 +72,18 @@ feature. Keep a spec in sync in the same change that alters its feature.
     `scripts/wipe-prod.js` (whole bucket + every Firestore collection + every Auth
     user). Dry-run by default; needs `--yes --confirm bike-eco-43a84` to apply, and
     `--keep-backoffice` to keep a way back in.
+  - `recover-firestore.md` — recovering deleted or corrupted data: PITR (7-day
+    window, minute precision) and the weekly backup schedule (Mondays, 35-day
+    retention), both enabled on `bike-eco-db`. Note that neither `clone` nor
+    `restore` rewrites the live database — both create a **new** one, so recovery
+    is always clone/restore → copy documents back → delete the temporary database.
+    Storage files and Auth users are **not** covered.
+  - `monitoring-alertes.md` — the email alerting on server failures, set up by
+    `scripts/setup-alerts.sh` (idempotent, Cloud Shell): one notification channel
+    plus two log-based policies. They match on **severity + function name, never on
+    a log message string**, so a new callable is covered automatically and editing
+    a message cannot silently disable an alert. Also documents the fields on the
+    `Callable failed` entry and what is deliberately *not* alerted on.
 
 # Project skills
 

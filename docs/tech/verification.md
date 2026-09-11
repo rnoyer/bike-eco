@@ -25,6 +25,7 @@ tests for screens is not the house style.
 | Pure auth helpers (`routeGuard`, `session`, `authErrors`, `googleEmail`) | Screens and components |
 | Pure data helpers (`selectCompanies`, `dataErrors`, `useRegionFilter`) | `use*` hooks that only wrap `onSnapshot` |
 | Cloud Function cores (`functions/src/*/core.ts`, `schemas.ts`) | Callable and trigger wiring in `index.ts` |
+| Shared pure helpers (`functions/src/errorLog.ts`, `labels.ts`, `storageUrl.ts`) | `callable.ts` itself (it runs `initializeApp`) |
 | Security rules (see below) | Storage upload plumbing |
 
 Import jest globals explicitly:
