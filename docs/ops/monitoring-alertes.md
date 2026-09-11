@@ -78,9 +78,12 @@ Le principe : créer une règle temporaire qui se déclenche sur quelque chose d
 fréquent**, confirmer que l'email arrive, puis la supprimer. On ne casse rien.
 
 ```bash
-# 1. récupérer le canal
-CHANNEL=$(gcloud beta monitoring channels list --project bike-eco-43a84 \
-  --filter="displayName='Bike-eco - alertes techniques'" --format='value(name)')
+# 1. récupérer le canal : lister, puis recopier le « name » de la bonne ligne.
+#    (Ne pas utiliser --filter sur displayName : voir l'encadré plus bas.)
+gcloud beta monitoring channels list --project bike-eco-43a84 \
+  --format='table(name,displayName,enabled)'
+
+CHANNEL="projects/bike-eco-43a84/notificationChannels/..."   # coller ici
 
 # 2. une règle jetable sur les avertissements (fréquents, anodins)
 cat > /tmp/test-policy.json <<JSON
@@ -105,11 +108,23 @@ gcloud monitoring policies create --project bike-eco-43a84 --policy-from-file=/t
 #    quelqu'un qui n'a pas de téléphone enregistré ("No registered device").
 #    Puis attendre quelques minutes et surveiller la boîte mail.
 
-# 4. TOUJOURS supprimer la règle de test ensuite
-POLICY=$(gcloud monitoring policies list --project bike-eco-43a84 \
-  --filter="displayName='ZZZ test jetable - a supprimer'" --format='value(name)')
-gcloud monitoring policies delete "$POLICY" --project bike-eco-43a84
+# 4. TOUJOURS supprimer la règle de test ensuite : lister, repérer la ligne
+#    « ZZZ test jetable », recopier son « name ».
+gcloud monitoring policies list --project bike-eco-43a84 \
+  --format='table(name,displayName,enabled)'
+
+gcloud monitoring policies delete projects/bike-eco-43a84/alertPolicies/... \
+  --project bike-eco-43a84
 ```
+
+> **Ne pas filtrer sur `displayName` avec `--filter`.** Pour ces commandes
+> `monitoring`, gcloud transmet l'expression à l'API, dont la syntaxe de filtre
+> refuse la citation habituelle : `--filter="displayName='Bike-eco - alertes
+> techniques'"` échoue sur **le premier espace** (`syntax error … token ' '`).
+> Pire, l'erreur n'apparaît que lorsqu'une ressource existe déjà — tant que la
+> liste est vide, gcloud se contente d'un avertissement et la commande semble
+> marcher. Lister puis recopier à la main est plus sûr ; c'est aussi pour cette
+> raison que `setup-alerts.sh` lit la liste en JSON au lieu de la filtrer.
 
 Si l'email n'arrive pas, le problème est presque toujours le canal `UNVERIFIED`
 ci-dessus, ou le message classé en indésirable.
