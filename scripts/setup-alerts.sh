@@ -13,7 +13,7 @@
 set -euo pipefail
 
 PROJECT_ID="${PROJECT_ID:-bike-eco-43a84}"
-ALERT_EMAIL="${ALERT_EMAIL:-rnoyer.dev+bikeeco@gmail.com}"
+ALERT_EMAIL="${ALERT_EMAIL:-rnoyer.dev+monitoringbikeeco@gmail.com}"
 DRY_RUN="${DRY_RUN:-0}"
 
 CHANNEL_TITLE="Bike-eco - alertes techniques"
@@ -35,6 +35,31 @@ say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 skip() { printf '  déjà en place — ignoré : %s\n' "$*"; }
 made() { printf '  créé : %s\n' "$*"; }
 
+# Print the resource name of the channel/policy whose displayName is exactly
+# $2, or nothing. $1 is the `gcloud ... list` command to run, as a string.
+#
+# Deliberately NOT `gcloud --filter=`: for these monitoring commands gcloud
+# hands the expression to the Monitoring API, whose filter dialect rejects the
+# quoting that works elsewhere in gcloud. `displayName='Bike-eco - alertes
+# techniques'` fails with "syntax error ... token ' '" on the first space —
+# and only once a resource exists, so a first run looks fine and the *second*
+# one breaks. Listing as JSON and matching in python has no dialect to get
+# wrong, and python3 is already required here to build the policies.
+# The title is passed as an ARGUMENT, not an environment variable: an
+# `VAR=x cmd | other` prefix sets VAR for the left-hand command only, so the
+# python on the right of the pipe would never see it.
+find_by_display_name() {
+  local list_cmd="$1" title="$2"
+  $list_cmd --project="$PROJECT_ID" --format=json | python3 -c '
+import json, sys
+wanted = sys.argv[1]
+for resource in json.load(sys.stdin):
+    if resource.get("displayName") == wanted:
+        print(resource["name"])
+        break
+' "$title"
+}
+
 if [ "$DRY_RUN" = "1" ]; then
   say "SIMULATION — aucune ressource ne sera créée"
 fi
@@ -54,10 +79,7 @@ fi
 
 # ─── 1. notification channel ─────────────────────────────────────────────────
 say "2/4 — Canal de notification"
-CHANNEL="$(gcloud beta monitoring channels list \
-  --project="$PROJECT_ID" \
-  --filter="displayName='${CHANNEL_TITLE}'" \
-  --format='value(name)' | head -1)"
+CHANNEL="$(find_by_display_name "gcloud beta monitoring channels list" "$CHANNEL_TITLE")"
 
 if [ -n "$CHANNEL" ]; then
   skip "$CHANNEL_TITLE"
@@ -92,10 +114,7 @@ create_policy() {
   local title="$1" filter="$2" rate="$3" doc="$4" file="$WORKDIR/policy.json"
 
   local existing
-  existing="$(gcloud monitoring policies list \
-    --project="$PROJECT_ID" \
-    --filter="displayName='${title}'" \
-    --format='value(name)' | head -1)"
+  existing="$(find_by_display_name "gcloud monitoring policies list" "$title")"
 
   if [ -n "$existing" ]; then
     skip "$title"
