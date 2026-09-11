@@ -113,11 +113,16 @@ so it caps file size (8 MB), file count (12) and field size before buffering.
 
 `email.ts` owns sending and region routing (NORTH/SOUTH mailboxes; `regions.ts`).
 
-**`DEV_EMAIL_OVERRIDE` is `false`** — real recipients now receive mail. It is a module
-constant, not an env var, so with it `false` the dev-redirect branches are statically
-dead; they are kept as the switch back for local testing. `NORTH_MAILBOX` and
-`SOUTH_MAILBOX` are still both the dev address, so `resolveRegion` routing has no
-observable effect until those are set to the real mailboxes.
+**`DEV_EMAIL_OVERRIDE` is `false` and both mailboxes are real** — `NORTH_MAILBOX` and
+`SOUTH_MAILBOX` are two *different* live addresses belonging to two different partners.
+So `resolveRegion` is not decorative: it decides which partner receives a customer's
+submission, and a wrong département mapping sends someone's name, phone and photos to
+the wrong company. `regions.ts` duplicates the département lists from
+`src/constants/departments.ts` (the functions package compiles in isolation and cannot
+import app sources) — change both, or routing silently disagrees with the UI.
+
+The override is a module constant, not an env var, so with it `false` the dev-redirect
+branches are statically dead; they are kept as the switch back for local testing.
 
 ## App Check
 

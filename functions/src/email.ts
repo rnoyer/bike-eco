@@ -18,9 +18,14 @@ const SMTP_PASS = defineSecret("SMTP_PASS");
 export const B2C_EMAIL_SECRETS = [SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS];
 
 /**
- * During the development phase every email is routed here regardless of region
- * (per the product spec). Swap these for the real mailboxes and flip
- * DEV_EMAIL_OVERRIDE off when going live.
+ * Region routing is live: the override is off and both mailboxes below are the
+ * partners' real addresses, so `teamRecipient` sends each B2C submission to
+ * whichever centre `resolveRegion` picks.
+ *
+ * DEV_EMAIL and the override are kept as the switch back for local testing —
+ * set DEV_EMAIL_OVERRIDE to `true` and every outbound mail (B2C team + customer,
+ * registration, the back-office recap) funnels to DEV_EMAIL instead. Shipping it
+ * that way means no real recipient ever receives anything.
  */
 const DEV_EMAIL_OVERRIDE = false;
 const DEV_EMAIL = "rnoyer.dev@gmail.com";
