@@ -76,7 +76,9 @@ feature. Keep a spec in sync in the same change that alters its feature.
     window, minute precision) and the weekly backup schedule (Mondays, 35-day
     retention), both enabled on `bike-eco-db`. Note that neither `clone` nor
     `restore` rewrites the live database — both create a **new** one, so recovery
-    is always clone/restore → copy documents back → delete the temporary database.
+    is always clone/restore → copy documents back with `scripts/recover-documents.js`
+    (one collection or subcollection path at a time, dry-run by default, skips
+    documents that still exist live) → delete the temporary database.
     Storage files and Auth users are **not** covered.
   - `monitoring-alertes.md` — the email alerting on server failures, set up by
     `scripts/setup-alerts.sh` (idempotent, Cloud Shell): one notification channel

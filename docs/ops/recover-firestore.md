@@ -159,8 +159,9 @@ Là encore l'opération se poursuit en arrière-plan.
 
 ## Recopier les documents vers `bike-eco-db`
 
-C'est l'étape manuelle, et c'est normal : seule une personne qui connaît l'incident sait quels
-documents doivent revenir et lesquels doivent rester tels quels.
+L'étape que personne ne peut automatiser entièrement : seule une personne qui connaît
+l'incident sait quelles collections doivent revenir et lesquelles doivent rester telles
+quelles. Le script `recover-documents.js` fait la recopie une fois ce choix arrêté.
 
 > **Ne jamais recopier la base entière par-dessus la base live.** Depuis l'incident, des
 > testeurs ont pu créer des dossiers et envoyer des messages légitimes. Un écrasement global
@@ -174,56 +175,56 @@ que la base temporaire contient bien ce qu'on cherche **avant** d'écrire quoi q
 
 ### Recopier
 
-Depuis Cloud Shell, avec `firebase-admin` (`npm i firebase-admin`), en ouvrant **deux** clients,
-un par base. Le squelette ci-dessous recopie une liste de dossiers ; l'adapter à l'incident.
+`scripts/recover-documents.js` fait ce travail : on lui donne la base source et la collection
+à restaurer, il recopie les documents manquants vers `bike-eco-db`, **sous-collections
+comprises**. Comme les autres scripts d'exploitation, il est en simulation par défaut.
 
-```js
-const { initializeApp } = require("firebase-admin/app");
-const { getFirestore } = require("firebase-admin/firestore");
+```bash
+npm i firebase-admin
 
-initializeApp({ projectId: "bike-eco-43a84" });
+# 1. simulation : affiche ce qui serait écrit, n'écrit rien
+node recover-documents.js --from recovery-20260914 --collection users
 
-// Un client par base. `getFirestore(<id>)` vise une base nommée — c'est le
-// motif utilisé par les scripts du dépôt (voir `scripts/wipe-prod.js`).
-// Sans identifiant, on écrirait dans `(default)`, qui est vide : erreur classique.
-const live = getFirestore("bike-eco-db");
-const source = getFirestore("recovery-20260914");
-
-const DRY_RUN = true; // passer à false seulement après relecture
-const IDS = ["dossier-1", "dossier-2"]; // la liste établie à l'étape précédente
-
-(async () => {
-  for (const id of IDS) {
-    const snap = await source.collection("dossiers").doc(id).get();
-    if (!snap.exists) {
-      console.log("absent de la source :", id);
-      continue;
-    }
-
-    const existing = await live.collection("dossiers").doc(id).get();
-    if (existing.exists) {
-      console.log("existe déjà en live, ignoré :", id);
-      continue;
-    }
-
-    console.log(DRY_RUN ? "[simulation] écrirait" : "écrit", id);
-    if (!DRY_RUN) await live.collection("dossiers").doc(id).set(snap.data());
-  }
-})();
+# 2. après relecture de la sortie : applique
+node recover-documents.js --from recovery-20260914 --collection users --yes
 ```
 
-Trois précautions, toutes les trois indispensables :
+| Option                | Effet                                                                                                                                   |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `--from <base>`       | la base source, celle créée à l'étape A ou B (obligatoire)                                                                               |
+| `--collection <path>` | ce qu'on restaure : `users`, `companies`, `invitations`, `dossiers`, ou un chemin de sous-collection `dossiers/<id>/messages`            |
+| `--ids a,b,c`         | ne restaurer que ces documents-là ; par défaut, toute la collection                                                                      |
+| `--to <base>`         | la cible ; par défaut `bike-eco-db`                                                                                                      |
+| `--overwrite`         | écraser les documents encore présents en live — **par défaut ils sont laissés tels quels**                                               |
+| `--no-subcollections` | s'arrêter aux documents nommés, sans leurs `messages`, `mutes` ni `pushTokens`                                                           |
+| `--yes`               | appliquer ; sans cette option, rien n'est écrit                                                                                          |
 
-- **`DRY_RUN = true` d'abord**, systématiquement. Lire la sortie en entier avant de le passer à
-  `false`. C'est la même convention que `wipe-prod.js` et `delete-b2b-user.js`.
-- **Ne pas écraser un document qui existe déjà** en live sans l'avoir décidé explicitement — le
-  `continue` ci-dessus est là pour ça.
-- **Les sous-collections ne suivent pas leur parent.** Un dossier a des `messages` et des
-  `mutes` ; un utilisateur a des `pushTokens`. Recopier le document parent ne les ramène pas :
-  il faut les parcourir et les recopier une par une (même remarque que dans `wipe-prod.md`).
+Trois comportements à connaître, ce sont eux qui rendent l'opération sûre :
+
+- **Un document déjà présent en live n'est pas touché.** Depuis l'incident, des testeurs ont
+  pu créer des dossiers et envoyer des messages légitimes : les réécrire par-dessus
+  remplacerait une perte par une autre. `--overwrite` existe, mais c'est une décision à
+  prendre document par document, jamais un réflexe.
+- **Les sous-collections sont parcourues pour tous les documents trouvés**, y compris ceux
+  qui ont été ignorés parce qu'ils existaient déjà. Un utilisateur toujours en live peut
+  avoir perdu ses `pushTokens` : ils reviennent.
+- **Rien n'est jamais supprimé** de la base cible, et le script est ré-exécutable : interrompu
+  en cours de route, le relancer reprend le reste.
+
+La sortie indique, collection par collection, combien de documents ont été trouvés, combien
+seront écrits et combien sont ignorés :
+
+```
+  · users                                        12 found, 9 to write, 3 already in bike-eco-db
+    · users/abc123/pushTokens                     2 found, 2 to write
+```
 
 Les collections du modèle sont listées dans `src/lib/firestore/schema.ts` : `companies`,
 `users` (+ `pushTokens`), `invitations`, `dossiers` (+ `messages`, `mutes`).
+
+Le script ne restaure **ni les fichiers Cloud Storage, ni les comptes Auth** : après coup,
+vérifier les `photoUrls` des dossiers revenus, et les uid vers lesquels pointent
+`submittedBy`, `invitedBy` et `ownerUid` (voir « Ce qui n'est PAS protégé » plus haut).
 
 ## Supprimer la base temporaire
 
@@ -277,7 +278,9 @@ procédure en entier :
 
 1. cloner par PITR sur un instant d'il y a une heure, vers `drill-<date>` ;
 2. ouvrir la base dans la console et vérifier qu'elle contient bien les dossiers attendus ;
-3. recopier **un seul** document de test vers `bike-eco-db` ;
+3. recopier un document de test vers `bike-eco-db` —
+   `node recover-documents.js --from drill-<date> --collection users --ids <un-uid>`,
+   d'abord sans `--yes` pour lire la simulation ;
 4. supprimer `drill-<date>` ;
 5. vérifier avec `firestore:databases:list` qu'il ne reste qu'une base.
 
