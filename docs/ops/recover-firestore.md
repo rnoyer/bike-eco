@@ -14,11 +14,11 @@ service** (voir `first-backoffice-account.md` pour l'ouverture de Cloud Shell).
 
 ## Ce qui est protégé aujourd'hui
 
-| Protection | État | Ce que ça couvre |
-| ---------- | ---- | ---------------- |
-| **Protection contre la suppression** | activée | empêche la suppression de la base `bike-eco-db` elle-même |
-| **PITR** (récupération à un instant précis) | activée | revenir à **n'importe quelle minute des 7 derniers jours** |
-| **Sauvegarde hebdomadaire** | tous les **lundis**, conservée **35 jours** | revenir à un lundi, jusqu'à 5 semaines en arrière |
+| Protection                                  | État                                        | Ce que ça couvre                                           |
+| ------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------- |
+| **Protection contre la suppression**        | activée                                     | empêche la suppression de la base `bike-eco-db` elle-même  |
+| **PITR** (récupération à un instant précis) | activée                                     | revenir à **n'importe quelle minute des 7 derniers jours** |
+| **Sauvegarde hebdomadaire**                 | tous les **lundis**, conservée **35 jours** | revenir à un lundi, jusqu'à 5 semaines en arrière          |
 
 Les deux se complètent et ne font pas double emploi : le PITR couvre les 7 derniers jours à la
 minute près, les sauvegardes couvrent les semaines 1 à 5 — le cas « on s'en aperçoit trois
@@ -41,17 +41,17 @@ affiche `3600s`, **le PITR est désactivé** et la fenêtre n'est que d'une heur
 
 ## Ce qui n'est PAS protégé
 
-| Non couvert | Conséquence |
-| ----------- | ----------- |
-| **Cloud Storage** (les photos des dossiers) | ni le PITR ni les sauvegardes Firestore ne contiennent les fichiers. Restaurer la base ramène les documents `dossiers` et leurs `photoUrls`, mais **les URL pointeront vers des fichiers absents** si les photos ont été supprimées. |
-| **Les comptes Firebase Auth** | un utilisateur Auth supprimé ne revient pas. Recréé sur la même adresse, il reçoit un **nouvel uid**, donc les `submittedBy`, `invitedBy` et `senderName` restaurés ne pointeront plus sur rien. |
-| **Les règles de sécurité, les index, les fonctions** | ils vivent dans ce dépôt, pas dans la base. On les redéploie, on ne les restaure pas. |
+| Non couvert                                          | Conséquence                                                                                                                                                                                                                          |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Cloud Storage** (les photos des dossiers)          | ni le PITR ni les sauvegardes Firestore ne contiennent les fichiers. Restaurer la base ramène les documents `dossiers` et leurs `photoUrls`, mais **les URL pointeront vers des fichiers absents** si les photos ont été supprimées. |
+| **Les comptes Firebase Auth**                        | un utilisateur Auth supprimé ne revient pas. Recréé sur la même adresse, il reçoit un **nouvel uid**, donc les `submittedBy`, `invitedBy` et `senderName` restaurés ne pointeront plus sur rien.                                     |
+| **Les règles de sécurité, les index, les fonctions** | ils vivent dans ce dépôt, pas dans la base. On les redéploie, on ne les restaure pas.                                                                                                                                                |
 
-Cloud Storage applique par défaut une **suppression réversible de 7 jours** (*soft delete*) :
+Cloud Storage applique par défaut une **suppression réversible de 7 jours** (_soft delete_) :
 un fichier effacé reste récupérable une semaine. Ce réglage n'a pas été vérifié sur ce projet —
 à contrôler dans la console (Cloud Storage → le bucket → Protection) **avant** d'en dépendre.
 
-## ⚠️ La règle qui surprend tout le monde
+## ⚠️ Concernant la restauration de la db Firestore
 
 **Aucune restauration ne remet `bike-eco-db` dans son état passé.**
 
@@ -73,12 +73,12 @@ fonctions **et** de publier une nouvelle version de l'application mobile. Ce n'e
 
 ## Quel outil pour quel incident
 
-| Situation | Outil | Section |
-| --------- | ----- | ------- |
-| « on a effacé ça il y a deux heures » | PITR | [A](#a--récupérer-par-pitr-7-derniers-jours) |
-| « le bug tourne depuis mardi dernier » | PITR si < 7 jours, sinon sauvegarde | [A](#a--récupérer-par-pitr-7-derniers-jours) / [B](#b--restaurer-une-sauvegarde-hebdomadaire) |
-| « on s'en aperçoit trois semaines après » | sauvegarde hebdomadaire | [B](#b--restaurer-une-sauvegarde-hebdomadaire) |
-| « juste savoir ce que contenait ce document hier » | PITR, lecture seule | [A](#a--récupérer-par-pitr-7-derniers-jours) puis lire la base temporaire sans rien recopier |
+| Situation                                          | Outil                               | Section                                                                                       |
+| -------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------- |
+| « on a effacé ça il y a deux heures »              | PITR                                | [A](#a--récupérer-par-pitr-7-derniers-jours)                                                  |
+| « le bug tourne depuis mardi dernier »             | PITR si < 7 jours, sinon sauvegarde | [A](#a--récupérer-par-pitr-7-derniers-jours) / [B](#b--restaurer-une-sauvegarde-hebdomadaire) |
+| « on s'en aperçoit trois semaines après »          | sauvegarde hebdomadaire             | [B](#b--restaurer-une-sauvegarde-hebdomadaire)                                                |
+| « juste savoir ce que contenait ce document hier » | PITR, lecture seule                 | [A](#a--récupérer-par-pitr-7-derniers-jours) puis lire la base temporaire sans rien recopier  |
 
 **Avant toute chose : noter l'heure.** L'instant qui compte est le **dernier moment où les
 données étaient encore correctes**, en **UTC**. Sans cette information, aucune des deux
@@ -189,16 +189,22 @@ initializeApp({ projectId: "bike-eco-43a84" });
 const live = getFirestore("bike-eco-db");
 const source = getFirestore("recovery-20260914");
 
-const DRY_RUN = true;                                 // passer à false seulement après relecture
-const IDS = ["dossier-1", "dossier-2"];               // la liste établie à l'étape précédente
+const DRY_RUN = true; // passer à false seulement après relecture
+const IDS = ["dossier-1", "dossier-2"]; // la liste établie à l'étape précédente
 
 (async () => {
   for (const id of IDS) {
     const snap = await source.collection("dossiers").doc(id).get();
-    if (!snap.exists) { console.log("absent de la source :", id); continue; }
+    if (!snap.exists) {
+      console.log("absent de la source :", id);
+      continue;
+    }
 
     const existing = await live.collection("dossiers").doc(id).get();
-    if (existing.exists) { console.log("existe déjà en live, ignoré :", id); continue; }
+    if (existing.exists) {
+      console.log("existe déjà en live, ignoré :", id);
+      continue;
+    }
 
     console.log(DRY_RUN ? "[simulation] écrirait" : "écrit", id);
     if (!DRY_RUN) await live.collection("dossiers").doc(id).set(snap.data());
@@ -251,11 +257,11 @@ droits de projet, qui ne passent pas par les règles.
 
 ## Ce que ça coûte
 
-| Poste | Tarif | Remarque |
-| ----- | ----- | -------- |
-| PITR | 0,00020 $ / Gio / heure | ≈ **0,15 $ par Gio et par mois** |
-| Sauvegardes | 0,00004 $ / Gio / heure et par copie conservée | ≈ **0,03 $ par Gio, par mois et par copie** — ici environ 5 copies |
-| Base temporaire | tarif d'une base normale | **d'où l'importance de la supprimer** |
+| Poste           | Tarif                                          | Remarque                                                           |
+| --------------- | ---------------------------------------------- | ------------------------------------------------------------------ |
+| PITR            | 0,00020 $ / Gio / heure                        | ≈ **0,15 $ par Gio et par mois**                                   |
+| Sauvegardes     | 0,00004 $ / Gio / heure et par copie conservée | ≈ **0,03 $ par Gio, par mois et par copie** — ici environ 5 copies |
+| Base temporaire | tarif d'une base normale                       | **d'où l'importance de la supprimer**                              |
 
 Aucun de ces postes n'entre dans le palier gratuit, même en plan Blaze.
 
